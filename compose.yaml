@@ -18,6 +18,7 @@ services:
       start_period: 30s
 
   portal:
+    init: true
     build: .
     environment:
       DATABASE_URL: mysql+pymysql://haedam:${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}@db/haedam?charset=utf8mb4
