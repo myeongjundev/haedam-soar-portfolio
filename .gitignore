@@ -1,0 +1,26 @@
+# Local configuration and generated evidence
+.env
+.env.*
+!.env.example
+!.env.*.example
+.local/
+.venv/
+instance/
+node_modules/
+dist/
+test-results/
+playwright-report/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+*.sqlite*
+*.db
+*.db-*
+*.log
+*.jsonl
+*.pcap*
+*.key
+*.pem
+*.ovpn
+*.p12
+.DS_Store
