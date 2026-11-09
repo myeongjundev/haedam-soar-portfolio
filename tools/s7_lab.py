@@ -186,12 +186,26 @@ def image_drift(path):
     return sorted(k for k in expected.keys() | actual.keys() if expected.get(k) != actual.get(k))
 
 
-def ready():
-    # s7-backend keeps its first contents; `up --build` alone would leave old backend code running.
-    stale = image_drift('/app/src')
+def mount_target(volume):
+    """Where the portal mounts this project's named `volume`, from the effective Compose model."""
+    portal = json.loads(compose('config', '--format', 'json'))['services']['portal']
+    targets = [m['target'] for m in portal.get('volumes', [])
+               if m.get('type') == 'volume' and m.get('source') == volume]
+    if len(targets) != 1:
+        raise RuntimeError('Portal mount for volume ' + volume + ' not found in the Compose config.')
+    return targets[0]
+
+
+def require_image_content(volume):
+    # A named volume keeps its first contents; after `up --build` it can shadow newer image code.
+    stale = image_drift(mount_target(volume))
     if stale:
-        raise RuntimeError('Backend volume is stale vs the built portal image (' + ', '.join(stale[:5]) +
+        raise RuntimeError(volume + ' volume is stale vs the built portal image (' + ', '.join(stale[:5]) +
                            '); start a new S7_PROJECT instead of reusing this one.')
+
+
+def ready():
+    require_image_content('s7-backend')
     cert = compose('exec', '-T', 'wazuh.manager', 'cat', '/var/ossec/api/configuration/ssl/server.crt')
     private_file(API_CA, cert + '\n')
     ident = wait_for(agent_id)
@@ -213,7 +227,7 @@ def restore(*args):
 
 def baseline():
     # Refuse to baseline an altered volume: compare every file to the built image first.
-    if image_drift('/app/frontend'):
+    if image_drift(mount_target('s7-web')):
         raise RuntimeError('Web volume differs from the built portal image; baseline refused.')
     exists = compose('exec', '-T', 's7-agent', 'sh', '-c',
                      'if test -f /opt/haedam-s7/state/baseline.sha256; then echo yes; fi')

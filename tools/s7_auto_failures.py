@@ -14,6 +14,7 @@ def replay_body(row):
 
 
 def verify():
+    lab.require_current_portal()
     old = next(r for r in reversed(rows()) if json.loads(r['event'])['file_key']==lab.SETTINGS['home_file'] and r['completion'])
     if any(t['status'] in ('open','responding','verified') for t in tickets()):
         raise RuntimeError('Finish existing S7 tickets first.')
