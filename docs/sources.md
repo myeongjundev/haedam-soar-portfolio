@@ -24,3 +24,12 @@
 | `contracts/` | 팀 공통 이벤트·포털·티켓 계약과 합성 예시 |
 
 팀 VPN 주소는 문서용 IP로, 워크플로의 서비스 URL은 개인 Compose용 DNS 이름으로 치환했습니다. n8n 자격증명 참조 ID와 이름은 개인 랩에서 다시 연결할 자리표시자로 바꿨습니다. 워크플로는 비활성 상태로 보존했습니다. 기존 Graylog 콘텐츠 팩, Wazuh 배포 규칙, pfSense 설정 백업과 팀 최종 PPT는 별도 확보 대상으로 기록합니다.
+
+## 개인 기여와 검증 근거
+
+| 범위 | 확인된 내용 | 근거 |
+| --- | --- | --- |
+| 김명준 팀 담당 · 포털 | React·Flask 민원포털 구현, 서버 세션·권한, 앱 이벤트·IP 대응 경로 | 위 프론트·백엔드 기준 커밋과 [백엔드 테스트](../haedam-portal-backend/tests) |
+| 김명준 팀 담당 · S8/S10 | 공격 입력 도구, 차단 효과와 원복 검증. S10 팀 시험에서 PF 차단 중 새 연결 timeout → PF만 해제한 뒤 포털 403 → 포털 해제 후 정상 접근·활성 조치 0 확인 | [S8/S10 입력 반입 PR](https://github.com/NoBugs-Aleph/aleph-soar-capstone/pull/131), [팀 발표 대본](https://github.com/NoBugs-Aleph/aleph-soar-capstone/blob/7155489/team_docs/%EB%B0%9C%ED%91%9C-%EB%8C%80%EB%B3%B8.md) |
+| 팀 공통 구현 | Wazuh·S7, 티켓 저장소, Graylog·n8n 연동, S1/S4/S12의 담당과 반입 경로 | [반입 경로](#반입-경로), [팀 시나리오와 담당](https://github.com/NoBugs-Aleph/aleph-soar-public/blob/main/docs/scenarios.md) |
+| 개인 전환 · P01 | 팀 코드 출처 고정, 웹·DB의 Compose 기동과 마이그레이션, 합성 가입·로그인과 재시작 후 세션 유지 | [11/9 작업일지](../work-log/members/myeongjundev/2026-11-09.md), [개인 P01 PR](https://github.com/myeongjundev/haedam-soar-portfolio/pull/1) |

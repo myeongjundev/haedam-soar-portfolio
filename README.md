@@ -15,6 +15,13 @@
 
 ## 포털과 DB 실행
 
+GitHub에서 처음 받는 경우 아래 명령을 실행합니다. 초안 PR 검증 중에는 새 폴더에서 `gh pr checkout 1`로 PR 코드를 받습니다.
+
+```powershell
+git clone https://github.com/myeongjundev/haedam-soar-portfolio.git
+Set-Location haedam-soar-portfolio
+```
+
 Docker Desktop 또는 Linux Docker Engine과 Docker Compose v2를 준비합니다. 첫 빌드는 이미지와 잠금 의존성을 내려받습니다. 아래 명령은 PowerShell 7에서 저장소 루트 기준입니다.
 
 ```powershell
@@ -44,6 +51,8 @@ fi
 - 새 DB에서는 포털 기동 시 Alembic 마이그레이션을 적용합니다. 시민은 화면에서 가입할 수 있습니다. 관리자는 `docker compose exec portal flask --app haedam_portal:create_app create-admin`으로 합성 계정을 만듭니다.
 - `docker compose stop`으로 멈추고 `docker compose up -d --wait`로 다시 실행하면 DB와 포털 이벤트 볼륨을 재사용합니다.
 - 이미 초기화된 볼륨은 최초 MySQL 비밀번호를 사용합니다. 환경값을 직접 넣을 때는 DB URL에 쓸 수 있는 16진수 값을 사용합니다.
+
+포털 화면·API·DB·규칙을 수정할 위치와 확인 방법은 [변경 후 재검증](docs/portfolio-plan.md#변경-후-재검증)에 있습니다.
 
 ## 관제 설정 반입 상태
 
