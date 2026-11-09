@@ -95,6 +95,7 @@ x.event_id=b.event_id; x.detected_at=b.detected_at;
     f.http('Record detection', 'http://ticket-store:8088/api/v1/tickets/record',
            body='={{ JSON.stringify($json.record) }}', idem="={{ 'h1-detected-' + $json.event_id }}")
     f.code('Detection recorded', """
+if(r.statusCode===409) return fail('held_ticket_conflict',409);
 if(!good||r.body?.ok!==true) return fail('held_ticket_record');
 const t=r.body, x=$('Validate').first().json;
 if(!/^T-[0-9]{8}-[0-9]{4}$/.test(t.ticket_id)||!['open','responding','verified'].includes(t.status)) return fail('held_old_event',409);
@@ -104,9 +105,17 @@ return emit({...x,ticket_id:t.ticket_id});
     f.code('Check current', """
 const x=$('Detection recorded').first().json,t=r.body;
 if(!good||t?.ok!==true||t.ticket_id!==x.ticket_id||!['open','responding','verified'].includes(t.status)||!Array.isArray(t.applied_actions)) return fail('held_current_ticket',409);
-if(t.applied_actions.some(a=>a.via==='portal'&&a.action==='restrict_write'&&a.target===x.username))
- return emit({ok:true,stop:true,status:200,verdict:'duplicate_no_action',ticket_id:x.ticket_id});
-return emit({...x,requested_at:new Date().toISOString()});
+const duplicate=t.applied_actions.some(a=>a.via==='portal'&&a.action==='restrict_write'&&a.target===x.username);
+return emit({...x,duplicate,requested_at:new Date().toISOString()});
+""")
+    # A ticket claim alone is not proof: the portal may have been released while the released record failed.
+    f.http('Read current restriction', "={{ 'http://portal-response:5000/api/v1/response/petitions/restrictions/'+$json.username }}", 'h1PortalAuth')
+    f.code('Check duplicate', """
+const x=$('Check current').first().json,d=r.body?.data;
+if(!good||r.body?.success!==true||d?.username!==x.username) return fail('held_portal_lookup');
+if(!x.duplicate) return emit(x);
+if(d.restricted===true&&d.ticket_id===x.ticket_id) return emit({ok:true,stop:true,status:200,verdict:'duplicate_no_action',ticket_id:x.ticket_id});
+return fail('held_portal_mismatch',409);
 """)
     f.http('Restrict portal', 'http://portal-response:5000/api/v1/response/petitions/restrict', 'h1PortalAuth',
            body='={{ JSON.stringify({username:$json.username,ticket_id:$json.ticket_id}) }}',

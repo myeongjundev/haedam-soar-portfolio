@@ -67,7 +67,7 @@ py -3.12 tools/h1_control.py reconcile T-YYYYMMDD-NNNN
 py -3.12 tools/h1_control.py release T-YYYYMMDD-NNNN
 ```
 
-같은 event_id라도 detected_at이 다르면 티켓 저장소의 멱등 충돌이며 n8n은 503 `held_ticket_record`로 보류합니다. 포털 해제 직후 `released` 기록이 실패하면 같은 `release`를 다시 실행합니다. 그 사이 탐지가 켜져 있으면 새 탐지가 실제 제한 없이 200 `duplicate_no_action`으로 끝나므로 탐지를 정지한 상태를 유지합니다. 기록 실패를 대응 성공으로 표시하지 않으며, 이 구간의 자동 복구는 별도 고도화 대상입니다.
+같은 event_id라도 detected_at이 다르면 티켓 저장소의 멱등 충돌이며 n8n은 409 `held_ticket_conflict`로 보류합니다. 재시도해도 같은 결과이므로 `reconcile`을 사용합니다. 저장소 장애는 503 `held_ticket_record`입니다. 포털 해제 직후 `released` 기록이 실패하면 같은 `release`를 다시 실행합니다. 그 사이 새 탐지가 들어오면 티켓에 조치 기록이 남아 있어도 포털 현재 제한을 확인하므로, 제한이 없거나 다른 티켓 소유이면 409 `held_portal_mismatch`로 보류합니다. 기록 실패를 대응 성공으로 표시하지 않으며, 이 구간의 자동 복구는 별도 고도화 대상입니다.
 
 ## 개발 검사
 
