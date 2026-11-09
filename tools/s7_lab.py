@@ -170,7 +170,26 @@ def wait_for(check, timeout=180):
     raise RuntimeError(scrub('Readiness timed out: ' + str(error)))
 
 
+def image_drift(path):
+    """Files under `path` that differ between the built portal image and the running portal."""
+    # Docker's containerd image store can return a non-runnable config digest
+    # from `compose images -q`; resolve the built image's manifest instead.
+    image_id = run(['docker', 'image', 'inspect', PROJECT + '-portal', '--format', '{{.Id}}'])
+    code = ('import hashlib,json,pathlib,sys; root=pathlib.Path(sys.argv[1]); '
+            'print(json.dumps({str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() '
+            'for p in root.rglob("*") if p.is_file()},sort_keys=True))')
+    expected = json.loads(run(['docker', 'run', '--rm', '--network', 'none', '--entrypoint', 'python',
+                               image_id, '-c', code, path]))
+    actual = json.loads(compose('exec', '-T', 'portal', 'python', '-c', code, path))
+    return sorted(k for k in expected.keys() | actual.keys() if expected.get(k) != actual.get(k))
+
+
 def ready():
+    # s7-backend keeps its first contents; `up --build` alone would leave old backend code running.
+    stale = image_drift('/app/src')
+    if stale:
+        raise RuntimeError('Backend volume is stale vs the built portal image (' + ', '.join(stale[:5]) +
+                           '); start a new S7_PROJECT instead of reusing this one.')
     cert = compose('exec', '-T', 'wazuh.manager', 'cat', '/var/ossec/api/configuration/ssl/server.crt')
     private_file(API_CA, cert + '\n')
     ident = wait_for(agent_id)
@@ -192,15 +211,7 @@ def restore(*args):
 
 def baseline():
     # Refuse to baseline an altered volume: compare every file to the built image first.
-    # Docker's containerd image store can return a non-runnable config digest
-    # from `compose images -q`; resolve the built image's manifest instead.
-    image_id = run(['docker', 'image', 'inspect', PROJECT + '-portal', '--format', '{{.Id}}'])
-    code = ('import hashlib,json,pathlib; root=pathlib.Path("/app/frontend"); '
-            'print(json.dumps({str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() '
-            'for p in root.rglob("*") if p.is_file()},sort_keys=True))')
-    expected = run(['docker', 'run', '--rm', '--network', 'none', '--entrypoint', 'python', image_id, '-c', code])
-    actual = compose('exec', '-T', 'portal', 'python', '-c', code)
-    if json.loads(expected) != json.loads(actual):
+    if image_drift('/app/frontend'):
         raise RuntimeError('Web volume differs from the built portal image; baseline refused.')
     exists = compose('exec', '-T', 's7-agent', 'sh', '-c',
                      'if test -f /opt/haedam-s7/state/baseline.sha256; then echo yes; fi')
