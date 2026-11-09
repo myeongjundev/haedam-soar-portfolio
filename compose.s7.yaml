@@ -1,0 +1,128 @@
+# Overlay compose.yaml. Personal FIM lab; no host directories, socket or PID access.
+services:
+  db:
+    mem_limit: 768m
+  portal:
+    mem_limit: 256m
+    networks: [default, access]
+    volumes:
+      - s7-web:/app/frontend:ro
+  wazuh.manager:
+    image: wazuh/wazuh-manager:4.9.0
+    hostname: wazuh.manager
+    mem_limit: 1024m
+    networks: [default, access]
+    environment:
+      INDEXER_URL: https://wazuh.indexer:9200
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD:?Run s7_lab.py init}
+      FILEBEAT_SSL_VERIFICATION_MODE: full
+      SSL_CERTIFICATE_AUTHORITIES: /etc/ssl/root-ca.pem
+      SSL_CERTIFICATE: /etc/ssl/filebeat.pem
+      SSL_KEY: /etc/ssl/filebeat.key
+      API_USERNAME: portfolio-api
+      API_PASSWORD: ${WAZUH_API_PASSWORD:?Run s7_lab.py init}
+    ports:
+      - "127.0.0.1:${WAZUH_API_PORT:-15520}:55000"
+    volumes:
+      - s7-manager-api:/var/ossec/api/configuration
+      - s7-manager-etc:/var/ossec/etc
+      - s7-manager-logs:/var/ossec/logs
+      - s7-manager-queue:/var/ossec/queue
+      - s7-manager-groups:/var/ossec/var/multigroups
+      - s7-filebeat-etc:/etc/filebeat
+      - s7-filebeat-var:/var/lib/filebeat
+      - ./.local/s7/certs/root-ca-manager.pem:/etc/ssl/root-ca.pem:ro
+      - ./.local/s7/certs/wazuh.manager.pem:/etc/ssl/filebeat.pem:ro
+      - ./.local/s7/certs/wazuh.manager-key.pem:/etc/ssl/filebeat.key:ro
+      - ./infra/wazuh/manager.conf:/wazuh-config-mount/etc/ossec.conf:ro
+      - ./.local/s7/authd.pass:/wazuh-config-mount/etc/authd.pass:ro
+    depends_on:
+      - wazuh.indexer
+  wazuh.indexer:
+    image: wazuh/wazuh-indexer:4.9.0
+    hostname: wazuh.indexer
+    mem_limit: 2048m
+    networks: [default, access]
+    environment:
+      OPENSEARCH_JAVA_OPTS: -Xms1g -Xmx1g
+    ulimits:
+      memlock: {soft: -1, hard: -1}
+      nofile: {soft: 65536, hard: 65536}
+    ports:
+      - "127.0.0.1:${WAZUH_INDEXER_PORT:-19220}:9200"
+    volumes:
+      - s7-indexer-data:/var/lib/wazuh-indexer
+      - ./.local/s7/certs/root-ca.pem:/usr/share/wazuh-indexer/certs/root-ca.pem:ro
+      - ./.local/s7/certs/wazuh.indexer.pem:/usr/share/wazuh-indexer/certs/wazuh.indexer.pem:ro
+      - ./.local/s7/certs/wazuh.indexer-key.pem:/usr/share/wazuh-indexer/certs/wazuh.indexer.key:ro
+      - ./.local/s7/certs/admin.pem:/usr/share/wazuh-indexer/certs/admin.pem:ro
+      - ./.local/s7/certs/admin-key.pem:/usr/share/wazuh-indexer/certs/admin-key.pem:ro
+      - ./infra/wazuh/indexer.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - ./.local/s7/internal_users.yml:/usr/share/wazuh-indexer/opensearch-security/internal_users.yml:ro
+  wazuh.dashboard:
+    image: wazuh/wazuh-dashboard:4.9.0
+    hostname: wazuh.dashboard
+    mem_limit: 768m
+    networks: [default, access]
+    environment:
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${WAZUH_INDEXER_PASSWORD:?Run s7_lab.py init}
+      WAZUH_API_URL: https://wazuh.manager
+      DASHBOARD_USERNAME: kibanaserver
+      DASHBOARD_PASSWORD: ${WAZUH_DASHBOARD_PASSWORD:?Run s7_lab.py init}
+      API_USERNAME: portfolio-api
+      API_PASSWORD: ${WAZUH_API_PASSWORD:?Run s7_lab.py init}
+    ports:
+      - "127.0.0.1:${WAZUH_DASHBOARD_PORT:-15620}:5601"
+    volumes:
+      - ./.local/s7/certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem:ro
+      - ./.local/s7/certs/wazuh.dashboard.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem:ro
+      - ./.local/s7/certs/wazuh.dashboard-key.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem:ro
+      - ./infra/wazuh/dashboard.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
+      - ./.local/s7/wazuh.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml
+      - s7-dashboard-custom:/usr/share/wazuh-dashboard/plugins/wazuh/public/assets/custom
+    depends_on:
+      - wazuh.indexer
+      - wazuh.manager
+  s7-agent:
+    build:
+      context: .
+      dockerfile: infra/wazuh/agent/Dockerfile
+    hostname: haedam-s7-agent
+    mem_limit: 256m
+    init: true
+    stop_grace_period: 30s
+    volumes:
+      - s7-web:/var/www/haedam
+      - s7-agent-etc:/var/ossec/etc
+      - s7-agent-queue:/var/ossec/queue
+      - s7-baseline:/opt/haedam-s7/state
+      - s7-quarantine:/var/lib/haedam-s7/quarantine
+      - s7-restore-logs:/var/log/haedam-s7
+      - ./.local/s7/authd.pass:/run/secrets/authd.pass:ro
+    depends_on:
+      portal: {condition: service_healthy}
+      wazuh.manager: {condition: service_started}
+
+networks:
+  access:
+  default:
+    internal: true
+
+volumes:
+  s7-web:
+  s7-manager-api:
+  s7-manager-etc:
+  s7-manager-logs:
+  s7-manager-queue:
+  s7-manager-groups:
+  s7-filebeat-etc:
+  s7-filebeat-var:
+  s7-indexer-data:
+  s7-dashboard-custom:
+  s7-agent-etc:
+  s7-agent-queue:
+  s7-baseline:
+  s7-quarantine:
+  s7-restore-logs:

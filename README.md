@@ -84,6 +84,20 @@ py -3.12 tools/h1_verify.py
 
 S8과 별도 프로젝트·포트·볼륨을 사용하며, 메모리가 작은 PC에서는 번갈아 실행합니다. [H1 실측 결과](docs/h1-results.md) · [H1 계약](docs/h1-contract.md) · [검토 카드](docs/h1-review.md).
 
+## Wazuh / S7 파일 변조 탐지와 복구
+
+[S7 개인 Docker 설치](docs/s7-lab.md)는 Wazuh manager·indexer·dashboard와 실제 포털 웹 파일을 감시하는 agent를 새 포털·MySQL과 함께 구성합니다. 변조 경보 검색과 Wazuh API 복구·격리, HTTP·해시 원복을 검증합니다. Graylog·n8n 자동 대응과 티켓은 후속 연결 대상입니다.
+
+```powershell
+py -3.12 tools/s7_lab.py init
+py -3.12 tools/s7_lab.py up
+py -3.12 tools/s7_lab.py ready
+py -3.12 tools/s7_lab.py baseline
+py -3.12 tools/s7_verify.py
+```
+
+각 명령의 성공을 확인하고 다음으로 진행합니다. 낮은 메모리에서는 기존 관제 환경과 번갈아 실행합니다. [S7 결과와 남은 범위](docs/s7-results.md) · [Claude 검토 카드](docs/s7-review.md).
+
 ## 작업 시작
 
 [공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 읽고 작업별 PR을 엽니다. 준비된 Claude IDE에서 별도의 개인 작업 폴더를 열고 [첫 문제 해결 카드](docs/claude-first-task.md)를 사용합니다.
