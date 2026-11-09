@@ -18,14 +18,18 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 
 from policy import normalize, validate_claim
+from settings import load_settings
 
-DATA = Path('/data')
-WEB = Path('/web')
-BASE = Path('/baseline')
-RECEIPTS = Path('/receipts')
-ALERTS = Path('/alerts/alerts/alerts.json')
+SETTINGS = load_settings()
+PATHS, URLS = SETTINGS['paths'], SETTINGS['urls']
+DATA = Path(PATHS['gateway_data'])
+WEB = Path(PATHS['gateway_web'])
+BASE = Path(PATHS['gateway_baseline'])
+RECEIPTS = Path(PATHS['gateway_receipts'])
+ALERTS = Path(PATHS['gateway_alerts']) / 'alerts/alerts.json'
 LOCK = threading.RLock()
 AGENT = os.environ['S7_AGENT_ID']
 KEY = os.environ['S7_BRIDGE_KEY']
@@ -67,14 +71,14 @@ def baseline():
         if saved.is_symlink() or not saved.is_file() or digest(saved) != value:
             raise Held('baseline_tampered')
         values[key] = value
-    if not values or 'index.html' not in values:
+    if not values or SETTINGS['home_file'] not in values:
         raise Held('missing_baseline')
     return values
 
 
 def current(key):
     path = WEB / key
-    if key not in ('index.html', 'assets/s7-probe.txt') or path.is_symlink() or path.parent.resolve() != path.parent:
+    if key not in SETTINGS['targets'] or path.is_symlink() or path.parent.resolve() != path.parent:
         raise Held('unsafe_path')
     return digest(path) if path.is_file() else 'absent'
 
@@ -91,15 +95,15 @@ def call(url, data=None, headers=None, method=None, context=None, timeout=8):
 
 
 def wazuh(path, body=None, method=None):
-    context = ssl.create_default_context(cafile='/run/secrets/wazuh-ca.pem')
+    context = ssl.create_default_context(cafile=PATHS['ca_file'])
     context.verify_flags &= ~ssl.VERIFY_X509_STRICT  # pinned 4.9 CA; signature/hostname checks stay enabled
-    auth = base64.b64encode(('s7-responder:' + os.environ['S7_WAZUH_PASSWORD']).encode()).decode()
-    status, raw = call('https://wazuh.manager:55000/security/user/authenticate', method='POST',
+    auth = base64.b64encode((SETTINGS['wazuh_user'] + ':' + os.environ['S7_WAZUH_PASSWORD']).encode()).decode()
+    status, raw = call(URLS['wazuh_api'] + '/security/user/authenticate', method='POST',
                        headers={'Authorization': 'Basic ' + auth}, context=context)
     if status != 200:
         raise Held('wazuh_auth_unavailable', 503)
     token = json.loads(raw)['data']['token']
-    status, raw = call('https://wazuh.manager:55000' + path, body, {'Authorization': 'Bearer ' + token}, method, context)
+    status, raw = call(URLS['wazuh_api'] + path, body, {'Authorization': 'Bearer ' + token}, method, context)
     result = json.loads(raw)
     if status != 200 or result.get('error') or result.get('data', {}).get('total_failed_items'):
         raise Held('wazuh_request_failed', 503)
@@ -125,7 +129,7 @@ def claim(body):
     if current(event['file_key']) != event['expected_hash']:
         raise Held('stale_file_hash')
     canonical = {**event, **body, 'baseline_hash': digest(BASE / 'baseline.sha256')}
-    canonical['group_key'] = 'S7:haedam-portal:' + event['event_key']
+    canonical['group_key'] = 'S7:' + SETTINGS['asset_id'] + ':' + event['event_key']
     with db() as conn:
         conn.execute('UPDATE events SET claim=? WHERE key=? AND claim IS NULL', (json.dumps(canonical), body['event_key']))
     return canonical
@@ -140,16 +144,16 @@ def effect(event):
     actual = {str(p.relative_to(WEB)) for p in WEB.rglob('*') if p.is_file() or p.is_symlink()}
     if actual != set(values):
         raise Held('extra_web_files')
-    code, page = call('http://portal:5000/')
-    if code != 200 or hashlib.sha256(page).hexdigest() != values['index.html']:
+    code, page = call(URLS['portal'] + '/')
+    if code != 200 or hashlib.sha256(page).hexdigest() != values[SETTINGS['home_file']]:
         raise Held('http_home_mismatch')
     status = 200
     if event['action'] == 'quarantine':
-        status, _ = call('http://portal:5000/' + event['file_key'])
+        status, _ = call(URLS['portal'] + '/' + event['file_key'])
         if status != 404:
             raise Held('http_probe_still_reachable')
     return {'home_status': 200, 'target_status': status, 'baseline_files': len(values),
-            'home_sha256': values['index.html']}
+            'home_sha256': values[SETTINGS['home_file']]}
 
 
 def respond(body, complete=False):
@@ -181,10 +185,10 @@ def respond(body, complete=False):
             effect(event)
         else:
             agents = wazuh('/agents?agents_list=' + AGENT)['affected_items']
-            if len(agents) != 1 or agents[0]['status'] != 'active' or agents[0]['name'] != 'haedam-s7-agent':
+            if len(agents) != 1 or agents[0]['status'] != 'active' or agents[0]['name'] != SETTINGS['agent_name']:
                 raise Held('agent_unavailable', 503)
         args = [key, ticket, event['file_key'], event['expected_hash'], event['baseline_hash'], 'complete' if complete else 'respond']
-        wazuh('/active-response?agents_list=' + AGENT, {'command': '!s7-guarded', 'arguments': args}, 'PUT')
+        wazuh('/active-response?agents_list=' + AGENT, {'command': '!' + SETTINGS['ar_command'], 'arguments': args}, 'PUT')
         deadline = time.monotonic() + 12
         while time.monotonic() < deadline and not receipt_file.exists():
             time.sleep(0.2)
@@ -225,7 +229,7 @@ def collect_once():
             if not line or not line.endswith(b'\n'):
                 break  # do not acknowledge partial writes
             try:
-                event = None if oversized else normalize(json.loads(line), AGENT, values)
+                event = None if oversized else normalize(json.loads(line), AGENT, values, SETTINGS)
             except (ValueError, KeyError, TypeError):
                 event = None
             if event:
@@ -237,11 +241,11 @@ def collect_once():
         pending = conn.execute('SELECT key,event FROM events WHERE delivered=0 LIMIT 20').fetchall()
     for row in pending:
         event = json.loads(row['event'])
-        packet = {'version': '1.1', 'host': 'haedam-wazuh', 'short_message': 'S7 trusted FIM candidate',
+        packet = {'version': '1.1', 'host': SETTINGS['relay_source'], 'short_message': 'S7 trusted FIM candidate',
                   'timestamp': datetime.fromisoformat(event['alert_at']).timestamp(),
                   '_event_key': event['event_key'], '_file_key': event['file_key'],
-                  '_agent_id': AGENT, '_wazuh_event_id': event['wazuh_event_id'], '_case_id': 'S7', '_asset_id': 'haedam-portal'}
-        status, _ = call('http://graylog:12202/gelf', packet)
+                  '_agent_id': AGENT, '_wazuh_event_id': event['wazuh_event_id'], '_case_id': 'S7', '_asset_id': SETTINGS['asset_id']}
+        status, _ = call(URLS['graylog_gelf'], packet)
         if status not in (200, 202):
             raise Held('graylog_ingest_unavailable', 503)
         with db() as conn:
@@ -320,4 +324,4 @@ if __name__ == '__main__':
         conn.execute('CREATE TABLE IF NOT EXISTS events(key TEXT PRIMARY KEY, event TEXT NOT NULL, delivered INTEGER DEFAULT 0, '
                      'claim TEXT, ticket TEXT, requested_at TEXT, response TEXT, completion TEXT)')
     threading.Thread(target=relay, daemon=True).start()
-    ThreadingHTTPServer(('0.0.0.0', 8097), Handler).serve_forever()
+    ThreadingHTTPServer((SETTINGS['gateway_bind'], urlsplit(URLS['gateway']).port), Handler).serve_forever()

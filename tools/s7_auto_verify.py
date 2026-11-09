@@ -13,7 +13,26 @@ from urllib.parse import urlencode
 import s7_auto_lab as lab
 
 lab.bind()
-from s7_verify import agent, alert, http as portal_http
+SETTINGS=lab.SETTINGS
+
+
+def agent(code,*args):
+    setup=('import json,os; from pathlib import Path; '
+           'settings=json.loads(Path(os.environ["S7_CONFIG_FILE"]).read_text()); paths=settings["paths"]; '
+           'web=Path(paths["agent_web"]); base=Path(paths["agent_baseline"]); '
+           'control=Path(paths["agent_control"]); quarantine=Path(paths["agent_quarantine"]); home=settings["home_file"]\n')
+    return lab.compose('exec','-T','s7-agent','python3','-I','-c',setup+code,*args)
+
+
+def alert(ident,key,event,since):
+    query={'size':5,'sort':[{'timestamp':'desc'}],'query':{'bool':{'filter':[
+        {'term':{'agent.id':ident}},{'term':{'syscheck.path':SETTINGS['paths']['agent_web']+'/'+key}},
+        {'term':{'syscheck.event':event}},{'range':{'timestamp':{'gte':since}}}]}}}
+    hits=lab.base.index('/wazuh-alerts-*/_search',query)['hits']['hits']
+    if not hits: return None
+    event=hits[0]['_source']; check=event['syscheck']
+    return dict(id=event['id'],timestamp=event['timestamp'],rule=event['rule']['id'],agent_id=ident,
+                path=check['path'],event=check['event'],sha256_before=check.get('sha256_before'),sha256_after=check.get('sha256_after'))
 
 
 def now():
@@ -21,7 +40,8 @@ def now():
 
 
 def rows():
-    code = ('import sqlite3,json; c=sqlite3.connect("file:/data/state.db?mode=ro",uri=True); c.row_factory=sqlite3.Row; '
+    code = ('import sqlite3,json; from settings import load_settings; '
+            'c=sqlite3.connect("file:"+load_settings()["paths"]["gateway_data"]+"/state.db?mode=ro",uri=True); c.row_factory=sqlite3.Row; '
             'print(json.dumps([dict(r) for r in c.execute("SELECT key,event,claim,ticket,response,completion FROM events")]))')
     return json.loads(lab.compose('exec', '-T', 's7-response', 'python', '-c', code))
 
@@ -51,7 +71,8 @@ from urllib.request import Request,urlopen
 from urllib.error import HTTPError
 x=json.load(sys.stdin); key=os.environ['S7_COMPLETE_KEY' if x['role']=='operator' else 'S7_BRIDGE_KEY']
 if x['role']=='wrong': key='wrong-test-key'
-r=Request('http://127.0.0.1:8097'+x['path'],data=json.dumps(x['body']).encode(),headers={'Content-Type':'application/json','X-S7-Key':key})
+from settings import load_settings
+r=Request(load_settings()['urls']['gateway']+x['path'],data=json.dumps(x['body']).encode(),headers={'Content-Type':'application/json','X-S7-Key':key})
 try: res=urlopen(r,timeout=40)
 except HTTPError as e: res=e
 with res: print(json.dumps({'status':res.status,'body':json.loads(res.read())}))
@@ -63,15 +84,15 @@ with res: print(json.dumps({'status':res.status,'body':json.loads(res.read())}))
 def scoped_api_checks():
     env = lab.env_values(); b = lab.base
     code, token = b.request(env['WAZUH_API_PORT'], '/security/user/authenticate', method='POST',
-        auth=b.basic('s7-responder', env['S7_WAZUH_PASSWORD']), ca=b.API_CA)
+        auth=b.basic(SETTINGS['wazuh_user'], env['S7_WAZUH_PASSWORD']), ca=b.API_CA)
     assert code == 200
     auth = 'Bearer ' + token['data']['token']
     results = {}
     for label, path, data, method in [
-        ('own_agent', '/agents?agents_list=001', None, None),
+        ('own_agent', '/agents?agents_list='+env['S7_AGENT_ID'], None, None),
         ('security_users', '/security/users', None, None),
         ('manager_agent_read', '/agents?agents_list=000', None, None),
-        ('manager_agent_response', '/active-response?agents_list=000', {'command':'!s7-guarded','arguments':['invalid']}, 'PUT')]:
+        ('manager_agent_response', '/active-response?agents_list=000', {'command':'!'+SETTINGS['ar_command'],'arguments':['invalid']}, 'PUT')]:
         status, body = b.request(env['WAZUH_API_PORT'], path, data, method, auth, b.API_CA)
         results[label] = {'status':status,'error':body.get('error'), 'failed':body.get('data',{}).get('total_failed_items',0),
                           'affected':body.get('data',{}).get('total_affected_items',0)}
@@ -85,14 +106,14 @@ def scoped_api_checks():
 
 
 def completion(event_key, ident):
-    return hook('complete', dict(case_id='S7',asset_id='haedam-portal',event_key=event_key,ticket_id=ident))
+    return hook('complete', dict(case_id='S7',asset_id=SETTINGS['asset_id'],event_key=event_key,ticket_id=ident))
 
 
 def mutate(key, marker):
-    assert key in ('index.html','assets/s7-probe.txt')
+    assert key in SETTINGS['targets']
     code = r'''import pathlib,hashlib,sys
-key,marker=sys.argv[1:]; p=pathlib.Path('/var/www/haedam')/key
-if key=='index.html': data=(pathlib.Path('/opt/haedam-s7/state/baseline')/key).read_bytes()+('\n<!-- '+marker+' -->\n').encode()
+key,marker=sys.argv[1:]; p=web/key
+if settings['targets'][key]=='restore': data=(base/'baseline'/key).read_bytes()+('\n<!-- '+marker+' -->\n').encode()
 else:
  assert not p.exists(), 'Probe already exists'
  data=('Harmless S7 personal test '+marker+'\n').encode()
@@ -109,18 +130,18 @@ def verify():
     before_count = len(rows())
     if any(t['status'] in ('open','responding','verified') for t in tickets()):
         raise RuntimeError('Complete existing tickets before this verification.')
-    baseline = agent('import pathlib,hashlib; print(hashlib.sha256(pathlib.Path("/opt/haedam-s7/state/baseline.sha256").read_bytes()).hexdigest())')
+    baseline = agent('import hashlib; print(hashlib.sha256((base/"baseline.sha256").read_bytes()).hexdigest())')
     try:
         ident = b.wait_for(b.agent_id)
-        b.wait_for(lambda: b.api('/syscheck/'+ident+'?search=index.html')['total_affected_items'] > 0)
+        b.wait_for(lambda: b.api('/syscheck/'+ident+'?'+urlencode({'search':SETTINGS['home_file']}))['total_affected_items'] > 0)
         result['checks']['scoped_api'] = scoped_api_checks()
-        readonly = agent('try:\n open("/opt/haedam-s7/state/baseline.sha256","ab").close(); print("writable")\nexcept OSError: print("readonly")')
+        readonly = agent('try:\n (base/"baseline.sha256").open("ab").close(); print("writable")\nexcept OSError: print("readonly")')
         assert readonly == 'readonly'; result['checks']['baseline_mount_readonly'] = True
         guard_job=hashlib.sha256((run_id+'-stale-guard').encode()).hexdigest()
-        b.api('/active-response?agents_list='+ident, {'command':'!s7-guarded',
-            'arguments':[guard_job,'T-20000101-9999','index.html','0'*64,baseline,'respond']},'PUT')
+        b.api('/active-response?agents_list='+ident, {'command':'!'+SETTINGS['ar_command'],
+            'arguments':[guard_job,'T-20000101-9999',SETTINGS['home_file'],'0'*64,baseline,'respond']},'PUT')
         def rejected_receipt():
-            text=agent('import pathlib,sys; p=pathlib.Path("/var/lib/haedam-s7/control")/(sys.argv[1]+".json"); print(p.read_text() if p.exists() else "null")',guard_job)
+            text=agent('import sys; p=control/(sys.argv[1]+".json"); print(p.read_text() if p.exists() else "null")',guard_job)
             return json.loads(text)
         rejected=b.wait_for(rejected_receipt,30)
         assert rejected['result']=='error' and rejected['reason']=='stale_file_hash'
@@ -134,7 +155,8 @@ def verify():
         assert gateway('/claim',unknown)['status'] == 404
         result['checks']['auth_and_unknown_event_denied'] = True
         lab.graylog('/events/definitions/'+definition+'/schedule',{},'PUT')
-        for key, event_type in [('index.html','modified'),('assets/s7-probe.txt','added')]:
+        for key, action in SETTINGS['targets'].items():
+            event_type='modified' if action=='restore' else 'added'
             case = dict(file_key=key,input_at=now()); result['cases'].append(case)
             case['input_sha256'] = mutate(key, run_id + '-' + event_type)
             case['wazuh_alert'] = b.wait_for(lambda: alert(ident,key,event_type,case['input_at']), 150)
@@ -154,7 +176,7 @@ def verify():
             assert case['wazuh_alert']['id'] == event['wazuh_event_id']
             assert all(x in t['event_ids'] for x in (event['wazuh_event_id'],response['graylog_event_id']))
             # Replay only the real observed Graylog decision. No new file operation.
-            payload=dict(case_id='S7',asset_id='haedam-portal',event_key=row['key'],event_id=response['graylog_event_id'],detected_at=response['detected_at'])
+            payload=dict(case_id='S7',asset_id=SETTINGS['asset_id'],event_key=row['key'],event_id=response['graylog_event_id'],detected_at=response['detected_at'])
             s,r=hook('respond',payload); assert s==200 and r['verdict']=='verified',(s,r)
             assert len(ticket(t['ticket_id'])['actions']) == 1
             case['duplicate_no_new_action'] = True
@@ -169,11 +191,11 @@ def verify():
             case['complete_and_old_event_replay_idempotent']=True
             case['input_to_verified_seconds']=round((datetime.fromisoformat(t['verified_at'])-datetime.fromisoformat(case['input_at'])).total_seconds(),3)
         time.sleep(8)
-        assert len(rows()) == before_count+2, 'Restoration generated an unexpected candidate'
+        assert len(rows()) == before_count+len(SETTINGS['targets']), 'Restoration generated an unexpected candidate'
         result['checks']['restoration_alerts_ignored'] = True
-        result['checks']['quarantine_entries_remaining'] = int(agent('import pathlib; print(len(list(pathlib.Path("/var/lib/haedam-s7/quarantine").iterdir())))'))
+        result['checks']['quarantine_entries_remaining'] = int(agent('print(len(list(quarantine.iterdir())))'))
         assert result['checks']['quarantine_entries_remaining'] == 0
-        assert agent('import pathlib,hashlib; print(hashlib.sha256(pathlib.Path("/opt/haedam-s7/state/baseline.sha256").read_bytes()).hexdigest())') == baseline
+        assert agent('import hashlib; print(hashlib.sha256((base/"baseline.sha256").read_bytes()).hexdigest())') == baseline
         result['checks']['baseline_preserved'] = True
         privacy = "const {DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('/home/node/.n8n/database.sqlite',{readOnly:true});console.log(JSON.stringify({payload_rows:db.prepare('SELECT count(*) AS n FROM execution_data').get().n}));"
         def clean_payloads():
@@ -189,12 +211,12 @@ def verify():
         # A failed response is kept for investigation. Restore only our two test
         # paths to the pinned baseline; this fallback never marks tickets successful.
         if result['result']!='pass':
-            result['fallback_cleanup']=agent('import pathlib,shutil; w=pathlib.Path("/var/www/haedam"); '
-                'shutil.copyfile("/opt/haedam-s7/state/baseline/index.html",w/"index.html"); '
-                '(w/"assets/s7-probe.txt").unlink(missing_ok=True); print("test paths restored; tickets/receipts retained")')
+            result['fallback_cleanup']=agent('import shutil\nfor key,action in settings["targets"].items():\n'
+                ' if action=="restore": shutil.copyfile(base/"baseline"/key,web/key)\n'
+                ' else: (web/key).unlink(missing_ok=True)\nprint("test paths restored; tickets/receipts retained")')
         result['finished_at']=now(); result['source_head']=b.run(['git','rev-parse','HEAD'])
         result['source_dirty_at_run']=bool(b.run(['git','status','--porcelain']))
-        sources=['compose.s7-auto.yaml','infra/wazuh/manager-auto.conf','infra/wazuh/agent/auto.conf','infra/wazuh/agent/s7_guard.py',
+        sources=['compose.s7-auto.yaml','infra/wazuh/manager-auto.conf','infra/s7-auto-settings.json','services/s7-response/settings.py','infra/wazuh/agent/s7_guard.py',
                  'services/s7-response/app.py','services/s7-response/policy.py','tools/s7_auto_lab.py','tools/s7_auto_verify.py','tools/build_s7_workflows.py','infra/graylog/s7-fim.json']
         sources += ['compose.yaml','compose.soc.yaml','compose.s7.yaml','Dockerfile','infra/wazuh/agent/Dockerfile',
                     'infra/wazuh/agent/entrypoint.sh','infra/wazuh/portal-rules.xml','services/s7-response/Dockerfile',

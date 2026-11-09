@@ -6,7 +6,7 @@
 
 ## 설치
 
-Windows Docker Desktop Linux 컨테이너, Python 3.12(`py -3.12`), Compose v2를 사용합니다. 12개 서비스가 실행되며 현재 약 6GiB WSL과 swap 4GiB에서는 기존 관제 환경을 잠시 중지하고 번갈아 실행합니다. 도구가 다른 프로젝트를 임의로 중지하지 않습니다. DB·관제·Wazuh 데이터는 프로젝트별 볼륨에 보존합니다.
+Windows Docker Desktop Linux 컨테이너, Python 3.12(`py -3.12`), Compose 2.24.4 이상(`!override` 지원)을 사용합니다. 12개 서비스가 실행되며 현재 약 6GiB WSL과 swap 4GiB에서는 기존 관제 환경을 잠시 중지하고 번갈아 실행합니다. 도구가 다른 프로젝트를 임의로 중지하지 않습니다. DB·관제·Wazuh 데이터는 프로젝트별 볼륨에 보존합니다.
 
 ```powershell
 py -3.12 tools/s7_auto_lab.py init
@@ -34,6 +34,14 @@ py -3.12 tools/s7_auto_lab.py stop
 | Wazuh API / indexer | https://127.0.0.1:15530 / https://127.0.0.1:19230 |
 
 Graylog `admin`은 `.env.s7-auto`의 `GRAYLOG_ADMIN_PASSWORD`, Wazuh `admin`은 `WAZUH_INDEXER_PASSWORD`를 사용합니다. n8n 소유자 설정은 최초 UI에서 진행할 수 있으며 워크플로 설치 자체는 컨테이너 CLI를 사용합니다. 브라우저 로그인·전역 신뢰 저장소를 도구가 변경하지 않습니다.
+
+## 환경값과 변경 절차
+
+비밀값은 `.env.s7-auto`, 비밀이 아닌 연결·감시 설정은 `infra/s7-auto-settings.json`에서 관리합니다. 공통 JSON의 `asset_id`, 에이전트 이름·대응 계정, `targets`, `paths`, `urls`를 중계 서비스·에이전트·워크플로 생성기·검증기가 함께 사용합니다. 위 주소와 아래 시험 파일은 기본 구성의 예시입니다. 호스트 공개 포트는 `.env.s7-auto`의 값을 우선하며 JSON의 `host_ports`는 최초 기본값입니다.
+
+설정 변경 후 `init → up → ready → configure`로 재생성·재배포합니다. `init`이 로컬 JSON·Wazuh agent 설정·Compose 변수를 만들고, `configure`가 현재 설정으로 n8n 워크플로를 설치합니다. 저장소의 기본 워크플로 JSON은 `py -3.12 tools/build_s7_workflows.py`로 갱신합니다. 다른 설정 파일은 `S7_CONFIG_FILE` 환경변수로 선택할 수 있습니다. 비밀번호·토큰을 JSON에 넣지 않습니다.
+
+서비스 내부 주소를 변경할 때는 상대 서비스의 Compose 리스너·네트워크 DNS·TLS 인증서도 일치시켜야 합니다. 외부 서비스 설정을 이 도구가 자동으로 변경하지 않습니다. 기존 Graylog 입력·스트림이나 기준 볼륨을 다른 대상으로 바꾸는 경우 새 개인 프로젝트로 검증합니다. 웹 홈 파일은 포털이 실제 `/`에서 제공하는 파일이어야 합니다. 운영자가 설정한 대상 외 경로, 경로 탈출, 임의 명령은 웹훅 입력으로 받지 않습니다. API 경로·S7 규칙 ID·티켓 상태는 환경값이 아닌 계약 상수입니다.
 
 ## 자동 조치와 원복 완료
 

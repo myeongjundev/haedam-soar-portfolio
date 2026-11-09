@@ -14,11 +14,12 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 
-WEB = Path('/var/www/haedam')
-BASE = Path('/opt/haedam-s7/state')
-CONTROL = Path('/var/lib/haedam-s7/control')
-QUARANTINE = Path('/var/lib/haedam-s7/quarantine')
-ALLOWED = {'index.html': 'restore', 'assets/s7-probe.txt': 'quarantine'}
+SETTINGS = json.loads(Path(os.environ['S7_CONFIG_FILE']).read_text())
+WEB = Path(SETTINGS['paths']['agent_web'])
+BASE = Path(SETTINGS['paths']['agent_baseline'])
+CONTROL = Path(SETTINGS['paths']['agent_control'])
+QUARANTINE = Path(SETTINGS['paths']['agent_quarantine'])
+ALLOWED = SETTINGS['targets']
 
 
 def now():
@@ -44,7 +45,7 @@ def atomic(path, data):
 
 
 def safe_file(key):
-    if key not in ALLOWED:
+    if key not in ALLOWED or Path(key).is_absolute() or '..' in Path(key).parts or not re.fullmatch(r'[A-Za-z0-9_./-]+',key):
         raise ValueError('invalid_path')
     path = WEB / key
     if path.is_symlink() or path.parent.resolve() != path.parent:
@@ -123,11 +124,11 @@ def execute(args):
                 observed = digest(path) if path.is_file() else 'absent'
                 if observed != expected:
                     raise ValueError('stale_file_hash')
-                if key == 'index.html' and (key not in values or expected == values[key]):
+                if ALLOWED[key] == 'restore' and (key not in values or expected == values[key]):
                     raise ValueError('not_a_tamper')
-                if key != 'index.html' and (key in values or expected == 'absent'):
+                if ALLOWED[key] == 'quarantine' and (key in values or expected == 'absent'):
                     raise ValueError('not_a_new_file')
-                spec = importlib.util.spec_from_file_location('team_restore', '/opt/haedam-s7/bin/s7_restore.py')
+                spec = importlib.util.spec_from_file_location('team_restore', SETTINGS['paths']['restore_program'])
                 team = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(team)
                 action = team.restore_one(key, job)

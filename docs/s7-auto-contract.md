@@ -4,7 +4,7 @@
 
 | 호출 | 인증 | 입력/의미 |
 | --- | --- | --- |
-| POST `/webhook/haedam-s7-respond` | `X-S7-Detection-Key` | case_id S7, asset_id haedam-portal, 실제 경보 event_key, Graylog event_id와 detected_at |
+| POST `/webhook/haedam-s7-respond` | `X-S7-Detection-Key` | case_id S7, 배포 설정과 일치하는 asset_id (기본 haedam-portal), 실제 경보 event_key, Graylog event_id와 detected_at |
 | POST `/webhook/haedam-s7-complete` | 별도 `X-S7-Operator-Key` | case_id, asset_id, event_key, 해당 ticket_id |
 | 내부 POST `s7-response:8097/claim` | `X-S7-Key`의 bridge credential | event_key, graylog_event_id, detected_at, n8n execution_id. 실제 경보만 허용하고 최초 판단을 영속 고정 |
 | 내부 POST `/respond` | bridge credential | event_key, ticket_id. 고정 agent/path/hash/기준 검사→영수증→실제 효과 |
@@ -12,7 +12,7 @@
 
 명시하지 않은 입력 필드는 거부합니다. 인증 실패 403, 형식 오류 400, 미등록 실제 경보 404, 상태/소유권/해시 불일치 409, 의존 서비스 오류 503입니다. n8n은 내부 오류를 `held_*` verdict로 표시하며 성공 HTTP로 위장하지 않습니다. 성공은 `{ok:true,status:200,verdict:verified|restored|already_restored,ticket_id,event_key}`입니다. 내부 연결 서비스는 `{ok:true,data:{...}}`로 최초 판단, 조치 영수증, requested/finished/effect_verified_at, HTTP/해시 효과를 반환합니다.
 
-티켓 seat C / case S7 / asset haedam-portal, group_key는 `S7:haedam-portal:<event_key>`입니다. 개별 Wazuh 사건에 한 회차를 연결하며 두 event_ids에 Graylog ID와 원본 Wazuh ID를 남깁니다. group_key의 팀 기본 설명 `{asset}:{file}`와 다른 **개인 자동화 회차 규칙**이며 팀 설정은 바꾸지 않습니다. 적용→효과→완료 기록의 idempotency key는 event_key에 단계별 접두사를 붙입니다.
+티켓 seat C / case S7 / asset은 배포 설정의 `asset_id`이며 group_key는 `S7:<asset_id>:<event_key>`입니다. 기본 asset은 `haedam-portal`입니다. 개별 Wazuh 사건에 한 회차를 연결하며 두 event_ids에 Graylog ID와 원본 Wazuh ID를 남깁니다. group_key의 팀 기본 설명 `{asset}:{file}`와 다른 **개인 자동화 회차 규칙**이며 팀 설정은 바꾸지 않습니다. 적용→효과→완료 기록의 idempotency key는 event_key에 단계별 접두사를 붙입니다.
 
 | 적용 action | 완료 action (`result: released`) | 실제 의미 |
 | --- | --- | --- |

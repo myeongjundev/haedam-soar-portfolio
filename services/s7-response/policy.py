@@ -3,22 +3,23 @@ from datetime import datetime
 import hashlib
 import json
 import re
+from pathlib import PurePosixPath
+from settings import load_settings
 
-PATHS = {'/var/www/haedam/index.html': 'index.html', '/var/www/haedam/assets/s7-probe.txt': 'assets/s7-probe.txt'}
-
-
-def normalize(alert, agent_id, baseline):
+def normalize(alert, agent_id, baseline, settings=None):
+    settings = settings or load_settings()
+    paths = {str(PurePosixPath(settings['paths']['agent_web']) / k): k for k in settings['targets']}
     agent, check, rule = (alert.get(k) or {} for k in ('agent', 'syscheck', 'rule'))
     path = check.get('path')
-    if agent.get('id') != agent_id or agent.get('name') != 'haedam-s7-agent' or path not in PATHS:
+    if agent.get('id') != agent_id or agent.get('name') != settings['agent_name'] or path not in paths:
         return None
-    key = PATHS[path]
+    key = paths[path]
     event = check.get('event')
     expected_rule = {'modified': '550', 'added': '554', 'deleted': '553'}.get(event)
     if rule.get('id') != expected_rule or expected_rule is None:
         return None
     after = 'absent' if event == 'deleted' else check.get('sha256_after')
-    if key == 'index.html':
+    if settings['targets'][key] == 'restore':
         if key not in baseline or after == baseline[key]:
             return None  # restoration/metadata-only alert, never another incident
         action = 'restore'

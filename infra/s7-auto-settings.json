@@ -1,0 +1,43 @@
+{
+  "asset_id": "haedam-portal",
+  "agent_name": "haedam-s7-agent",
+  "agent_id": "001",
+  "wazuh_user": "s7-responder",
+  "wazuh_role": "s7-one-agent",
+  "relay_source": "haedam-wazuh",
+  "ar_command": "s7-guarded",
+  "home_file": "index.html",
+  "targets": {"index.html": "restore", "assets/s7-probe.txt": "quarantine"},
+  "urls": {
+    "portal": "http://portal:5000",
+    "wazuh_api": "https://wazuh.manager:55000",
+    "graylog_gelf": "http://graylog:12202/gelf",
+    "gateway": "http://s7-response:8097",
+    "ticket_api": "http://ticket-store:8088",
+    "ticket_read": "http://ticket-store:8089",
+    "n8n": "http://n8n:5678"
+  },
+  "paths": {
+    "agent_web": "/var/www/haedam",
+    "agent_backend": "/var/lib/haedam/backend",
+    "agent_log_dir": "/var/log/haedam-portal",
+    "agent_baseline": "/opt/haedam-s7/state",
+    "agent_control": "/var/lib/haedam-s7/control",
+    "agent_quarantine": "/var/lib/haedam-s7/quarantine",
+    "agent_restore_log_dir": "/var/log/haedam-s7",
+    "restore_program": "/opt/haedam-s7/bin/s7_restore.py",
+    "gateway_data": "/data",
+    "gateway_web": "/web",
+    "gateway_baseline": "/baseline",
+    "gateway_receipts": "/receipts",
+    "gateway_alerts": "/alerts",
+    "ca_file": "/run/secrets/wazuh-ca.pem"
+  },
+  "wazuh_log_gid": "999",
+  "gateway_bind": "0.0.0.0",
+  "host_ports": {
+    "PORTAL_PORT": "15030", "WAZUH_API_PORT": "15530", "WAZUH_INDEXER_PORT": "19230",
+    "WAZUH_DASHBOARD_PORT": "15630", "GRAYLOG_PORT": "19130", "N8N_PORT": "15730",
+    "GELF_PORT": "22330", "TICKET_PORT": "18130"
+  }
+}

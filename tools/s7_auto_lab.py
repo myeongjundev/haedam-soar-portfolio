@@ -7,10 +7,12 @@ import os
 from pathlib import Path
 import secrets
 import urllib.request
+from urllib.parse import urlsplit, urlencode
+import xml.etree.ElementTree as ET
 
 import s7_lab as base
 from s8_lab import http
-from build_s7_workflows import build
+from build_s7_workflows import build, SETTINGS
 
 ROOT = base.ROOT
 LOCAL = ROOT / '.local/s7-auto'
@@ -19,6 +21,13 @@ if not base.re.fullmatch(r'haedam-s7-[a-z0-9][a-z0-9-]{0,31}', PROJECT):
     raise ValueError('Invalid personal S7 project')
 ENV = ROOT / '.env.s7-auto'
 STATE = LOCAL / (PROJECT + '-state.json')
+
+
+def agent_id():
+    agents=base.api('/agents?' + urlencode({'name':SETTINGS['agent_name']}))['affected_items']
+    if len(agents)!=1 or agents[0]['status']!='active':
+        raise RuntimeError('Expected exactly one active configured S7 agent')
+    return agents[0]['id']
 
 
 def env_values():
@@ -42,12 +51,16 @@ def compose(*args, stdin=None, timeout=300):
 
 def bind():
     # Reuse pinned Wazuh API/index helpers with this project's ports and scoped Compose.
+    snapshot = LOCAL / 'settings.json'
+    if snapshot.exists() and json.loads(snapshot.read_text()) != SETTINGS:
+        raise RuntimeError('S7 configuration changed; run init and recreate before continuing.')
     base.PROJECT = PROJECT
     base.ENV_FILE = ENV
     base.API_CA = ROOT / '.local/s7/certs/root-ca-manager.pem'
     base.env_values = env_values
     base.scrub = scrub
     base.compose = compose
+    base.agent_id = agent_id
 
 
 def init():
@@ -66,12 +79,30 @@ def init():
         if not values.get(k):
             values[k] = secrets.token_hex(48 if k == 'GRAYLOG_PASSWORD_SECRET' else 24) + 'aA1-'
     values['GRAYLOG_ROOT_PASSWORD_SHA2'] = hashlib.sha256(values['GRAYLOG_ADMIN_PASSWORD'].encode()).hexdigest()
-    ports = dict(PORTAL_PORT='15030', WAZUH_API_PORT='15530', WAZUH_INDEXER_PORT='19230',
-                 WAZUH_DASHBOARD_PORT='15630', GRAYLOG_PORT='19130', N8N_PORT='15730', GELF_PORT='22330', TICKET_PORT='18130')
+    ports = SETTINGS['host_ports']
     existing = env_values()
     for k, v in ports.items():
         values[k] = existing.get(k) or v
-    values.setdefault('S7_AGENT_ID', '001')
+    if not values.get('S7_AGENT_ID'):
+        values['S7_AGENT_ID'] = SETTINGS['agent_id']
+    for key,value in SETTINGS['paths'].items():
+        values['S7_CFG_'+key.upper()] = value
+    values['S7_WAZUH_LOG_GID'] = SETTINGS['wazuh_log_gid']
+    values['S7_GATEWAY_PORT'] = str(urlsplit(SETTINGS['urls']['gateway']).port)
+    values['S7_AR_COMMAND'] = SETTINGS['ar_command']
+    # A private local snapshot is mounted by every consumer; host builders read
+    # the same source. No secrets are present in this JSON.
+    base.private_file(LOCAL / 'settings.json',json.dumps(SETTINGS,indent=2)+'\n')
+    config=ET.parse(ROOT/'infra/wazuh/agent/ossec.conf')
+    root=config.getroot(); paths=SETTINGS['paths']
+    root.find('client/server/address').text=urlsplit(SETTINGS['urls']['wazuh_api']).hostname
+    root.find('client/enrollment/manager_address').text=urlsplit(SETTINGS['urls']['wazuh_api']).hostname
+    root.find('client/enrollment/agent_name').text=SETTINGS['agent_name']
+    ET.SubElement(root.find('client/enrollment'),'server_ca_path').text=paths['ca_file']
+    for node,value in zip(root.findall('syscheck/directories'),(paths['agent_web'],paths['agent_backend'])):
+        node.text=value
+    root.find('localfile/location').text=paths['agent_log_dir']+'/events.jsonl'
+    base.private_file(LOCAL/'agent.conf',ET.tostring(root,encoding='unicode')+'\n')
     base.private_file(ENV, ''.join(f'{k}={v}\n' for k, v in values.items()))
     # Public CA, copied separately so the gateway needs no DAC override capability.
     base.private_file(LOCAL / 'manager-ca.pem', (ROOT / '.local/s7/certs/root-ca-manager.pem').read_text())
@@ -114,13 +145,14 @@ def up():
 
 def baseline():
     image = base.run(['docker', 'image', 'inspect', PROJECT + '-portal', '--format', '{{.Id}}'])
-    code = ('import hashlib,json,pathlib; p=pathlib.Path("/app/frontend"); '
+    code = ('import hashlib,json,pathlib,os; p=pathlib.Path(os.environ["FRONTEND_DIST"]); '
             'print(json.dumps({str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest() for f in p.rglob("*") if f.is_file()},sort_keys=True))')
     expected = base.run(['docker', 'run', '--rm', '--network', 'none', '--entrypoint', 'python', image, '-c', code])
     if json.loads(expected) != json.loads(compose('exec', '-T', 'portal', 'python', '-c', code)):
         raise RuntimeError('Changed web volume; refusing to replace baseline.')
     exists = compose('exec', '-T', 's7-agent', 'python3', '-c',
-        'from pathlib import Path; print(Path("/opt/haedam-s7/state/baseline.sha256").exists())') == 'True'
+        'from pathlib import Path; import sys; print((Path(sys.argv[1])/"baseline.sha256").exists())',
+        SETTINGS['paths']['agent_baseline']) == 'True'
     print(compose('run', '--rm', '--no-deps', 's7-baseline', 'verify' if exists else 'baseline'))
 
 
@@ -132,9 +164,9 @@ def scope_api():
         items = api(path)['affected_items']
         old = next((x for x in items if x.get(field) == name), None)
         return old['id'] if old else api(path, payload, 'POST')['affected_items'][0]['id']
-    user = ensure('/security/users', 's7-responder', {'username': 's7-responder', 'password': env_values()['S7_WAZUH_PASSWORD']}, 'username')
-    role = ensure('/security/roles', 's7-one-agent', {'name': 's7-one-agent'}, 'name')
-    policy = ensure('/security/policies', 's7-one-agent', {'name': 's7-one-agent', 'policy': {
+    user = ensure('/security/users', SETTINGS['wazuh_user'], {'username': SETTINGS['wazuh_user'], 'password': env_values()['S7_WAZUH_PASSWORD']}, 'username')
+    role = ensure('/security/roles', SETTINGS['wazuh_role'], {'name': SETTINGS['wazuh_role']}, 'name')
+    policy = ensure('/security/policies', SETTINGS['wazuh_role'], {'name': SETTINGS['wazuh_role'], 'policy': {
         'actions': ['agent:read', 'active-response:command'], 'resources': ['agent:id:' + env_values()['S7_AGENT_ID']], 'effect': 'allow'}}, 'name')
     current_role = api(f'/security/roles?role_ids={role}')['affected_items'][0]
     current_user = api(f'/security/users?user_ids={user}')['affected_items'][0]
@@ -147,7 +179,7 @@ def scope_api():
         api(f'/security/roles/{role}/policies?policy_ids={policy}', {}, 'POST')
     if role not in current_user.get('roles', []):
         api(f'/security/users/{user}/roles?role_ids={role}', {}, 'POST')
-    print('Scoped s7-responder role assigned; runtime denies are verified separately.')
+    print('Configured responder role assigned; runtime denies are verified separately.')
 
 
 def install_n8n():
@@ -187,14 +219,14 @@ def configure():
         return next(result[k] for k in ('id', 'input_id', 'stream_id') if k in result)
     input_id = ensure('/system/inputs', 'inputs', {'title': 'Portfolio S7 trusted GELF HTTP',
         'type': 'org.graylog2.inputs.gelf.http.GELFHttpInput', 'global': True,
-        'configuration': {'bind_address': '0.0.0.0', 'port': 12202, 'number_worker_threads': 2,
+        'configuration': {'bind_address': SETTINGS['gateway_bind'], 'port': urlsplit(SETTINGS['urls']['graylog_gelf']).port, 'number_worker_threads': 2,
                           'recv_buffer_size': 1048576, 'max_message_size': 2097152, 'tls_enable': False, 'enable_cors': False}})
     index = next(x['id'] for x in graylog('/system/indices/index_sets')['index_sets'] if x['default'])
     stream = ensure('/streams', 'streams', {'title': 'Portfolio S7 trusted Wazuh', 'description': 'Fixed personal FIM candidates',
         'index_set_id': index, 'matching_type': 'AND', 'remove_matches_from_default_stream': False,
-        'rules': [{'type': 1, 'field': 'source', 'value': 'haedam-wazuh', 'inverted': False, 'description': 'Owned relay'}]})
+        'rules': [{'type': 1, 'field': 'source', 'value': SETTINGS['relay_source'], 'inverted': False, 'description': 'Owned relay'}]})
     graylog('/streams/' + stream + '/resume', {}, 'POST')
-    url = 'http://n8n:5678/webhook/haedam-s7-respond'
+    url = SETTINGS['urls']['n8n'] + '/webhook/haedam-s7-respond'
     allowlist = graylog('/system/urlwhitelist')
     entries = [e for e in allowlist.get('entries', []) if e.get('id') != 'portfolio-s7']
     entries.append({'id': 'portfolio-s7', 'type': 'literal', 'title': 'Portfolio S7 n8n', 'value': url})
@@ -203,11 +235,12 @@ def configure():
     notification['title'] = 'Portfolio S7 authenticated n8n'
     notification['config'].update(url=url, api_key_as_header=True, api_key='X-S7-Detection-Key',
         api_secret=env_values()['S7_DETECTION_KEY'], headers='', body_template=json.dumps({
-            'event_id': '${event.id}', 'event_key': '${event.fields.event_key}', 'asset_id': 'haedam-portal',
+            'event_id': '${event.id}', 'event_key': '${event.fields.event_key}', 'asset_id': SETTINGS['asset_id'],
             'case_id': 'S7', 'detected_at': '${event.timestamp_processing}'}))
     notif = ensure('/events/notifications', 'notifications', notification)
     notification['id'] = notif; graylog('/events/notifications/' + notif, notification, 'PUT')
     definition = json.loads((ROOT / 'infra/graylog/s7-fim.json').read_text(encoding='utf-8'))
+    definition['config']['query']='source:' + SETTINGS['relay_source'] + ' AND case_id:S7'
     definition['config']['streams'] = [stream]
     definition['notifications'] = [{'notification_id': notif, 'notification_parameters': None}]
     ident = ensure('/events/definitions', 'event_definitions', definition)

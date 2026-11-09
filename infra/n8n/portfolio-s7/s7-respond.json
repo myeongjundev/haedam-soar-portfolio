@@ -37,7 +37,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst b=r.body||{};\nif(Object.keys(b).sort().join(',')!=='asset_id,case_id,detected_at,event_id,event_key') return fail('invalid_fields',400);\nif(b.case_id!=='S7'||b.asset_id!=='haedam-portal'||!/^[0-9a-f]{64}$/.test(b.event_key||'')||\n !/^[0-9A-Z]{26}$/.test(b.event_id||'')||!Number.isFinite(Date.parse(b.detected_at))) return fail('invalid_scope',400);\nreturn emit({event_key:b.event_key,graylog_event_id:b.event_id,detected_at:b.detected_at,execution_id:String($execution.id)});\n"
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst b=r.body||{};\nif(Object.keys(b).sort().join(',')!=='asset_id,case_id,detected_at,event_id,event_key') return fail('invalid_fields',400);\nif(b.case_id!=='S7'||b.asset_id!==\"haedam-portal\"||!/^[0-9a-f]{64}$/.test(b.event_key||'')||\n !/^[0-9A-Z]{26}$/.test(b.event_id||'')||!Number.isFinite(Date.parse(b.detected_at))) return fail('invalid_scope',400);\nreturn emit({event_key:b.event_key,graylog_event_id:b.event_id,detected_at:b.detected_at,execution_id:String($execution.id)});\n"
       }
     },
     {
@@ -120,7 +120,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nif(!good||r.body?.ok!==true) return fail('held_claim',r.statusCode===503?503:409);\nconst x=r.body.data;\n\nconst record={seat:'C',case_id:'S7',group_key:x.group_key,title:'S7 파일 무결성: '+x.file_key,\nasset_id:'haedam-portal',event_ids:[x.graylog_event_id,x.wazuh_event_id],\ndetected_at:x.detected_at,condition_met_at:x.alert_at,stage:'detected',action:null};\nreturn emit({...x,record});"
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nif(!good||r.body?.ok!==true) return fail('held_claim',r.statusCode===503?503:409);\nconst x=r.body.data;\n\nconst record={seat:'C',case_id:'S7',group_key:x.group_key,title:'S7 파일 무결성: '+x.file_key,\nasset_id:\"haedam-portal\",event_ids:[x.graylog_event_id,x.wazuh_event_id],\ndetected_at:x.detected_at,condition_met_at:x.alert_at,stage:'detected',action:null};\nreturn emit({...x,record});"
       }
     },
     {
@@ -260,7 +260,7 @@
       ],
       "parameters": {
         "method": "GET",
-        "url": "={{ 'http://ticket-store:8089/api/v1/tickets/'+$json.ticket_id }}",
+        "url": "={{ \"http://ticket-store:8089/api/v1/tickets/\"+$json.ticket_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {
@@ -375,7 +375,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nif(!good||r.body?.ok!==true) return fail('held_response',r.statusCode===503?503:409);\nconst previous=$('Check ticket').first().json,x=r.body.data;\nif(x.ticket_id!==previous.ticket_id||x.event_key!==previous.event_key||x.result!=='applied') return fail('invalid_response',409);\nif(previous.already_restored) return emit({ok:true,stop:true,status:200,verdict:'already_restored',ticket_id:x.ticket_id});\n\nconst record={seat:'C',case_id:'S7',group_key:x.group_key,title:'S7 파일 무결성: '+x.file_key,\nasset_id:'haedam-portal',event_ids:[x.graylog_event_id,x.wazuh_event_id],\ndetected_at:x.detected_at,condition_met_at:x.alert_at,stage:'detected',action:null};\n\nconst action={bot:'117',via:'wazuh-ar',action:x.result==='released'?'complete_'+x.action:x.action,target:x.file_key,result:x.result,\napplied_verified:true,effect_verified:true,requested_at:x.requested_at,finished_at:x.finished_at,\neffect_verified_at:x.effect_verified_at,n8n_execution_id:x.execution_id,\ndetail:'Guarded agent receipt, full baseline hashes and real HTTP readback verified.'};\nreturn emit({...x,record:{...record,stage:'applied',action}});"
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nif(!good||r.body?.ok!==true) return fail('held_response',r.statusCode===503?503:409);\nconst previous=$('Check ticket').first().json,x=r.body.data;\nif(x.ticket_id!==previous.ticket_id||x.event_key!==previous.event_key||x.result!=='applied') return fail('invalid_response',409);\nif(previous.already_restored) return emit({ok:true,stop:true,status:200,verdict:'already_restored',ticket_id:x.ticket_id});\n\nconst record={seat:'C',case_id:'S7',group_key:x.group_key,title:'S7 파일 무결성: '+x.file_key,\nasset_id:\"haedam-portal\",event_ids:[x.graylog_event_id,x.wazuh_event_id],\ndetected_at:x.detected_at,condition_met_at:x.alert_at,stage:'detected',action:null};\n\nconst action={bot:'117',via:'wazuh-ar',action:x.result==='released'?'complete_'+x.action:x.action,target:x.file_key,result:x.result,\napplied_verified:true,effect_verified:true,requested_at:x.requested_at,finished_at:x.finished_at,\neffect_verified_at:x.effect_verified_at,n8n_execution_id:x.execution_id,\ndetail:'Guarded agent receipt, full baseline hashes and real HTTP readback verified.'};\nreturn emit({...x,record:{...record,stage:'applied',action}});"
       }
     },
     {

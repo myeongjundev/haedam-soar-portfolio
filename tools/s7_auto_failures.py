@@ -9,12 +9,12 @@ from s7_auto_verify import lab, rows, ticket, tickets, hook, gateway, completion
 
 def replay_body(row):
     claim = json.loads(row['claim'])
-    return dict(case_id='S7',asset_id='haedam-portal',event_key=row['key'],
+    return dict(case_id='S7',asset_id=lab.SETTINGS['asset_id'],event_key=row['key'],
                 event_id=claim['graylog_event_id'],detected_at=claim['detected_at'])
 
 
 def verify():
-    old = next(r for r in reversed(rows()) if json.loads(r['event'])['file_key']=='index.html' and r['completion'])
+    old = next(r for r in reversed(rows()) if json.loads(r['event'])['file_key']==lab.SETTINGS['home_file'] and r['completion'])
     if any(t['status'] in ('open','responding','verified') for t in tickets()):
         raise RuntimeError('Finish existing S7 tickets first.')
     definition=json.loads(lab.STATE.read_text())['definition']
@@ -23,7 +23,7 @@ def verify():
     stopped=False
     try:
         lab.graylog('/events/definitions/'+definition+'/unschedule',{},'PUT')
-        changed=mutate('index.html',run_id)
+        changed=mutate(lab.SETTINGS['home_file'],run_id)
         status,body=hook('respond',replay_body(old))
         assert status==409 and body['verdict']=='held_response',(status,body)
         out['checks']['old_success_does_not_mask_new_tamper']=status
@@ -40,7 +40,7 @@ def verify():
         status,body=hook('respond',replay_body(row))
         assert status==503 and body['verdict']=='held_detection_record',(status,body)
         assert find_row()['response'] is None
-        assert agent('import pathlib,hashlib; print(hashlib.sha256(pathlib.Path("/var/www/haedam/index.html").read_bytes()).hexdigest())')==changed
+        assert agent('import hashlib; print(hashlib.sha256((web/home).read_bytes()).hexdigest())')==changed
         out['checks']['ticket_outage_no_response']={'status':status,'file_sha256_unchanged':True}
         lab.compose('up','-d','--wait','ticket-store'); stopped=False
         # Replay the original actual decision into n8n to exercise deterministic recovery.
@@ -67,7 +67,7 @@ def verify():
         if stopped: lab.compose('up','-d','--wait','ticket-store')
         lab.graylog('/events/definitions/'+definition+'/unschedule',{},'PUT')
         if out['result']!='pass':
-            out['fallback_cleanup']=agent('import shutil; shutil.copyfile("/opt/haedam-s7/state/baseline/index.html","/var/www/haedam/index.html"); print("baseline restored; ticket retained")')
+            out['fallback_cleanup']=agent('import shutil; shutil.copyfile(base/"baseline"/home,web/home); print("baseline restored; ticket retained")')
         out['finished_at']=now(); out['source_head']=lab.base.run(['git','rev-parse','HEAD'])
         out['source_dirty_at_run']=bool(lab.base.run(['git','status','--porcelain']))
         out['verifier_sha256']=hashlib.sha256((lab.ROOT/'tools/s7_auto_failures.py').read_bytes()).hexdigest()

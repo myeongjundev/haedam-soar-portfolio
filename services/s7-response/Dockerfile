@@ -1,5 +1,5 @@
 FROM python:3.12-slim
 WORKDIR /app
-COPY app.py policy.py ./
+COPY app.py policy.py settings.py ./
 ENV PYTHONUNBUFFERED=1
 CMD ["python", "app.py"]

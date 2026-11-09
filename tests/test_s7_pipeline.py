@@ -9,6 +9,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'services/s7-response'))
 from policy import normalize, validate_claim
+from settings import load_settings
 
 
 def source(**changes):
@@ -47,6 +48,33 @@ def test_claim_rejects_caller_controlled_path_and_naive_time():
         validate_claim({**valid, 'file_key': '/etc/passwd'})
     with pytest.raises(ValueError):
         validate_claim({**valid, 'detected_at': '2026-11-09T06:00:00'})
+
+
+def test_configured_agent_root_and_target_replace_default_scope(tmp_path, monkeypatch):
+    settings = load_settings()
+    settings['agent_name'] = 'alternate-agent'
+    settings['paths']['agent_web'] = '/srv/alternate'
+    settings['home_file'] = 'home.html'
+    settings['targets'] = {'home.html': 'restore'}
+    path = tmp_path / 'settings.json'
+    path.write_text(json.dumps(settings))
+    monkeypatch.setenv('S7_CONFIG_FILE', str(path))
+    assert normalize(source(), '001', {'index.html': 'a'*64}) is None
+    event = source(agent={'id':'015','name':'alternate-agent'},
+                   syscheck={'path':'/srv/alternate/home.html','event':'modified','sha256_after':'b'*64})
+    result = normalize(event, '015', {'home.html':'a'*64})
+    assert result['file_key'] == 'home.html' and result['action'] == 'restore'
+
+
+@pytest.mark.parametrize('target', ['../escape', '/etc/passwd', '.', 'assets/../escape', 'assets//probe'])
+def test_unsafe_configuration_rejected(tmp_path, monkeypatch, target):
+    settings = load_settings()
+    settings['targets'][target] = 'quarantine'
+    path = tmp_path / 'settings.json'
+    path.write_text(json.dumps(settings))
+    monkeypatch.setenv('S7_CONFIG_FILE', str(path))
+    with pytest.raises(ValueError, match='Unsafe configured S7 target'):
+        load_settings()
 
 
 @pytest.fixture

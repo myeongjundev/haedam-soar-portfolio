@@ -32,45 +32,71 @@ services:
   s7-agent:
     build:
       target: automatic
-    volumes:
-      - s7-baseline:/opt/haedam-s7/state:ro
-      - s7-control:/var/lib/haedam-s7/control
-      - ./infra/wazuh/agent/auto.conf:/opt/haedam-s7/agent.conf:ro
-      - ./.local/s7-auto/manager-ca.pem:/run/secrets/manager-ca.pem:ro
+      args:
+        S7_AR_COMMAND: ${S7_AR_COMMAND:?Run init}
+        S7_RESTORE_PROGRAM: ${S7_CFG_RESTORE_PROGRAM:?Run init}
+    environment:
+      S7_CONFIG_FILE: /etc/haedam/s7.json
+      S7_WEB_ROOT: ${S7_CFG_AGENT_WEB:?Run init}
+      S7_STATE_DIR: ${S7_CFG_AGENT_BASELINE:?Run init}
+      S7_QUARANTINE_DIR: ${S7_CFG_AGENT_QUARANTINE:?Run init}
+      S7_LOG: ${S7_CFG_AGENT_RESTORE_LOG_DIR:?Run init}/s7-restore.log
+    volumes: !override
+      - s7-web:${S7_CFG_AGENT_WEB:?Run init}
+      - s7-backend:${S7_CFG_AGENT_BACKEND:?Run init}:ro
+      - portal-instance:${S7_CFG_AGENT_LOG_DIR:?Run init}:ro
+      - s7-agent-etc:/var/ossec/etc
+      - s7-agent-queue:/var/ossec/queue
+      - s7-baseline:${S7_CFG_AGENT_BASELINE:?Run init}:ro
+      - s7-control:${S7_CFG_AGENT_CONTROL:?Run init}
+      - s7-quarantine:${S7_CFG_AGENT_QUARANTINE:?Run init}
+      - s7-restore-logs:${S7_CFG_AGENT_RESTORE_LOG_DIR:?Run init}
+      - ./.local/s7/authd.pass:/run/secrets/authd.pass:ro
+      - ./.local/s7-auto/settings.json:/etc/haedam/s7.json:ro
+      - ./.local/s7-auto/agent.conf:/opt/haedam-s7/agent.conf:ro
+      - ./.local/s7-auto/manager-ca.pem:${S7_CFG_CA_FILE:?Run init}:ro
   s7-baseline:
     profiles: [setup]
     build:
       context: .
       dockerfile: infra/wazuh/agent/Dockerfile
       target: agent
-    entrypoint: [python3, -I, /opt/haedam-s7/bin/s7_restore.py]
+      args:
+        S7_RESTORE_PROGRAM: ${S7_CFG_RESTORE_PROGRAM:?Run init}
+    entrypoint: [python3, -I, "${S7_CFG_RESTORE_PROGRAM:?Run init}"]
+    environment:
+      S7_WEB_ROOT: ${S7_CFG_AGENT_WEB:?Run init}
+      S7_STATE_DIR: ${S7_CFG_AGENT_BASELINE:?Run init}
+      S7_LOG: ${S7_CFG_AGENT_RESTORE_LOG_DIR:?Run init}/s7-restore.log
     volumes:
-      - s7-web:/var/www/haedam:ro
-      - s7-baseline:/opt/haedam-s7/state
-      - s7-restore-logs:/var/log/haedam-s7
+      - s7-web:${S7_CFG_AGENT_WEB:?Run init}:ro
+      - s7-baseline:${S7_CFG_AGENT_BASELINE:?Run init}
+      - s7-restore-logs:${S7_CFG_AGENT_RESTORE_LOG_DIR:?Run init}
     network_mode: none
   s7-response:
     build: ./services/s7-response
     mem_limit: 128m
     read_only: true
     cap_drop: [ALL]
-    group_add: ["999"]  # pinned Wazuh 4.9 log reader group; mounts remain read-only
+    group_add: ["${S7_WAZUH_LOG_GID:?Run init}"]
     security_opt: [no-new-privileges:true]
     tmpfs: [/tmp]
     environment:
-      S7_AGENT_ID: ${S7_AGENT_ID:-001}
+      S7_AGENT_ID: ${S7_AGENT_ID:?Run init}
+      S7_CONFIG_FILE: /etc/haedam/s7.json
       S7_BRIDGE_KEY: ${S7_BRIDGE_KEY:?Run s7_auto_lab.py init}
       S7_COMPLETE_KEY: ${S7_COMPLETE_KEY:?Run s7_auto_lab.py init}
       S7_WAZUH_PASSWORD: ${S7_WAZUH_PASSWORD:?Run s7_auto_lab.py init}
     volumes:
-      - s7-web:/web:ro
-      - s7-baseline:/baseline:ro
-      - s7-control:/receipts:ro
-      - s7-manager-logs:/alerts:ro
-      - s7-response-data:/data
-      - ./.local/s7-auto/manager-ca.pem:/run/secrets/wazuh-ca.pem:ro
+      - s7-web:${S7_CFG_GATEWAY_WEB:?Run init}:ro
+      - s7-baseline:${S7_CFG_GATEWAY_BASELINE:?Run init}:ro
+      - s7-control:${S7_CFG_GATEWAY_RECEIPTS:?Run init}:ro
+      - s7-manager-logs:${S7_CFG_GATEWAY_ALERTS:?Run init}:ro
+      - s7-response-data:${S7_CFG_GATEWAY_DATA:?Run init}
+      - ./.local/s7-auto/manager-ca.pem:${S7_CFG_CA_FILE:?Run init}:ro
+      - ./.local/s7-auto/settings.json:/etc/haedam/s7.json:ro
     healthcheck:
-      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8097/health', timeout=3)"]
+      test: [CMD, python, -c, "import urllib.request; from settings import load_settings; urllib.request.urlopen(load_settings()['urls']['gateway']+'/health', timeout=3)"]
       interval: 5s
       timeout: 5s
       retries: 12

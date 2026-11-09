@@ -10,6 +10,7 @@ sys.path.insert(0,str(ROOT/'services/ticket-store'))
 sys.path.insert(0,str(ROOT/'tools'))
 from ticket_store import core, db, validate
 from build_s7_workflows import build
+import build_s7_workflows as builder
 
 
 @pytest.mark.parametrize('action,target',[('restore','index.html'),('quarantine','assets/s7-probe.txt')])
@@ -53,3 +54,18 @@ def test_webhook_examples_and_workflow_exports():
         webhook=flow['nodes'][0]
         assert webhook['parameters']['authentication']=='headerAuth'
         assert flow['settings']['saveDataSuccessExecution']=='none'
+
+
+def test_workflow_uses_configured_identity_and_endpoints(monkeypatch):
+    monkeypatch.setattr(builder, 'SETTINGS', {**builder.SETTINGS, 'asset_id':'alternate-portal'})
+    monkeypatch.setattr(builder, 'URLS', {**builder.URLS, 'gateway':'http://alternate-response:8098',
+                                        'ticket_api':'http://alternate-tickets:8080',
+                                        'ticket_read':'http://alternate-tickets:8081'})
+    flows = builder.build()
+    serialized = json.dumps(flows)
+    assert 'haedam-portal' not in serialized and '__ASSET__' not in serialized
+    assert 'S7:alternate-portal:' in serialized
+    urls = [n['parameters']['url'] for f in flows.values() for n in f['nodes'] if 'url' in n['parameters']]
+    assert 'http://alternate-response:8098/claim' in urls
+    assert 'http://alternate-tickets:8080/api/v1/tickets/record' in urls
+    assert any('http://alternate-tickets:8081/api/v1/tickets/' in u for u in urls)

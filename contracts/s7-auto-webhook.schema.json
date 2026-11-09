@@ -8,7 +8,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["case_id", "asset_id", "event_key", "event_id", "detected_at"],
       "properties": {
-        "case_id": {"const": "S7"}, "asset_id": {"const": "haedam-portal"},
+        "case_id": {"const": "S7"}, "asset_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$", "description": "Runtime must equal the deployment's configured asset_id."},
         "event_key": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "event_id": {"type": "string", "pattern": "^[0-9A-Z]{26}$"},
         "detected_at": {"type": "string", "format": "date-time"}
@@ -18,7 +18,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["case_id", "asset_id", "event_key", "ticket_id"],
       "properties": {
-        "case_id": {"const": "S7"}, "asset_id": {"const": "haedam-portal"},
+        "case_id": {"const": "S7"}, "asset_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$", "description": "Runtime must equal the deployment's configured asset_id."},
         "event_key": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "ticket_id": {"type": "string", "pattern": "^T-[0-9]{8}-[0-9]{4}$"}
       }
