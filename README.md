@@ -86,7 +86,7 @@ S8과 별도 프로젝트·포트·볼륨을 사용하며, 메모리가 작은 P
 
 ## Wazuh / S7 파일 변조 탐지와 복구
 
-[S7 개인 Docker 설치](docs/s7-lab.md)는 Wazuh manager·indexer·dashboard와 실제 포털 웹 파일을 감시하는 agent를 새 포털·MySQL과 함께 구성합니다. 변조 경보 검색과 Wazuh API 복구·격리, HTTP·해시 원복을 검증합니다. Graylog·n8n 자동 대응과 티켓은 후속 연결 대상입니다.
+[S7 개인 Docker 설치](docs/s7-lab.md)는 Wazuh manager·indexer·dashboard와 실제 포털 웹 파일을 감시하는 agent를 새 포털·MySQL과 함께 구성합니다. 변조 경보 검색과 Wazuh API 복구·격리, HTTP·해시 원복을 검증합니다. 수동 단계의 재현 안내이며 전체 자동 연결은 아래 별도 절차를 사용합니다.
 
 ```powershell
 py -3.12 tools/s7_lab.py init
@@ -99,6 +99,22 @@ py -3.12 tools/s7_verify.py
 각 명령의 성공을 확인하고 다음으로 진행합니다. 낮은 메모리에서는 기존 관제 환경과 번갈아 실행합니다. [S7 결과와 남은 범위](docs/s7-results.md) · [Claude 검토 카드](docs/s7-review.md).
 
 [프론트·백엔드 파일과 앱 로그 감시](docs/portal-wazuh-paths.md)를 연결했습니다. `ready` 이후 `py -3.12 tools/s7_paths_verify.py`로 백엔드 FIM과 실제 포털 접속 로그의 Wazuh 수집을 재현합니다.
+
+## S7 Wazuh → Graylog → n8n 자동 복구·티켓
+
+[S7 자동 연결 설치](docs/s7-auto-lab.md)는 별도 개인 프로젝트에서 실제 FIM 경보를 Graylog·n8n으로 전달하고 티켓 선기록 → 자동 복구/격리 → 파일·HTTP 효과 확인 → 운영자 원복 완료까지 연결합니다. [새 볼륨 실측](docs/s7-auto-results.md)에서 정상·중복·기록 장애·재시도·원복을 확인했습니다. 팀의 접근 성공 상관 정책과 구분한 개인 FIM 정책입니다.
+
+```powershell
+py -3.12 tools/s7_auto_lab.py init
+py -3.12 tools/s7_auto_lab.py up
+py -3.12 tools/s7_auto_lab.py ready
+py -3.12 tools/s7_auto_lab.py configure
+py -3.12 tools/s7_auto_verify.py
+py -3.12 tools/s7_auto_failures.py
+py -3.12 tools/s7_auto_lab.py stop
+```
+
+각 명령이 성공한 뒤 다음 명령을 실행합니다. Compose 2.24.4 이상이 필요합니다. 비밀값은 `.env.s7-auto`, 연결·감시 환경값은 [공통 설정](infra/s7-auto-settings.json)에서 관리합니다. 기존 개인 S7 및 다른 관제 실측과 순서를 맞춥니다. [계약](docs/s7-auto-contract.md) · [Claude 검토 카드](docs/s7-auto-review.md).
 
 ## 작업 시작
 
