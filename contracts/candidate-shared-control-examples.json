@@ -1,0 +1,9 @@
+{
+  "intent": {"operation": "withdraw", "resource": {"asset_id": "synthetic-portal", "via": "portal", "action": "block", "target": "203.0.113.11"}, "ticket_id": "T-20261024-0001", "action_id": "synthetic-apply-1"},
+  "recovery": {"executor_stopped": true, "evidence_ref": "synthetic/operator-review-1"},
+  "waiting": {"ok": true, "synthetic_only": true, "allow_target_call": false, "result": {"state": "withdrawn_waiting", "plan_id": null}},
+  "cancelled": {"ok": true, "synthetic_only": true, "allow_target_call": false, "result": {"state": "cancelled", "plan_id": "shared-11111111111111111111111111111111"}},
+  "forbidden": {"ok": false, "synthetic_only": true, "allow_target_call": false, "error": {"code": "FORBIDDEN"}},
+  "resolve": {"executor_stopped": true, "evidence_ref": "synthetic/operator-review-1", "expected_revision": 0, "review_hash": "1111111111111111111111111111111111111111111111111111111111111111"},
+  "resolved": {"ok": true, "synthetic_only": true, "allow_target_call": false, "result": {"state": "journal_resolved", "plan_id": null, "journal_id": "journal-11111111111111111111111111111111", "revision": 1}}
+}

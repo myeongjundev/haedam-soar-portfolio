@@ -1,0 +1,104 @@
+// pfSense filterlog 정규화 파이프라인 (Graylog 6.1.16 Pipeline Rules). B 세션이 D Graylog에 화면·API로 먼저 적용한 것을 10/27에 저장소로 내보냄(적용 일시 미기록).
+// 연결: 스트림 `pfsense`에 파이프라인 `pfsense-parse`를 연결한다. 스트림 규칙은 "match input"=`pfSense Syslog UDP` 하나뿐이라 `pfSense Syslog TCP`로 들어온 메시지는 이 스트림·파이프라인을 거치지 않는다(10/27 확인). 스트림은 기본 스트림에서 메시지를 뺀다.
+// 비밀값 없음. filterlog CSV 위치(0부터): 0 rule, 3 tracker, 4 iface, 5 reason, 6 action, 7 dir, 8 ipver,
+//   13 frag offset, 14 flags, 16 proto, 17 len, 18 src, 19 dst, 20 sport, 21 dport, 22 datalen. 규칙 번호는 바뀌므로 tracker로 구분한다.
+//
+// pipeline "pfsense-parse"
+// stage 0 match either   rule "pfsense: filterlog header"
+// stage 1 match either   rule "pfsense: filterlog ipv4"
+// stage 2 match either   rule "pfsense: filterlog ports", "pfsense: common fields", "pfsense: tag fragment"
+// stage 3 match either   rule "pfsense: rule block", "pfsense: tag noise", "pfsense: tag team vpn"
+// stage 4 match either   rule "pfsense: cleanup"
+// end
+
+rule "pfsense: filterlog header"
+when
+  regex("^filterlog\\[[0-9]+\\]:\\s", to_string($message.message)).matches == true
+then
+  let body = regex_replace("^filterlog\\[[0-9]+\\]:\\s*", to_string($message.message), "");
+  let f = split(",", body);
+  set_field("pf_rule_num", to_long(f[0]));
+  set_field("pf_tracker", f[3]);
+  set_field("pf_iface", f[4]);
+  set_field("pf_reason", f[5]);
+  set_field("pf_action", f[6]);
+  set_field("pf_dir", f[7]);
+  set_field("pf_ipver", f[8]);
+  set_field("pf_csv", body);
+end
+
+rule "pfsense: filterlog ipv4"
+when
+  has_field("pf_csv") && to_string($message.pf_ipver) == "4"
+then
+  let f = split(",", to_string($message.pf_csv));
+  set_field("pf_ip_flags", f[14]);
+  set_field("pf_frag_off", to_long(f[13]));
+  set_field("pf_proto", lowercase(to_string(f[16])));
+  set_field("pf_len", to_long(f[17]));
+  set_field("pf_src_ip", f[18]);
+  set_field("pf_dst_ip", f[19]);
+end
+
+rule "pfsense: filterlog ports"
+when
+  has_field("pf_proto") &&
+  (to_string($message.pf_proto) == "udp" || to_string($message.pf_proto) == "tcp") &&
+  to_long($message.pf_frag_off) == 0
+then
+  let f = split(",", to_string($message.pf_csv));
+  set_field("pf_src_port", to_long(f[20]));
+  set_field("pf_dst_port", to_long(f[21]));
+  set_field("pf_data_len", to_long(f[22]));
+end
+
+rule "pfsense: common fields"
+when
+  has_field("pf_src_ip")
+then
+  set_field("src_ip", to_string($message.pf_src_ip));
+end
+
+rule "pfsense: tag fragment"
+when
+  has_field("pf_ip_flags") &&
+  (to_string($message.pf_ip_flags) == "+" || to_long($message.pf_frag_off) > 0)
+then
+  set_field("pf_fragment", "true");
+end
+
+rule "pfsense: rule block"
+when
+  has_field("pf_src_ip") && to_string($message.pf_action) == "block"
+then
+  set_field("rule", "pfsense-block");
+end
+
+rule "pfsense: tag noise"
+when
+  has_field("pf_dst_ip") &&
+  (
+    to_string($message.pf_dst_ip) == "255.255.255.255" ||
+    ends_with(to_string($message.pf_dst_ip), ".255") ||
+    starts_with(to_string($message.pf_dst_ip), "224.") ||
+    starts_with(to_string($message.pf_dst_ip), "239.") ||
+    to_string($message.pf_src_ip) == "0.0.0.0"
+  )
+then
+  set_field("pf_noise", "broadcast_multicast");
+end
+
+rule "pfsense: tag team vpn"
+when
+  has_field("pf_src_ip") &&
+  (to_string($message.pf_iface) == "ovpns2" || starts_with(to_string($message.pf_src_ip), "192.0.2."))
+then
+  set_field("pf_scope", "team-vpn");
+end
+
+rule "pfsense: cleanup"
+when
+  has_field("pf_csv")
+then
+  remove_field("pf_csv");
+end

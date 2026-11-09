@@ -1,0 +1,4 @@
+<form class="flow-filters" method="get">
+<label>자리 <select name="seat"><option value="">전체</option>{% for seat in seats %}<option value="{{ seat }}"{% if filters.seat == seat %} selected{% endif %}>{{ seat }} 자리</option>{% endfor %}</select></label>
+<label><input type="checkbox" name="sample" value="1"{% if filters.sample %} checked{% endif %}> 샘플 포함</label><button type="submit">적용</button>
+</form>

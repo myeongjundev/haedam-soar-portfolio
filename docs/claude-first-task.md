@@ -1,6 +1,6 @@
 # Claude 첫 작업 · Graylog에서 n8n까지 새 환경으로 연결
 
-공통 규칙은 [AGENTS.md](../AGENTS.md)를 읽습니다. 브랜치는 `claude/graylog-n8n-fresh-start`를 사용합니다. `gh pr list --state open`으로 포털 반입 PR의 변경 범위와 HEAD를 먼저 확인합니다.
+공통 규칙은 [AGENTS.md](../AGENTS.md)를 읽습니다. 브랜치는 `claude/graylog-n8n-fresh-start`를 사용합니다. `gh pr list --state open`으로 포털 반입 PR의 변경 범위와 HEAD를 먼저 확인합니다. 작업에 필요한 팀 Compose 참고본은 `infra/graylog/compose.team.yaml`과 `infra/n8n/compose.team.yaml`입니다. 개인용 구성에서는 새 프로젝트 이름과 빈 볼륨을 사용합니다.
 
 ## 재현할 문제
 

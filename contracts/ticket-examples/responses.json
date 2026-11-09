@@ -1,0 +1,263 @@
+{
+  "record_created": {
+    "ok": true,
+    "ticket_id": "T-20261024-0002",
+    "created": true,
+    "duplicate": false,
+    "status": "responding"
+  },
+  "record_duplicate": {
+    "ok": true,
+    "ticket_id": "T-20261024-0002",
+    "created": false,
+    "duplicate": true,
+    "status": "responding"
+  },
+  "check_seat_none": {
+    "ok": true,
+    "exists": false,
+    "ticket_id": null,
+    "status": null,
+    "applied_actions": []
+  },
+  "check_seat_open": {
+    "ok": true,
+    "exists": true,
+    "ticket_id": "T-20261024-0002",
+    "status": "responding",
+    "applied_actions": [
+      {
+        "bot": "112",
+        "action": "block",
+        "target": "203.0.113.11",
+        "via": "portal",
+        "result": "applied"
+      }
+    ]
+  },
+  "check_all_hold_release": {
+    "ok": true,
+    "tickets": [
+      {
+        "seat": "B",
+        "ticket_id": "T-20261024-0003",
+        "status": "responding",
+        "active_actions": [
+          {
+            "bot": "112",
+            "action": "block",
+            "target": "203.0.113.11",
+            "via": "pfsense"
+          }
+        ]
+      }
+    ]
+  },
+  "active_resource_hold_release": {
+    "ok": true,
+    "resource": {
+      "asset_id": "haedam-portal",
+      "via": "portal",
+      "action": "block",
+      "target": "203.0.113.11"
+    },
+    "tickets": [
+      {
+        "seat": "A",
+        "ticket_id": "T-20261024-0001",
+        "status": "responding",
+        "active_actions": [
+          {
+            "bot": "112",
+            "via": "portal",
+            "action": "block",
+            "target": "203.0.113.11"
+          }
+        ]
+      },
+      {
+        "seat": "D",
+        "ticket_id": "T-20261024-0002",
+        "status": "responding",
+        "active_actions": [
+          {
+            "bot": "112",
+            "via": "portal",
+            "action": "block",
+            "target": "203.0.113.11"
+          }
+        ]
+      }
+    ]
+  },
+  "active_resource_none": {
+    "ok": true,
+    "resource": {
+      "asset_id": "haedam-portal",
+      "via": "portal",
+      "action": "block",
+      "target": "203.0.113.12"
+    },
+    "tickets": []
+  },
+  "error_validation": {
+    "ok": false,
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "seat must be one of A, B, C, D"
+    }
+  },
+  "list_ok": {
+    "ok": true,
+    "count": 1,
+    "items": [
+      {
+        "ticket_id": "T-20261024-0001",
+        "seat": "C",
+        "case_id": "S7",
+        "title": "S7 홈페이지 변조: assets/zz_s7_sample.txt",
+        "status": "verified",
+        "group_key": "haedam-portal:assets/zz_s7_sample.txt",
+        "last_result": "applied",
+        "mttd_seconds": 8,
+        "mttr_seconds": 42,
+        "data_origin": "sample",
+        "updated_at": "2026-10-24T14:06:11+09:00"
+      }
+    ],
+    "counts": {
+      "open": 0,
+      "responding": 0,
+      "verified": 1,
+      "restored": 0,
+      "closed": 0
+    },
+    "last_record_at": null
+  },
+  "detail_ok": {
+    "ok": true,
+    "ticket": {
+      "schema_version": "1.0",
+      "ticket_id": "T-20261024-0001",
+      "seat": "C",
+      "case_id": "S7",
+      "group_key": "haedam-portal:assets/zz_s7_sample.txt",
+      "title": "S7 홈페이지 변조: assets/zz_s7_sample.txt",
+      "status": "verified",
+      "asset_id": "haedam-portal",
+      "src_ip": "203.0.113.10",
+      "username": null,
+      "event_ids": [
+        "sample-graylog-s7-event-01"
+      ],
+      "reason": "Synthetic contract example only: FIM add (554) and web access 200 on the same asset and file_key within 10 minutes.",
+      "first_attack_at": null,
+      "condition_met_at": "2026-10-24T14:05:20+09:00",
+      "detected_at": "2026-10-24T14:05:28+09:00",
+      "received_at": "2026-10-24T14:05:29+09:00",
+      "responded_at": "2026-10-24T14:05:34+09:00",
+      "verified_at": "2026-10-24T14:06:10+09:00",
+      "restored_at": null,
+      "actions": [
+        {
+          "bot": "117",
+          "target": "assets/zz_s7_sample.txt",
+          "via": "wazuh-ar",
+          "action": "quarantine",
+          "result": "applied",
+          "applied_verified": true,
+          "effect_verified": true,
+          "requested_at": "2026-10-24T14:05:31+09:00",
+          "finished_at": "2026-10-24T14:05:34+09:00",
+          "effect_verified_at": "2026-10-24T14:06:10+09:00",
+          "n8n_execution_id": "sample-1234",
+          "detail": "moved outside web root; original URL 404, home 200",
+          "action_id": "sample-1234-applied",
+          "duplicate": false,
+          "recorded_at": "2026-10-24T14:05:35+09:00"
+        }
+      ],
+      "data_origin": "sample",
+      "created_at": "2026-10-24T14:05:35+09:00",
+      "updated_at": "2026-10-24T14:06:11+09:00"
+    }
+  },
+  "close_ok": {
+    "ok": true,
+    "ticket": {
+      "schema_version": "1.0",
+      "ticket_id": "T-20261024-0001",
+      "seat": "C",
+      "case_id": "S7",
+      "group_key": "haedam-portal:assets/zz_s7_sample.txt",
+      "title": "S7 홈페이지 변조: assets/zz_s7_sample.txt",
+      "status": "closed",
+      "asset_id": "haedam-portal",
+      "src_ip": "203.0.113.10",
+      "username": null,
+      "event_ids": [
+        "sample-graylog-s7-event-01"
+      ],
+      "reason": "Synthetic contract example only: FIM add (554) and web access 200 on the same asset and file_key within 10 minutes.",
+      "first_attack_at": null,
+      "condition_met_at": "2026-10-24T14:05:20+09:00",
+      "detected_at": "2026-10-24T14:05:28+09:00",
+      "received_at": "2026-10-24T14:05:29+09:00",
+      "responded_at": "2026-10-24T14:05:34+09:00",
+      "verified_at": "2026-10-24T14:06:10+09:00",
+      "restored_at": null,
+      "actions": [
+        {
+          "bot": "117",
+          "target": "assets/zz_s7_sample.txt",
+          "via": "wazuh-ar",
+          "action": "quarantine",
+          "result": "applied",
+          "applied_verified": true,
+          "effect_verified": true,
+          "requested_at": "2026-10-24T14:05:31+09:00",
+          "finished_at": "2026-10-24T14:05:34+09:00",
+          "effect_verified_at": "2026-10-24T14:06:10+09:00",
+          "n8n_execution_id": "sample-1234",
+          "detail": "moved outside web root; original URL 404, home 200",
+          "action_id": "sample-1234-applied",
+          "duplicate": false,
+          "recorded_at": "2026-10-24T14:05:35+09:00"
+        }
+      ],
+      "data_origin": "sample",
+      "created_at": "2026-10-24T14:05:35+09:00",
+      "updated_at": "2026-10-24T17:00:00+09:00",
+      "closed_at": "2026-10-24T17:00:00+09:00",
+      "close_note": "샘플: 확인 후 종료"
+    }
+  },
+  "error_close_forbidden": {
+    "ok": false,
+    "error": {
+      "code": "FORBIDDEN",
+      "message": "close is only allowed from the dashboard page"
+    }
+  },
+  "error_close_invalid_transition": {
+    "ok": false,
+    "error": {
+      "code": "INVALID_TRANSITION",
+      "message": "only verified or restored tickets can be closed (now responding)"
+    }
+  },
+  "error_stale_effect": {
+    "ok": false,
+    "error": {
+      "code": "STALE_EFFECT",
+      "message": "effect_verified_at is earlier than the active action"
+    }
+  },
+  "record_scope_conflict": {
+    "ok": false,
+    "error": {
+      "code": "INVALID_TRANSITION",
+      "message": "asset_id differs from the existing ticket; use a distinct group_key"
+    }
+  }
+}

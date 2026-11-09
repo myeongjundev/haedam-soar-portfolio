@@ -1,0 +1,728 @@
+[
+ {
+  "id": "haedamRelease01",
+  "name": "haedam-50 원복(해제) — 사람 승인 후",
+  "active": false,
+  "nodes": [
+   {
+    "id": "b9a6049b-774d-5868-a405-c813c633ea84",
+    "name": "Webhook",
+    "type": "n8n-nodes-base.webhook",
+    "typeVersion": 2,
+    "position": [
+     0,
+     0
+    ],
+    "parameters": {
+     "httpMethod": "POST",
+     "path": "haedam-release",
+     "responseMode": "responseNode",
+     "options": {}
+    },
+    "webhookId": "haedam-release"
+   },
+   {
+    "id": "0ba432a5-6808-5a23-b452-d6db64f79381",
+    "name": "승인 확인·티켓 조회 입력",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     240,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// 원복(해제)은 자동으로 하지 않는다. 사람이 확인한 뒤 approver(이름)와 함께 부른다. 순서: 경계(pfSense) → 앱(포털).\nconst b = $input.first().json.body || {};\nconst CFG = { dry_run: true, live_release_enabled: false };   // 실제 해제는 포털 키·pfSense 수단이 정해진 뒤 false\nif (!CFG.dry_run && !CFG.live_release_enabled) return [{json:{ok:false,stop:true,no_action:true,verdict:'held_live_release_not_accepted'}}];\nconst need = ['seat', 'case_id', 'group_key', 'approver'];\nconst missing = need.filter(k => !b[k] || typeof b[k] !== 'string');\nif (missing.length) return [{ json: { ok: false, verdict: 'invalid_input', missing, stop: true } }];\nif (!['A', 'B', 'C', 'D'].includes(b.seat)) return [{ json: { ok: false, verdict: 'invalid_input', detail: 'seat', stop: true } }];\nconst X = { seat: b.seat, case_id: b.case_id, group_key: b.group_key, approver: b.approver.slice(0, 40), asset_id: b.asset_id || 'haedam-portal', cfg: CFG, reason: b.reason ? String(b.reason).slice(0, 200) : null };\nreturn [{ json: { mode: 'check', seat: b.seat, group_key: b.group_key, ctx: X, stop: false } }];\n"
+    }
+   },
+   {
+    "id": "63dbe4d5-098b-5762-a3aa-bda6aa9fd0e7",
+    "name": "입력 통과?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     480,
+     0
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "79060ff8-7ceb-5b6b-baa0-7c46daee4d60",
+        "leftValue": "={{ $json.stop !== true }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "2f14ccf7-03fe-5007-9d2f-ef3bdec1eb8c",
+    "name": "열린 티켓 조회 (haedam-10 check)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     720,
+     -60
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamResultLog01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "d63b6edb-f3ff-5ff3-9d07-4ed7c14305ae",
+    "name": "해제 대상 고르기",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     960,
+     -60
+    ],
+    "parameters": {
+     "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json,x=j.ctx;\nif (!snapshotOK(j)) return held(x,'held_ticket_check');\nif (!j.exists) return [{json:{ok:true,no_action:true,verdict:'no_open_ticket'}}];\nconst actions=j.actions.map(a=>({...a,action:canon(a)}));\nif (['restored','closed'].includes(j.status) && actions.length) return held(x,'held_inconsistent_ticket_cycle');\nconst selected=actions.filter(a=>a.bot==='112' && a.action==='block' && ['portal','pfsense'].includes(a.via));\nconst ips=[...new Set(selected.map(a=>a.target))];\nif (!ips.length) return [{json:{ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:j.ticket_id}}];\nif (ips.length!==1) return held(x,'held_multiple_targets');\nconst resources=[...new Set(selected.map(a=>a.via))].sort().map(via=>({asset_id:x.asset_id,via,action:'block',target:ips[0]}));\nreturn [{json:{ok:true,mode:'active',resource:resources[0],ctx:{...x,ticket_id:j.ticket_id,ip:ips[0],resources,resource_index:0,hasFw:selected.some(a=>a.via==='pfsense'),hasApp:selected.some(a=>a.via==='portal'),manual_required:actions.filter(a=>!selected.includes(a)).map(a=>`${a.bot}:${a.via}:${a.action}:${a.target}`)}}}];\n"
+    }
+   },
+   {
+    "id": "152f007f-5bdd-543d-a057-745610146df3",
+    "name": "해제 대상 있음?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     1200,
+     -60
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "1b1def86-9aae-537a-bcf9-8f265100e056",
+        "leftValue": "={{ $json.no_action !== true }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "6e490bcd-8eec-521f-ba59-ab4a2a8769dc",
+    "name": "다른 자리 티켓 조회 (haedam-10 check)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     1440,
+     -140
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamResultLog01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "e8195561-1a75-5186-9654-5b3d65e8d2d8",
+    "name": "보류 판정",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     1680,
+     -140
+    ],
+    "parameters": {
+     "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json,x=j.ctx,r=x.resources[x.resource_index];\nif (j.ok!==true || !j.resource || !['asset_id','via','action','target'].every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>ticketId(t.ticket_id) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>refOK(a,!!x.cfg.dry_run) && a.via===r.via && canon(a)===r.action && a.target===r.target))) return held(x,'held_resource_check');\nif (!j.tickets.some(t=>t.ticket_id===x.ticket_id && t.active_actions.some(a=>a.bot==='112'))) return held(x,'held_own_claim_missing');\nconst others=j.tickets.filter(t=>t.ticket_id!==x.ticket_id || t.active_actions.some(a=>a.bot!=='112'));\nif (others.length) return [{json:{ok:true,no_action:true,verdict:'held_other_resource_ticket',other_tickets:others.map(t=>t.ticket_id),ctx:x}}];\nconst next=x.resource_index+1;\nif (next<x.resources.length) return [{json:{ok:true,more_resources:true,mode:'active',resource:x.resources[next],ctx:{...x,resource_index:next}}}];\nreturn [{json:{ok:true,proceed:true,more_resources:false,ctx:x}}];\n"
+    }
+   },
+   {
+    "id": "4ae91ea6-d775-55bb-b48a-5ecb3a0f2c79",
+    "name": "보류 아님?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     1920,
+     -140
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "ba001ab0-497b-594e-9f03-54f9e1732ed4",
+        "leftValue": "={{ $json.proceed === true }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "a39a37ab-f15c-5ac8-85f0-87a2402a465d",
+    "name": "해제1 입력 (pfSense 해제)",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     2160,
+     -140
+    ],
+    "parameters": {
+     "jsCode": "if ($input.first().json.ok !== true) throw new Error('RELEASE_RECORD_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst ticket_id = x.ticket_id;\nreturn [{ json: { ctx: x, ticket_id, dry_run: x.cfg.dry_run, action: x.abort || !x.hasFw ? 'skip' : 'unblock', ip: x.ip } }];\n"
+    }
+   },
+   {
+    "id": "d9d5f445-39ac-50fb-aa6d-1e1a7cc749d4",
+    "name": "해제1 (pfSense 해제)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     2400,
+     -140
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamPfsense01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "7b7788c2-3242-5252-9b13-4ffc2b7a961c",
+    "name": "해제1 기록 입력",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     2640,
+     -140
+    ],
+    "parameters": {
+     "jsCode": "// 해제 결과를 티켓에 기록(stage released). 실패하면 기록하지 않고 중단 표시.\nconst r = $input.first().json;\nconst x = r.ctx;\nif (r.result === 'skipped') return [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title || x.case_id,\n  asset_id: x.asset_id, event_ids: [`release-skip-${$execution.id}-1`], idempotency_key: `${$execution.id}-skip-1` } }];\nif (r.applied_verified === false) throw new Error('RELEASE_STATE_MISMATCH');\nconst ok = ['released', 'already_applied', 'dry_run'].includes(r.result);\nconst res = { step: 1, result: ok ? 'released' : r.result, detail: r.detail };\nif (!ok) return [{ json: { ctx: { ...x, abort: true, results: [...(x.results || []), res] }, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key,\n  title: x.title || x.case_id, asset_id: x.asset_id, event_ids: [`release-fail-${$execution.id}-1`], idempotency_key: `${$execution.id}-fail-1` } }];\nconst now = new Date().toISOString();\nreturn [{ json: { ctx: { ...x, results: [...(x.results || []), res] }, mode: 'record', stage: 'released', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title || x.case_id,\n  asset_id: x.asset_id, event_ids: [`release-${$execution.id}-1`], idempotency_key: `${$execution.id}-released-1`,\n  action: { bot: '112', target: x.ip, via: 'pfsense', action: 'unblock', result: 'released', applied_verified: r.applied_verified ?? null, effect_verified: null, effect_verified_at: null,\n    requested_at: r.requested_at || now, finished_at: r.finished_at || now, n8n_execution_id: String($execution.id), detail: `승인 ${x.approver}${r.result === 'already_applied' ? ' (이미 해제됨)' : ''}`.slice(0, 300) } } }];\n"
+    }
+   },
+   {
+    "id": "d8e48e9a-9439-5089-8860-2cfa4b93ca9e",
+    "name": "해제1 기록 (haedam-10 released)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     2880,
+     -140
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamResultLog01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "1ef69ca1-21f8-5c1a-9865-0bf5aaed2710",
+    "name": "해제2 입력 (포털 해제)",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     3120,
+     -140
+    ],
+    "parameters": {
+     "jsCode": "if ($input.first().json.ok !== true) throw new Error('RELEASE_RECORD_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst ticket_id = x.ticket_id;\nreturn [{ json: { ctx: x, ticket_id, dry_run: x.cfg.dry_run, action: x.abort || !x.hasApp ? 'skip' : 'unblock', ip: x.ip } }];\n"
+    }
+   },
+   {
+    "id": "657b5fdf-1503-5738-8679-0f83dc825af1",
+    "name": "해제2 (포털 해제)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     3360,
+     -140
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamPortalIp01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "7498e8b2-fb5a-5c63-97c9-e9b1b39e9292",
+    "name": "해제2 기록 입력",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     3600,
+     -140
+    ],
+    "parameters": {
+     "jsCode": "// 해제 결과를 티켓에 기록(stage released). 실패하면 기록하지 않고 중단 표시.\nconst r = $input.first().json;\nconst x = r.ctx;\nif (r.result === 'skipped') return [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title || x.case_id,\n  asset_id: x.asset_id, event_ids: [`release-skip-${$execution.id}-2`], idempotency_key: `${$execution.id}-skip-2` } }];\nif (r.applied_verified === false) throw new Error('RELEASE_STATE_MISMATCH');\nconst ok = ['released', 'already_applied', 'dry_run'].includes(r.result);\nconst res = { step: 2, result: ok ? 'released' : r.result, detail: r.detail };\nif (!ok) return [{ json: { ctx: { ...x, abort: true, results: [...(x.results || []), res] }, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key,\n  title: x.title || x.case_id, asset_id: x.asset_id, event_ids: [`release-fail-${$execution.id}-2`], idempotency_key: `${$execution.id}-fail-2` } }];\nconst now = new Date().toISOString();\nreturn [{ json: { ctx: { ...x, results: [...(x.results || []), res] }, mode: 'record', stage: 'released', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title || x.case_id,\n  asset_id: x.asset_id, event_ids: [`release-${$execution.id}-2`], idempotency_key: `${$execution.id}-released-2`,\n  action: { bot: '112', target: x.ip, via: 'portal', action: 'unblock', result: 'released', applied_verified: r.applied_verified ?? null, effect_verified: null, effect_verified_at: null,\n    requested_at: r.requested_at || now, finished_at: r.finished_at || now, n8n_execution_id: String($execution.id), detail: `승인 ${x.approver}${r.result === 'already_applied' ? ' (이미 해제됨)' : ''}`.slice(0, 300) } } }];\n"
+    }
+   },
+   {
+    "id": "99ff2fa5-8843-5c24-a84a-cb5ffd677cf8",
+    "name": "해제2 기록 (haedam-10 released)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     3840,
+     -140
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamResultLog01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "9512b6c3-f9d1-5cb7-ad78-d86a40874738",
+    "name": "알림 입력",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     4080,
+     -140
+    ],
+    "parameters": {
+     "jsCode": "if ($input.first().json.ok !== true) throw new Error('RELEASE_RECORD_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst failed = (x.results || []).some(s => !['released'].includes(s.result));\nreturn [{ json: { ctx: { ...x, ticket: { ticket_id: r.ticket_id, status: r.status } }, level: failed ? 'error' : 'info', case_id: x.case_id, title: failed ? '원복 중단(해제 실패)' : '원복 완료',\n  src_ip: x.ip, ticket_id: r.ticket_id, result: (x.results || []).map(s => s.result).join(', '),\n  detail: `승인 ${x.approver}` + (x.manual_required && x.manual_required.length ? ' / 사람이 직접 할 것: ' + x.manual_required.join(', ') : '') } }];\n"
+    }
+   },
+   {
+    "id": "02d635d6-907f-51ed-b313-9e169a77368c",
+    "name": "Discord 알림 (haedam-11)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     4320,
+     -140
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamDiscord01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "b85d79af-91ee-50d0-926c-8588c10e76a9",
+    "name": "최종 응답",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     4560,
+     -140
+    ],
+    "parameters": {
+     "jsCode": "const r = $input.first().json;\nconst x = r.ctx;\nreturn [{ json: { ok: !(x.results || []).some(s => s.result !== 'released'), verdict: x.cfg.dry_run ? 'dry_run' : 'released', case_id: x.case_id, ip: x.ip, steps: x.results, ticket: x.ticket,\n  manual_required: x.manual_required, discord_sent: r.sent, n8n_execution_id: $execution.id } }];\n"
+    }
+   },
+   {
+    "id": "1beb1563-cb40-5ca6-921a-404c5373378f",
+    "name": "응답: 원복",
+    "type": "n8n-nodes-base.respondToWebhook",
+    "typeVersion": 1.1,
+    "position": [
+     4800,
+     -140
+    ],
+    "parameters": {
+     "respondWith": "allIncomingItems",
+     "options": {}
+    }
+   },
+   {
+    "id": "43a1d55b-bf45-5e78-a25d-d2f36014248b",
+    "name": "처리 없음 응답",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     1920,
+     140
+    ],
+    "parameters": {
+     "jsCode": "const j = $input.first().json;\nreturn [{ json: { ...j, no_action: true, n8n_execution_id: $execution.id } }];\n"
+    }
+   },
+   {
+    "id": "cc93a162-afcb-5b1e-863c-86bad2f5277f",
+    "name": "응답: 처리 없음",
+    "type": "n8n-nodes-base.respondToWebhook",
+    "typeVersion": 1.1,
+    "position": [
+     2160,
+     140
+    ],
+    "parameters": {
+     "respondWith": "allIncomingItems",
+     "options": {}
+    }
+   },
+   {
+    "id": "b9c0c277-1b8a-504b-98d3-e4de879e77d8",
+    "name": "다음 자원 조회?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     1800,
+     -260
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "3ce64529-29ae-5868-a5cc-826fd7ba3eec",
+        "leftValue": "={{ $json.more_resources === true }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   }
+  ],
+  "connections": {
+   "Webhook": {
+    "main": [
+     [
+      {
+       "node": "승인 확인·티켓 조회 입력",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "승인 확인·티켓 조회 입력": {
+    "main": [
+     [
+      {
+       "node": "입력 통과?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "입력 통과?": {
+    "main": [
+     [
+      {
+       "node": "열린 티켓 조회 (haedam-10 check)",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "처리 없음 응답",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "열린 티켓 조회 (haedam-10 check)": {
+    "main": [
+     [
+      {
+       "node": "해제 대상 고르기",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제 대상 고르기": {
+    "main": [
+     [
+      {
+       "node": "해제 대상 있음?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제 대상 있음?": {
+    "main": [
+     [
+      {
+       "node": "다른 자리 티켓 조회 (haedam-10 check)",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "처리 없음 응답",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "다른 자리 티켓 조회 (haedam-10 check)": {
+    "main": [
+     [
+      {
+       "node": "보류 판정",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "보류 판정": {
+    "main": [
+     [
+      {
+       "node": "다음 자원 조회?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "보류 아님?": {
+    "main": [
+     [
+      {
+       "node": "해제1 입력 (pfSense 해제)",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "처리 없음 응답",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제1 입력 (pfSense 해제)": {
+    "main": [
+     [
+      {
+       "node": "해제1 (pfSense 해제)",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제1 (pfSense 해제)": {
+    "main": [
+     [
+      {
+       "node": "해제1 기록 입력",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제1 기록 입력": {
+    "main": [
+     [
+      {
+       "node": "해제1 기록 (haedam-10 released)",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제1 기록 (haedam-10 released)": {
+    "main": [
+     [
+      {
+       "node": "해제2 입력 (포털 해제)",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제2 입력 (포털 해제)": {
+    "main": [
+     [
+      {
+       "node": "해제2 (포털 해제)",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제2 (포털 해제)": {
+    "main": [
+     [
+      {
+       "node": "해제2 기록 입력",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제2 기록 입력": {
+    "main": [
+     [
+      {
+       "node": "해제2 기록 (haedam-10 released)",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "해제2 기록 (haedam-10 released)": {
+    "main": [
+     [
+      {
+       "node": "알림 입력",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "알림 입력": {
+    "main": [
+     [
+      {
+       "node": "Discord 알림 (haedam-11)",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Discord 알림 (haedam-11)": {
+    "main": [
+     [
+      {
+       "node": "최종 응답",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "최종 응답": {
+    "main": [
+     [
+      {
+       "node": "응답: 원복",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "처리 없음 응답": {
+    "main": [
+     [
+      {
+       "node": "응답: 처리 없음",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "다음 자원 조회?": {
+    "main": [
+     [
+      {
+       "node": "다른 자리 티켓 조회 (haedam-10 check)",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "보류 아님?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  }
+ }
+]

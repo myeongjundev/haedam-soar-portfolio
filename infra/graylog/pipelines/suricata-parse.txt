@@ -1,0 +1,21 @@
+// Suricata EVE JSON 파싱 파이프라인 (Graylog 6.1.16 Pipeline Rules). B 세션 협의로 D Graylog에 화면·API로 먼저 적용한 것을 10/27에 저장소로 내보냄(적용 일시 미기록).
+// 연결: 입력 `suricata Raw TCP`(5515/tcp, Raw/Plaintext, 줄 단위)의 메시지를 모으는 스트림 `suricata-alerts`(규칙 type 1, 값 `suricata Raw TCP`, 기본 스트림에서 뺌)에 파이프라인 `suricata-parse`를 연결한다.
+// 비밀값 없음. EVE JSON 한 줄이 한 메시지이며, 값은 `suri_*` 필드로 풀린다.
+//
+// pipeline "suricata-parse"
+// stage 0 match either   rule "suricata: parse eve json"
+// end
+
+rule "suricata: parse eve json"
+when
+  starts_with(to_string($message.message), "{") &&
+  contains(to_string($message.message), "\"event_type\"")
+then
+  let flat = to_map(flatten_json(to_string($message.message), "json"));
+  set_fields(fields: flat, prefix: "suri_");
+  set_field("suri_sid", to_long(flat["alert_signature_id"]));
+  set_field("suri_severity", to_long(flat["alert_severity"]));
+  set_field("suri_src_ip", to_string(flat["src_ip"]));
+  set_field("suri_dst_ip", to_string(flat["dest_ip"]));
+  set_field("message", concat(concat(concat("[Suricata ", to_string(flat["alert_signature_id"])), "] "), to_string(flat["alert_signature"])));
+end

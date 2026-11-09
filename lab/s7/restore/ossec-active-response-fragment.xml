@@ -1,0 +1,29 @@
+<!--
+S7 117: FIM(554·550, agent 010) 발생 시 s7-restore-ar를 자동 실행하는 조각.
+설계만 해 둔 것으로 **아직 어떤 manager에도 넣지 않았습니다.**
+
+적용 방법(참고, 지금 실행하지 않음):
+  1. 이 조각을 manager ossec.conf의 <ossec_config> 안에 추가한다
+     (docker exec: /var/ossec/etc/ossec.conf).
+  2. manager 재시작 필요(`/var/ossec/bin/wazuh-control restart` 또는 컨테이너 재시작).
+  3. agent 010의 active-response/bin/s7-restore-ar는 이미 설치돼 있어야 한다(10/28).
+
+<command> 이름은 n8n/API 쪽에서 쓰는 "!s7-restore-ar"(느낌표, ar.conf 건너뜀)와
+다른 경로다. <active-response>는 이 이름을 등록해 FIM 경보가 뜰 때 manager가
+직접 agent로 보낸다. API 호출(n8n)과 자동 실행(이 조각)은 같은 바이너리를
+쓰지만 트리거 경로가 다르다.
+-->
+<ossec_config>
+  <command>
+    <name>s7-restore-ar</name>
+    <executable>s7-restore-ar</executable>
+    <timeout_allowed>no</timeout_allowed>
+  </command>
+
+  <active-response>
+    <command>s7-restore-ar</command>
+    <location>specific</location>
+    <agent_id>010</agent_id>
+    <rules_id>554,550</rules_id>
+  </active-response>
+</ossec_config>

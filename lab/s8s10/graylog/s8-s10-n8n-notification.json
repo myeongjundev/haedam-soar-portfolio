@@ -1,0 +1,18 @@
+{
+  "title": "n8n haedam-s8-s10 (S8·S10 → haedam-32)",
+  "description": "S8/S10 공용 알림 후보. event_id/asset_id/src_ip/case_id와 원본·처리 시각을 보낸다. 실제 실행/저장은 게시된 CFG로 정하며 body의 dry_run/store_real을 신뢰하지 않는다. 인증·하위 호출 연결은 D 인수. 미배포.",
+  "config": {
+    "type": "http-notification-v2",
+    "url": "http://host.docker.internal:5678/webhook/haedam-s8-s10",
+    "method": "POST",
+    "content_type": "JSON",
+    "time_zone": "UTC",
+    "headers": "",
+    "basic_auth": null,
+    "api_key_as_header": false,
+    "api_key": "",
+    "api_secret": null,
+    "skip_tls_verification": false,
+    "body_template": "{\"event_id\":\"${event.id}\",\"asset_id\":\"haedam-portal\",\"src_ip\":\"${event.fields.src_ip}\",\"case_id\":\"${event.fields.case_id}\",\"condition_met_at\":\"${event.timestamp}\",\"detected_at\":\"${event.timestamp_processing}\",\"event_definition_id\":\"${event_definition_id}\"}"
+  }
+}

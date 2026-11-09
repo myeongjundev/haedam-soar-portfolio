@@ -1,0 +1,110 @@
+[
+ {
+  "id": "haedamTicketCheck01",
+  "name": "haedam-01 티켓 저장소 연결 확인 (읽기 전용)",
+  "active": false,
+  "nodes": [
+   {
+    "id": "b9a6049b-774d-5868-a405-c813c633ea84",
+    "name": "Webhook",
+    "type": "n8n-nodes-base.webhook",
+    "typeVersion": 2,
+    "position": [
+     0,
+     0
+    ],
+    "parameters": {
+     "httpMethod": "POST",
+     "path": "haedam-ticket-check",
+     "responseMode": "responseNode",
+     "options": {}
+    },
+    "webhookId": "haedam-ticket-check"
+   },
+   {
+    "id": "c6243076-51c8-5ae3-9e5f-d3f742864855",
+    "name": "check 입력",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     240,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// 티켓 저장소(C) 연결·키 확인용. 읽기(check)만 하고 아무것도 기록하지 않는다. 키는 n8n 자격 증명에만 있다.\nconst b = ($input.first().json.body) || {};\nreturn [{ json: { mode: 'check', seat: b.seat || 'D', group_key: b.group_key || '__connectivity_check__', ctx: { cfg: { dry_run: false, store_real: true }, purpose: 'connectivity_check' } } }];\n"
+    }
+   },
+   {
+    "id": "0cca2598-9ecc-56ab-acd4-bcee638304aa",
+    "name": "haedam-10 (실제 저장소 check)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     480,
+     0
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamResultLog01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "728db901-8bb0-568c-a40f-cedf111fb4ef",
+    "name": "응답",
+    "type": "n8n-nodes-base.respondToWebhook",
+    "typeVersion": 1.1,
+    "position": [
+     720,
+     0
+    ],
+    "parameters": {
+     "respondWith": "allIncomingItems",
+     "options": {}
+    }
+   }
+  ],
+  "connections": {
+   "Webhook": {
+    "main": [
+     [
+      {
+       "node": "check 입력",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "check 입력": {
+    "main": [
+     [
+      {
+       "node": "haedam-10 (실제 저장소 check)",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "haedam-10 (실제 저장소 check)": {
+    "main": [
+     [
+      {
+       "node": "응답",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  }
+ }
+]

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nobugs:aleph:ticket:1.0",
+  "title": "Draft 114 ticket store ticket v1.0 (not implemented)",
+  "description": "Ticket returned by GET /api/v1/tickets/{ticket_id}. Status is set by the store, never by n8n. See docs/C-티켓저장소-설계.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "if": {"properties": {"status": {"const": "closed"}}},
+  "then": {"required": ["closed_at", "close_note"]},
+  "else": {"not": {"anyOf": [{"required": ["closed_at"]}, {"required": ["close_note"]}]}},
+  "required": ["schema_version", "ticket_id", "seat", "case_id", "group_key", "title", "status", "asset_id", "event_ids", "actions", "data_origin", "created_at", "updated_at"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "ticket_id": {"type": "string", "pattern": "^T-[0-9]{8}-[0-9]{4}$"},
+    "seat": {"$ref": "#/$defs/seat"},
+    "case_id": {"$ref": "#/$defs/case_id"},
+    "group_key": {"$ref": "#/$defs/group_key"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 200},
+    "status": {"enum": ["open", "responding", "verified", "restored", "closed"]},
+    "asset_id": {"type": "string", "minLength": 1},
+    "src_ip": {"$ref": "#/$defs/ip_or_null"},
+    "username": {"type": ["string", "null"], "minLength": 1},
+    "event_ids": {"$ref": "#/$defs/event_ids"},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 500},
+    "first_attack_at": {"$ref": "#/$defs/time_or_null"},
+    "condition_met_at": {"$ref": "#/$defs/time_or_null"},
+    "detected_at": {"$ref": "#/$defs/time_or_null"},
+    "received_at": {"$ref": "#/$defs/time_or_null"},
+    "responded_at": {"$ref": "#/$defs/time_or_null"},
+    "verified_at": {"$ref": "#/$defs/time_or_null"},
+    "restored_at": {"$ref": "#/$defs/time_or_null"},
+    "closed_at": {"type": "string", "format": "date-time"},
+    "close_note": {"type": "string", "minLength": 1, "maxLength": 200},
+    "actions": {"type": "array", "items": {"$ref": "#/$defs/stored_action"}},
+    "data_origin": {"enum": ["live", "sample"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "seat": {"enum": ["A", "B", "C", "D"]},
+    "case_id": {"enum": ["S1", "S4", "S7", "S8", "S10", "S12"]},
+    "group_key": {
+      "description": "A = username, B/D = src_ip, C = {asset_id}:{file_key}",
+      "type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "event_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+    "time_or_null": {"anyOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+    "ip_or_null": {"anyOf": [{"type": "string", "format": "ipv4"}, {"type": "string", "format": "ipv6"}, {"type": "null"}]},
+    "action": {
+      "description": "One response result from the n8n result-log. via values await D confirmation.",
+      "type": "object",
+      "required": ["bot", "target", "via", "action", "result", "applied_verified", "effect_verified", "requested_at", "finished_at", "effect_verified_at", "n8n_execution_id"],
+      "properties": {
+        "bot": {"type": "string", "pattern": "^([0-9]{3}|manual)$"},
+        "target": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\u0000-\\u001f\\u007f]+$"},
+        "via": {"enum": ["portal", "wazuh-ar", "pfsense", "manual"]},
+        "action": {"type": "string", "pattern": "^[a-z][a-z_]{1,31}$"},
+        "result": {"enum": ["applied", "already_applied", "failed", "rejected", "released"]},
+        "applied_verified": {"type": ["boolean", "null"]},
+        "effect_verified": {"type": ["boolean", "null"]},
+        "requested_at": {"$ref": "#/$defs/time_or_null"},
+        "finished_at": {"$ref": "#/$defs/time_or_null"},
+        "effect_verified_at": {"$ref": "#/$defs/time_or_null"},
+        "n8n_execution_id": {"type": "string", "minLength": 1, "maxLength": 64},
+        "detail": {"type": "string", "maxLength": 300}
+      }
+    },
+    "input_action": {"$ref": "#/$defs/action", "unevaluatedProperties": false},
+    "stored_action": {
+      "$ref": "#/$defs/action",
+      "required": ["action_id", "duplicate", "recorded_at"],
+      "properties": {
+        "action_id": {"description": "Idempotency-Key of the request that created this line", "type": "string", "pattern": "^[!-~]{8,100}$"},
+        "duplicate": {"type": "boolean"},
+        "recorded_at": {"type": "string", "format": "date-time"}
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}

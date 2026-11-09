@@ -1,0 +1,36 @@
+{
+  "title": "S12 요청 폭주 (src_ip 1분 요청 수)",
+  "description": "D S12 초안. 포털 web.request 이벤트가 1분 창에서 같은 src_ip로 N건을 넘으면 발동. N은 정상 기준선(10/30 s12-1030-baseline-30m-01)의 '60초 창 최대 요청 수 x 3' 이상으로 정한다(team_docs/S12-진행계획-D-chacha1650a.md, tools/s12_baseline_calc.py). N=93은 10/30 기준선(60초 창 최대 31건 x 3, B 전송 기준)이고 스트림은 haedam-portal(6ad95444188b5d4016e9d412)이다. 반입 전 알림 연결과 D 확인이 필요하다. 검색 창은 60초 그대로 두고 30초마다 실행해(겹침) 30초짜리 단계가 한 창에 온전히 들어가게 했다. 유예는 60초로 줄여, 첫 검사에서 헬스가 정상이어도 요청 수가 N을 넘는 동안 매분 다시 검사한다(티켓이 생기면 haedam-20의 중복 확인에서 끝난다). 정의는 시험 직전까지 꺼 둔다(상태 DISABLED로 반입).",
+  "priority": 2,
+  "alert": true,
+  "config": {
+    "type": "aggregation-v1",
+    "query": "source:haedam-portal AND event_type:web.request",
+    "query_parameters": [],
+    "filters": [],
+    "streams": ["6ad95444188b5d4016e9d412"],
+    "group_by": ["src_ip"],
+    "series": [
+      {"id": "count()", "type": "count", "field": null}
+    ],
+    "conditions": {
+      "expression": {
+        "expr": ">",
+        "left": {"expr": "number-ref", "ref": "count()"},
+        "right": {"expr": "number", "value": 93}
+      }
+    },
+    "search_within_ms": 60000,
+    "execute_every_ms": 30000,
+    "use_cron_scheduling": false,
+    "event_limit": 100
+  },
+  "field_spec": {
+    "src_ip": {"data_type": "string", "providers": [{"type": "template-v1", "template": "${source.src_ip}", "require_values": true}]},
+    "case_id": {"data_type": "string", "providers": [{"type": "template-v1", "template": "S12", "require_values": true}]}
+  },
+  "key_spec": ["src_ip"],
+  "notification_settings": {"grace_period_ms": 60000, "backlog_size": 20},
+  "notifications": [],
+  "storage": [{"type": "persist-to-streams-v1", "streams": ["000000000000000000000002"]}]
+}

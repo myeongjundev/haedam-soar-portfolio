@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aleph.local/contracts/s12-comparison.schema.json",
+  "title": "Offline S12 comparison metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "ticket_id",
+    "target",
+    "load_profile",
+    "before_version",
+    "after_version",
+    "origin",
+    "route",
+    "expected_status",
+    "interval_seconds",
+    "timeout_seconds",
+    "duration_seconds"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "ticket_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "load_profile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "before_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "after_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "origin": {
+      "enum": [
+        "live",
+        "sample"
+      ]
+    },
+    "route": {
+      "enum": [
+        "portal",
+        "pfsense"
+      ]
+    },
+    "expected_status": {
+      "type": "integer",
+      "minimum": 200,
+      "maximum": 299
+    },
+    "interval_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 86400
+    },
+    "timeout_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 86400
+    },
+    "duration_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 86400
+    }
+  }
+}

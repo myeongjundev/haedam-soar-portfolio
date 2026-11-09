@@ -1,0 +1,50 @@
+// S7 홈페이지 변조 판정 규칙 (Graylog 6.1.16 Pipeline Rules).
+// 기준: lab/s7/graylog/s7-rule-spec.md(C 제안 → D 검토). 미반입·미시험(2026-10-28 작성).
+// 비밀값 없음.
+//
+// 신호 두 가지에 signal_kind를 단다. 둘 다 있는 (asset_id, file_key)만 S7 이벤트로 발동한다(card(signal_kind)>1).
+//   FIM 변경·생성: wazuh-alerts 스트림, wazuh-parse 뒤 stage
+//   웹 접근 2xx:   haedam-portal 스트림
+//
+// lookup s7_baseline_hashes: 키 = 파일 sha256, 값 = file_key. 정상 배포·117 복구 재경보를 거른다.
+//   원천은 infra/graylog/lookup/s7_baseline_hashes.csv (배포 때 갱신). 10/28 프론트 #3 배포 뒤 4개 확정.
+//
+// 연결(반입 뒤):
+//   wazuh-parse 파이프라인 stage 2: "S7: FIM file_key"
+//   wazuh-parse 파이프라인 stage 3: "S7: FIM signal (not baseline)"
+//   haedam-portal 스트림 파이프라인(없으면 "s7-web-parse"를 만들어 연결) stage 0: "S7: web access 2xx"
+//
+// D 확인(10/28): 포털 GELF는 D에서 event_type·status(long)·file_key·asset_id로 저장됨(밑줄 접두 없음).
+//   web.file_access에 file_key가 실제로 담기는지는 S7 실제 접근으로 한 번 더 확인한다.
+
+rule "S7: FIM file_key"
+when
+  to_string($message.wazuh_agent_name) == "haedam-portal-vm"
+  && starts_with(to_string($message.wazuh_file), "/home/haedam/haedam-portal-frontend/dist/")
+  && (to_string($message.wazuh_rule_id) == "554" || to_string($message.wazuh_rule_id) == "550")
+then
+  set_field("file_key", replace(to_string($message.wazuh_file), "/home/haedam/haedam-portal-frontend/dist/", ""));
+  set_field("asset_id", "haedam-portal");
+end
+
+// 제외는 "해시가 표에 있고 그 해시의 file_key가 이 경보의 file_key와 같을 때"만.
+// 해시만 보면(is_null만) 허용된 다른 파일 내용으로 index.html을 덮는 회피가 제외돼 버린다(C 리뷰 10/28).
+rule "S7: FIM signal (not baseline)"
+when
+  has_field("file_key") && has_field("wazuh_syscheck_sha256_after")
+  && (
+    is_null(lookup_value("s7_baseline_hashes", to_string($message.wazuh_syscheck_sha256_after)))
+    || to_string(lookup_value("s7_baseline_hashes", to_string($message.wazuh_syscheck_sha256_after))) != to_string($message.file_key)
+  )
+then
+  set_field("signal_kind", "fim-change");
+end
+
+rule "S7: web access 2xx"
+when
+  to_string($message.event_type) == "web.file_access"
+  && to_long($message.status) >= 200 && to_long($message.status) < 300
+  && has_field("file_key")
+then
+  set_field("signal_kind", "web-access-2xx");
+end

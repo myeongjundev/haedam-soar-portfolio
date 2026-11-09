@@ -1,0 +1,311 @@
+/* Civic service finder: explicit choices, reusable writing guidance. */
+.finder-modes {
+  display: flex;
+  gap: 6px;
+  background: #eaf0eb;
+  padding: 5px;
+  border: 1px solid #dce5df;
+  border-radius: 11px;
+  width: fit-content;
+  margin-bottom: 23px;
+}
+.finder-modes button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 45px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 9px 20px;
+  background: transparent;
+  color: #50675a;
+  font-size: 13px;
+  font-weight: 600;
+}
+.finder-modes button[aria-pressed="true"] {
+  background: #fff;
+  border-color: #c6d7cd;
+  color: #285648;
+  box-shadow: 0 2px 5px #173b3f08;
+}
+.finder-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 23px;
+}
+.finder-situations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.finder-situations button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  min-height: 100px;
+  border: 1px solid #dce5df;
+  border-radius: 12px;
+  padding: 19px 16px;
+  background: #fff;
+  color: #294d43;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.finder-situations button:hover {
+  border-color: #8eaf9b;
+  background: #f3f7f2;
+}
+.finder-situations button[aria-pressed="true"] {
+  border-color: #527f69;
+  background: #eaf3ed;
+  box-shadow: inset 0 0 0 1px #527f69;
+}
+.finder-situation-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 39px;
+  height: 39px;
+  border-radius: 11px;
+  background: #eff5ef;
+  color: #4d7358;
+}
+.finder-situations strong {
+  font-size: 14px;
+  line-height: 1.8;
+  flex: 1;
+  min-width: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.finder-situations button > svg {
+  flex-shrink: 0;
+  color: #5b7a64;
+}
+.finder-advice {
+  border: 1px solid #d2e0d6;
+  border-radius: 14px;
+  padding: 26px 28px;
+  background: #f0f5ef;
+  min-height: 330px;
+}
+.finder-advice.has-selection {
+  background: #fff;
+  border-color: #b9d0bf;
+}
+.finder-category {
+  display: inline-block;
+  border: 1px solid #c4d8c8;
+  border-radius: 5px;
+  background: #edf5ed;
+  color: #386149;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+}
+.finder-advice h3 {
+  font-size: 22px;
+  line-height: 1.5;
+  margin: 16px 0 10px;
+  color: #244d40;
+}
+.finder-advice p {
+  font-size: 13px;
+  line-height: 1.9;
+  color: #52695c;
+  margin: 0 0 15px;
+}
+.finder-advice ol {
+  margin: 18px 0;
+  padding-left: 22px;
+  color: #425f4e;
+  font-size: 13px;
+  line-height: 1.9;
+}
+.finder-advice li + li {
+  margin-top: 7px;
+}
+.finder-advice .finder-choice-note {
+  border-top: 1px solid #dce5df;
+  padding-top: 15px;
+  font-size: 12px;
+}
+.finder-advice .button {
+  margin-top: 3px;
+}
+.finder-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 260px;
+  text-align: center;
+}
+.finder-placeholder > span {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  background: #fff;
+  border: 1px solid #d9e5da;
+  border-radius: 17px;
+  color: #5b8063;
+}
+.finder-placeholder h3 {
+  font-size: 20px;
+  margin-top: 20px;
+}
+.selected-service-guide .eyebrow {
+  margin-bottom: 9px;
+}
+.selected-service-guide > h3 {
+  font-size: 21px;
+  line-height: 1.7;
+  margin: 7px 0 14px;
+}
+.selected-service-guide .selected-guide-summary {
+  font-size: 13px;
+  line-height: 1.9;
+  margin: 17px 0;
+  color: #52695c;
+}
+.selected-guide-tips {
+  padding-left: 21px;
+  margin: 20px 0;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #425f4e;
+}
+.selected-guide-tips li + li {
+  margin-top: 11px;
+}
+.selected-service-guide .selected-guide-note {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #52695c;
+  border-top: 1px solid #d3dfd1;
+  padding-top: 16px;
+}
+.selected-service-guide > .text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
+  min-height: 40px;
+  font-size: 12px;
+}
+.mobile-service-guide {
+  display: none;
+}
+@media (max-width: 800px) {
+  .mobile-service-guide {
+    display: grid;
+    gap: 8px;
+    border: 1px solid #cbdccf;
+    border-radius: 10px;
+    padding: 17px;
+    background: #f0f6ef;
+    margin: 0 0 23px;
+  }
+  .mobile-service-guide > strong {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #2e5540;
+  }
+  .mobile-service-guide > span {
+    font-size: 12px;
+    color: #4f6957;
+  }
+  .mobile-service-guide summary {
+    cursor: pointer;
+    min-height: 40px;
+    padding-block: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #355f49;
+  }
+  .mobile-service-guide ol {
+    padding-left: 20px;
+    font-size: 13px;
+    line-height: 1.9;
+    margin: 9px 0 12px;
+    color: #425f4e;
+  }
+  .mobile-service-guide li + li {
+    margin-top: 7px;
+  }
+  .mobile-service-guide details > p {
+    font-size: 12px;
+    line-height: 1.9;
+    color: #52695c;
+    margin: 0;
+  }
+}
+@media (max-width: 1050px) {
+  .finder-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 17px;
+  }
+  .finder-situations {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .finder-situations button {
+    min-height: 100px;
+    padding: 16px 13px;
+    gap: 10px;
+  }
+  .finder-situations button > svg {
+    display: none;
+  }
+  .finder-advice {
+    min-height: 0;
+  }
+  .finder-placeholder {
+    min-height: 185px;
+  }
+}
+@media (max-width: 650px) {
+  .finder-situations {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .finder-situations button {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    min-height: 118px;
+  }
+  .finder-situations strong {
+    flex-basis: 100%;
+    font-size: 13px;
+  }
+  .finder-situation-icon {
+    width: 33px;
+    height: 33px;
+  }
+  .finder-modes {
+    width: 100%;
+    gap: 3px;
+  }
+  .finder-modes button {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 7px;
+    font-size: 12px;
+    gap: 7px;
+  }
+  .finder-advice {
+    padding: 22px 20px;
+  }
+  .finder-advice h3 {
+    font-size: 20px;
+  }
+  .finder-advice .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .selected-service-guide > h3 {
+    font-size: 19px;
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nobugs:aleph:incident:1.0",
+  "title": "Draft shared incident view v1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "incident_id", "title", "status", "username", "asset_id", "event_ids", "reason", "response_state"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "incident_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "status": {"enum": ["open", "contained", "resolved"]},
+    "username": {"type": "string", "minLength": 1},
+    "asset_id": {"type": "string", "minLength": 1},
+    "event_ids": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+    "reason": {"type": "string", "minLength": 1},
+    "response_state": {"enum": ["not_requested", "pending", "succeeded", "failed", "restored"]}
+  }
+}

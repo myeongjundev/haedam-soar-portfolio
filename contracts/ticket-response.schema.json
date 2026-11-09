@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nobugs:aleph:ticket-response:1.0",
+  "title": "Draft 114 ticket store responses v1.0",
+  "description": "ok-style responses agreed with D on 2026-10-23 (same shape as the D haedam-10 placeholder). n8n: record, check by seat, check across seats (8088). Dashboard: list, detail and close (8089, design section 6-6). Errors share one shape.",
+  "oneOf": [
+    {"$ref": "#/$defs/record_ok"},
+    {"$ref": "#/$defs/check_seat_ok"},
+    {"$ref": "#/$defs/check_all_ok"},
+    {"$ref": "#/$defs/active_resource_ok"},
+    {"$ref": "#/$defs/list_ok"},
+    {"$ref": "#/$defs/ticket_ok"},
+    {"$ref": "#/$defs/error"}
+  ],
+  "$defs": {
+    "status": {"enum": ["open", "responding", "verified", "restored", "closed"]},
+    "ticket_id": {"type": "string", "pattern": "^T-[0-9]{8}-[0-9]{4}$"},
+    "action_ref": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bot", "via", "action", "target"],
+      "properties": {
+        "bot": {"type": "string", "pattern": "^([0-9]{3}|manual)$"},
+        "action": {"type": "string", "pattern": "^[a-z][a-z_]{1,31}$"},
+        "target": {"type": "string", "minLength": 1, "maxLength": 300},
+        "via": {"enum": ["portal", "wazuh-ar", "pfsense", "manual"]},
+        "result": {"enum": ["applied", "already_applied"]}
+      }
+    },
+    "record_ok": {
+      "description": "POST /api/v1/tickets/record. 201 created, 200 appended or duplicate.",
+      "type": "object", "additionalProperties": false,
+      "required": ["ok", "ticket_id", "created", "duplicate", "status"],
+      "properties": {
+        "ok": {"const": true},
+        "ticket_id": {"$ref": "#/$defs/ticket_id"},
+        "created": {"type": "boolean"},
+        "duplicate": {"type": "boolean"},
+        "status": {"$ref": "#/$defs/status"}
+      }
+    },
+    "check_seat_ok": {
+      "description": "GET /api/v1/tickets/open with seat. No open ticket is 200 with exists false.",
+      "type": "object", "additionalProperties": false,
+      "required": ["ok", "exists", "ticket_id", "status", "applied_actions"],
+      "properties": {
+        "ok": {"const": true},
+        "exists": {"type": "boolean"},
+        "ticket_id": {"anyOf": [{"$ref": "#/$defs/ticket_id"}, {"type": "null"}]},
+        "status": {"anyOf": [{"$ref": "#/$defs/status"}, {"type": "null"}]},
+        "applied_actions": {"type": "array", "items": {"$ref": "#/$defs/action_ref"}}
+      },
+      "if": {"properties": {"exists": {"const": false}}},
+      "then": {"properties": {"ticket_id": {"type": "null"}, "status": {"type": "null"}, "applied_actions": {"maxItems": 0}}},
+      "else": {"properties": {"ticket_id": {"type": "string"}, "status": {"type": "string"}}}
+    },
+    "check_all_ok": {
+      "description": "GET /api/v1/tickets/open without seat: open tickets for this group_key only. Not a cross-resource release guard; use /active.",
+      "type": "object", "additionalProperties": false,
+      "required": ["ok", "tickets"],
+      "properties": {
+        "ok": {"const": true},
+        "tickets": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["seat", "ticket_id", "status", "active_actions"],
+          "properties": {
+            "seat": {"enum": ["A", "B", "C", "D"]},
+            "ticket_id": {"$ref": "#/$defs/ticket_id"},
+            "status": {"$ref": "#/$defs/status"},
+            "active_actions": {"type": "array", "items": {"$ref": "#/$defs/action_ref"}}
+          }
+        }}
+      }
+    },
+    "resource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["asset_id", "via", "action", "target"],
+      "properties": {
+        "asset_id": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\u0000-\\u001f\\u007f]+$"},
+        "via": {"enum": ["portal", "wazuh-ar", "pfsense", "manual"]},
+        "action": {"type": "string", "pattern": "^[a-z][a-z_]{1,31}$"},
+        "target": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\u0000-\\u001f\\u007f]+$"}
+      }
+    },
+    "active_resource_ok": {
+      "description": "Authenticated GET /api/v1/tickets/active with exactly asset_id, via, action, target. All matching live claims across seats/group keys/bots, including closed tickets with unreleased actions. Read snapshot only; no permission or reservation to release.",
+      "type": "object", "additionalProperties": false,
+      "required": ["ok", "resource", "tickets"],
+      "properties": {
+        "ok": {"const": true},
+        "resource": {"$ref": "#/$defs/resource"},
+        "tickets": {"$ref": "#/$defs/check_all_ok/properties/tickets"}
+      }
+    },
+    "list_ok": {
+      "description": "GET /api/v1/tickets (dashboard). counts follow the same sample filter as items.",
+      "type": "object", "additionalProperties": false,
+      "required": ["ok", "count", "items", "counts", "last_record_at"],
+      "properties": {
+        "ok": {"const": true},
+        "count": {"type": "integer", "minimum": 0},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/list_item"}},
+        "counts": {
+          "type": "object", "additionalProperties": false,
+          "required": ["open", "responding", "verified", "restored", "closed"],
+          "patternProperties": {"^(open|responding|verified|restored|closed)$": {"type": "integer", "minimum": 0}}
+        },
+        "last_record_at": {"anyOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+      }
+    },
+    "list_item": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ticket_id", "seat", "case_id", "title", "status", "group_key", "last_result", "mttd_seconds",
+                   "mttr_seconds", "data_origin", "updated_at"],
+      "properties": {
+        "ticket_id": {"$ref": "#/$defs/ticket_id"},
+        "seat": {"enum": ["A", "B", "C", "D"]},
+        "case_id": {"enum": ["S1", "S4", "S7", "S8", "S10", "S12"]},
+        "title": {"type": "string", "minLength": 1},
+        "status": {"$ref": "#/$defs/status"},
+        "group_key": {"type": "string", "minLength": 1},
+        "last_result": {"enum": ["applied", "already_applied", "failed", "rejected", "released", null]},
+        "mttd_seconds": {"type": ["number", "null"]},
+        "mttr_seconds": {"type": ["number", "null"]},
+        "data_origin": {"enum": ["live", "sample"]},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "ticket_ok": {
+      "description": "GET /api/v1/tickets/{ticket_id} and POST /api/v1/tickets/{ticket_id}/close or /cancel (dashboard).",
+      "type": "object", "additionalProperties": false,
+      "required": ["ok", "ticket"],
+      "properties": {"ok": {"const": true}, "ticket": {"$ref": "urn:nobugs:aleph:ticket:1.0"}}
+    },
+    "error": {
+      "description": "400 VALIDATION_ERROR, 401 UNAUTHORIZED (n8n key), 403 FORBIDDEN (dashboard Origin/token), 404 NOT_FOUND, 409 IDEMPOTENCY_CONFLICT or STALE_EFFECT (record) or INVALID_TRANSITION (scope/round, close, cancel), 500/503 SERVER_ERROR.",
+      "type": "object", "additionalProperties": false,
+      "required": ["ok", "error"],
+      "properties": {
+        "ok": {"const": false},
+        "error": {
+          "type": "object", "additionalProperties": false,
+          "required": ["code", "message"],
+          "properties": {
+            "code": {"enum": ["VALIDATION_ERROR", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "IDEMPOTENCY_CONFLICT", "STALE_EFFECT", "INVALID_TRANSITION", "SERVER_ERROR"]},
+            "message": {"type": "string", "minLength": 1, "maxLength": 200}
+          }
+        }
+      }
+    }
+  }
+}

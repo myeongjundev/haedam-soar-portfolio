@@ -1,0 +1,25 @@
+// 출처: C(shk12170-dev)의 Wazuh 인수인계(2026-10-22) 3절. C 연습 Graylog에서 동작했고 이 환경(D PC)에서는 아직 시험하지 않았다.
+// 쓰는 곳: 스트림 wazuh-alerts에 연결한 파이프라인 wazuh-parse, Stage 0·1.
+// 메시지 모양: <132>… ossec: {JSON}  (Wazuh syslog_output, format json, group syscheck)
+// 주의: 파이프라인을 만들고 Stage에 규칙을 넣지 않으면 오류 없이 아무 일도 안 일어난다.
+//       System → Configurations → Message Processors에서 Pipeline Processor가 Message Filter Chain보다 뒤에 있어야 한다.
+// S7 file_key·asset_id 규칙은 보강 전 측정이 끝난 뒤 A·C와 자산 ID를 정해 따로 만든다(여기에는 넣지 않는다).
+
+rule "wazuh: parse alert json"
+when
+  contains(to_string($message.message), "ossec: {")
+then
+  let m = regex("ossec: (.*)", to_string($message.message));
+  let flat = to_map(flatten_json(to_string(m["0"]), "json"));
+  set_fields(fields: flat, prefix: "wazuh_");
+  set_field("wazuh_rule_level", to_long(flat["rule_level"]));
+  set_field("source", to_string(flat["agent_name"]));
+  set_field("message", concat(concat(concat("[Wazuh ", to_string(flat["rule_id"])), "] "), to_string(flat["rule_description"])));
+end
+
+rule "wazuh: fim path safe"
+when
+  has_field("wazuh_syscheck_path")
+then
+  set_field("wazuh_file", replace(to_string($message.wazuh_syscheck_path), "\\", "/"));
+end

@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}대응·원복{% endblock %}{% block body %}
+<header class="head"><div><p class="eyebrow">RESPONSE QUEUE</p><h1>대응·원복</h1><p class="page-description">사람이 확인할 조치와 남은 원복을 살펴봅니다.</p></div><div class="refresh-controls"><label class="auto"><input type="checkbox" id="auto-refresh" checked> 10초마다 자동 갱신</label><button type="button" id="refresh-now">지금 새로고침 ↻</button></div></header>
+{% include '_screen_filters.html' %}<p id="refresh-warning" class="warning" {% if view %}hidden{% endif %}>갱신 실패 <span id="failed-at"></span> — 마지막으로 읽은 결과를 유지합니다.</p>
+<div id="list-area" data-fragment="/_work" data-query="{{ request.query_string.decode() }}">{% if view %}{% include '_work.html' %}{% else %}<p class="empty">조회 실패</p>{% endif %}</div>{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.ticket_id }}{% endblock %}
+{% macro yesno(value) %}{% if value is none %}<span class="verification unknown">미확인</span>{% elif value %}<span class="verification confirmed">예</span>{% else %}<span class="verification denied">아니오</span>{% endif %}{% endmacro %}
+{% block body %}
+<p class="back-link"><a href="{{ url_for('dashboard.' + ('cases' if request.args.get('source') == 'cases' else 'work' if request.args.get('source') == 'work' else 'index'), seat=request.args.get('seat', ''), sample=request.args.get('sample', '0')) }}">← {{ '케이스 보드' if request.args.get('source') == 'cases' else '대응·원복' if request.args.get('source') == 'work' else '인시던트 목록' }}</a></p>
+<header class="head">
+  <div><p class="eyebrow">INCIDENT DETAIL</p><h1 class="ticket-heading">{{ ticket.ticket_id }}
+    <span class="badge st-{{ ticket.status }}">{{ STATUS_LABELS[ticket.status] }}</span>
+    {% if last_result in FAILED_RESULTS %}<span class="flag flag-fail">대응 실패</span>{% endif %}
+    {% if ticket.data_origin == "sample" %}<span class="flag flag-sample">샘플</span>{% endif %}
+  </h1><p class="ticket-title wrap">{{ ticket.title }}</p></div>
+</header>
+{% if ticket.data_origin == "sample" %}<p class="sample-notice"><span class="sample-icon" aria-hidden="true">S</span><span><strong>샘플 티켓</strong> · 화면 확인용 합성 데이터이며 실제 탐지·대응의 증거가 아닙니다.</span></p>{% endif %}
+
+<nav class="detail-nav" aria-label="사건 상세 탐색"><a href="#h-overview">기본 정보</a><a href="#h-timeline">시각·실측</a><a href="#h-actions">대응 기록</a><a href="#h-events">원본 이벤트</a><a href="#h-close">종료 확인</a></nav>
+<p class="metric-note">MTTD: 조건 충족 → 판정 · MTTR: 판정 → 효과 확인. 개별 사건의 경과 시간이며 평균값이 아닙니다. — 는 미측정입니다.</p>
+<div class="detail-grid">
+<section aria-labelledby="h-overview">
+  <p class="eyebrow">INCIDENT CONTEXT</p><h2 id="h-overview">사건 개요</h2>
+  <dl class="overview">
+    <dt>자리</dt><dd>{{ ticket.seat }}</dd>
+    <dt>케이스</dt><dd>{{ ticket.case_id }}</dd>
+    <dt>상태</dt><dd>{{ STATUS_LABELS[ticket.status] }} ({{ ticket.status }})</dd>
+    <dt>자산</dt><dd>{{ ticket.asset_id }}</dd>
+    <dt>대상</dt><dd class="wrap">{{ ticket.group_key }}</dd>
+    <dt>출발지</dt><dd>{{ ticket.src_ip or "—" }}</dd>
+    <dt>계정</dt><dd>{{ ticket.username or "계정 없음 사건" }}</dd>
+    <dt>판정 근거</dt><dd class="wrap">{{ ticket.reason or "—" }}</dd>
+  </dl>
+</section>
+
+<section aria-labelledby="h-timeline">
+  <p class="eyebrow">EVIDENCE TIMELINE</p><h2 id="h-timeline">대응 흐름 (KST)</h2>
+  <ol class="timeline">
+  {% for step in steps %}
+    {% if step.gap %}<li class="gap"><span>{{ step.gap[0] }}</span> {{ step.gap[1] }}</li>{% endif %}
+    <li class="step{% if not step.at %} empty-step{% endif %}">
+      <span class="step-label">{{ step.label }}</span>
+      {% if step.at %}<time title="{{ step.at }}">{{ step.at | kst("%Y-%m-%d %H:%M:%S") }}</time>{% else %}<span>아직 없음 · 기록 없음</span>{% endif %}
+    </li>
+  {% endfor %}
+  </ol>
+</section>
+</div>
+
+{% if ticket.case_id == "S12" %}{% include "_s12_comparison.html" %}{% endif %}
+
+<section aria-labelledby="h-actions">
+  <div class="section-heading"><div><p class="eyebrow">RESPONSE HISTORY</p><h2 id="h-actions">대응 기록</h2></div><p class="scope-note">적용 확인과 실제 효과 확인은 서로 다른 근거입니다.</p></div>
+    {% if ticket.action_page > 1 %}<a href="{{ url_for('dashboard.detail', ticket_id=ticket.ticket_id, page=ticket.action_page-1) }}#h-actions">← 이전 이력</a>{% endif %}
+  {% if ticket.actions %}
+  <p class="scope-note">조치 이력 최신순 · 페이지 {{ ticket.action_page }} · 최대 50건</p>
+  <div class="table-scroll" tabindex="0" role="region" aria-label="대응 기록 표">
+  <table class="actions">
+    <caption class="sr-only">경로별 조치 결과, 적용 확인, 실제 효과 확인 및 실행 시각</caption>
+    <thead>
+      <tr><th>봇</th><th>경로</th><th>조치</th><th>대상</th><th>결과</th><th>적용 확인</th><th>효과 확인</th>
+        <th>요청</th><th>완료</th><th>효과 확인 시각</th><th>n8n 실행 ID</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+    {% for a in ticket.actions %}
+      <tr class="{% if a.duplicate %}dup{% endif %}{% if a.result in FAILED_RESULTS %} failed{% endif %}">
+        <td data-label="봇">{{ a.bot }}{% if a.duplicate %} <span class="flag">중복</span>{% endif %}</td>
+        <td data-label="경로">{{ a.via }}</td>
+        <td data-label="조치">{{ a.action }}</td>
+        <td data-label="대상" class="wrap">{{ a.target }}</td>
+        <td data-label="결과">{% if a.result in FAILED_RESULTS %}<span class="flag flag-fail">{{ a.result }}</span>{% else %}{{ a.result }}{% endif %}</td>
+        <td data-label="적용 확인">{{ yesno(a.applied_verified) }}</td>
+        <td data-label="효과 확인">{{ yesno(a.effect_verified) }}</td>
+        <td data-label="요청"><time title="{{ a.requested_at or '' }}">{{ a.requested_at | kst }}</time></td>
+        <td data-label="완료"><time title="{{ a.finished_at or '' }}">{{ a.finished_at | kst }}</time></td>
+        <td data-label="효과 확인 시각"><time title="{{ a.effect_verified_at or '' }}">{{ a.effect_verified_at | kst }}</time></td>
+        <td data-label="실행 ID" class="wrap">{{ a.n8n_execution_id }}</td>
+        <td data-label="설명" class="wrap">{{ a.detail or "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if ticket.more_actions %}<a href="{{ url_for('dashboard.detail', ticket_id=ticket.ticket_id, page=ticket.action_page+1) }}#h-actions">다음 이력 →</a>{% endif %}
+  {% else %}
+  <p class="empty">아직 대응 기록이 없습니다.</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="h-events">
+  <p class="eyebrow">SOURCE EVIDENCE</p><h2 id="h-events">원본 이벤트</h2>
+  <p class="muted">Graylog는 D PC에서만 열립니다. ID를 복사해 D Graylog 검색창에 아래 검색어로 찾습니다.</p>
+  <ul class="events">
+  {% for id in ticket.event_ids %}
+    <li>
+      <code class="wrap">{{ id }}</code>
+      <button type="button" class="copy" data-copy="{{ id }}">ID 복사</button>
+      <span class="muted">검색어</span> <code class="wrap">_id:{{ id }}</code>
+      <button type="button" class="copy" data-copy="_id:{{ id }}">검색어 복사</button>
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+
+<section aria-labelledby="h-close">
+  <p class="eyebrow">INCIDENT CLOSURE</p><h2 id="h-close">티켓 닫기</h2>
+  <p class="close-description">종료 처리는 기록을 닫는 작업입니다. 실제 차단 해제·원복은 별도로 확인하세요.</p>
+  {% if ticket.status == "closed" %}
+  <p>닫힌 티켓입니다. 닫은 시각 <time title="{{ ticket.closed_at }}">{{ ticket.closed_at | kst("%Y-%m-%d %H:%M:%S") }}</time>,
+    이유: <span class="wrap">{{ ticket.close_note }}</span></p>
+  {% elif closable %}
+  <form id="close-form" data-url="{{ url_for('dashboard.close', ticket_id=ticket.ticket_id) }}">
+    <label for="close-note">닫는 이유 ({{ note_max }}자 이내)</label>
+    <textarea id="close-note" name="note" maxlength="{{ note_max }}" rows="2" required></textarea>
+    <button type="submit">티켓 닫기</button>
+  </form>
+  {% elif active_action %}
+  <p class="notice">적용된 조치가 아직 해제되지 않아 닫을 수 없습니다. 차단 해제·원복 기록을 먼저 확인하세요.</p>
+  {% else %}
+  <p class="notice">지금은 '{{ STATUS_LABELS[ticket.status] }}' 상태라 닫을 수 없습니다. 효과 확인·원복 상태만 사람이 닫을 수 있습니다.</p>
+  {% endif %}
+  <p id="close-msg" class="notice" role="status" hidden></p>
+</section>
+{% endblock %}

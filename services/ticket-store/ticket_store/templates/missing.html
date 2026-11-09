@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}티켓 없음{% endblock %}
+{% block body %}
+<p><a href="{{ url_for('dashboard.index') }}">← 목록</a></p>
+<h1>티켓을 찾을 수 없습니다</h1>
+<p class="empty"><code>{{ ticket_id }}</code> 티켓이 저장소에 없습니다.</p>
+{% endblock %}

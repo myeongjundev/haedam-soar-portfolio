@@ -1,0 +1,214 @@
+/* Staff-only workspace: original request and deliberate response side by side. */
+.detail-side {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+.staff-workspace {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: start;
+}
+.staff-workspace .detail-panel {
+  padding: 28px;
+}
+.staff-workspace .detail-panel h1 {
+  font-size: 25px;
+}
+.staff-workspace .journey-steps {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.staff-workspace .journey-guidance {
+  flex-wrap: wrap;
+}
+.staff-workspace .journey-guidance > div {
+  flex: 1 1 calc(100% - 36px);
+}
+.staff-workspace .journey-action {
+  margin-left: 36px;
+}
+.staff-task-panel {
+  padding: 28px;
+  margin: 0;
+  border-top: 4px solid #38715e;
+  scroll-margin-top: 24px;
+}
+.staff-task-panel h2 {
+  margin: 7px 0 12px;
+  font-size: 23px;
+}
+.staff-task-panel > .staff-task-reference {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: #4f685f;
+  overflow-wrap: anywhere;
+}
+.reply-steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 22px;
+}
+.reply-steps li {
+  padding: 11px 9px;
+  text-align: center;
+  border-radius: 8px;
+  background: #f0f4f2;
+  color: #52655e;
+  font-size: 13px;
+  font-weight: 600;
+}
+.reply-steps [aria-current="step"] {
+  color: #fff;
+  background: #205d4d;
+}
+.reply-writing-guide,
+.retained-reply {
+  padding: 14px;
+  border: 1px solid #d3e1d9;
+  border-radius: 10px;
+  background: #f6f9f7;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.85;
+  color: #435f53;
+}
+.reply-writing-guide summary,
+.retained-reply summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 32px;
+  padding: 4px 0;
+}
+.reply-writing-guide ul {
+  padding-left: 20px;
+  margin: 10px 0 16px;
+}
+.reply-writing-guide p {
+  margin: 12px 0 0;
+}
+.staff-task-panel textarea {
+  line-height: 1.85;
+  min-height: 255px;
+  resize: vertical;
+}
+.staff-task-panel .field-hint {
+  font-size: 12px;
+  line-height: 1.9;
+  margin: 9px 0 12px;
+  color: #53685e;
+}
+.reply-review h3 {
+  font-size: 19px;
+  line-height: 1.6;
+  margin: 0 0 10px;
+}
+.reply-unsent {
+  font-size: 13px;
+  color: #78552e;
+  margin: 0 0 18px;
+}
+.reply-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.95;
+  color: #26493d;
+  padding: 18px;
+  border: 1px solid #d4e1d9;
+  background: #f5f9f6;
+  border-radius: 10px;
+  font-size: 15px;
+  margin: 0 0 20px;
+}
+.staff-task-panel .reply-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 15px 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.8;
+  cursor: pointer;
+}
+.reply-confirmation input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  margin: 3px 0 0;
+  accent-color: #205d4d;
+}
+.reply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+.reply-actions .button,
+.staff-task-panel > .button,
+.staff-task-panel form > .button {
+  min-height: 46px;
+  white-space: normal;
+}
+.staff-refresh-warning {
+  padding: 17px;
+  margin-bottom: 22px;
+  background: #fff8ed;
+  border: 1px solid #e6d1aa;
+  border-radius: 10px;
+  color: #6c4b24;
+  font-size: 14px;
+  line-height: 1.85;
+}
+.staff-refresh-warning p {
+  margin: 8px 0 15px;
+}
+.staff-refresh-warning .button {
+  white-space: normal;
+}
+.staff-task-panel > .staff-complete-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.staff-complete-note svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.staff-workspace .detail-meta {
+  grid-template-columns: 1fr;
+}
+@media (max-width: 1000px) {
+  .staff-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .staff-workspace .detail-panel,
+  .staff-task-panel {
+    padding: 20px;
+  }
+  .staff-workspace .detail-panel h1 {
+    font-size: 22px;
+  }
+  .reply-actions .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .reply-writing-guide {
+    padding: 12px;
+  }
+  .reply-preview {
+    padding: 14px;
+  }
+}

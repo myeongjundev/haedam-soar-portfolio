@@ -1,0 +1,186 @@
+[
+ {
+  "id": "haedamEffectReport01",
+  "name": "haedam-40 효과 확인 보고 수신",
+  "active": false,
+  "nodes": [
+   {
+    "id": "b9a6049b-774d-5868-a405-c813c633ea84",
+    "name": "Webhook",
+    "type": "n8n-nodes-base.webhook",
+    "typeVersion": 2,
+    "position": [
+     0,
+     0
+    ],
+    "parameters": {
+     "httpMethod": "POST",
+     "path": "haedam-effect-report",
+     "responseMode": "responseNode",
+     "options": {}
+    },
+    "webhookId": "haedam-effect-report"
+   },
+   {
+    "id": "c491b916-97b5-5007-bc84-fbc55c0a2052",
+    "name": "보고 검증·기록 입력",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     240,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// 효과 확인 보고 수신: 각 자리의 시험 스크립트(공격 출발지가 403을 받는지 등)나 사람이 결과를 보내면 티켓의 해당 조치 줄에 effect를 기록한다.\nconst b = $input.first().json.body || {};\nconst CFG = { dry_run: true };   // 실제 티켓 저장소에 쓰려면 false (A·C 연결 뒤)\nconst need = ['seat', 'case_id', 'group_key', 'asset_id', 'bot', 'via', 'action', 'target'];\nconst missing = need.filter(k => !b[k]);\nif (missing.length || typeof b.effect_verified !== 'boolean') return [{ json: { ok: false, error: { code: 'VALIDATION_ERROR', message: 'missing: ' + missing.concat(typeof b.effect_verified !== 'boolean' ? ['effect_verified(boolean)'] : []).join(',') } , bad: true } }];\nconst now = new Date().toISOString();\nreturn [{ json: { ctx: { cfg: CFG, reporter: b.reporter || null }, mode: 'record', stage: 'effect', seat: b.seat, case_id: b.case_id, group_key: b.group_key,\n  title: b.title || `${b.case_id} 효과 확인`, asset_id: b.asset_id, src_ip: b.src_ip || null, username: b.username || null,\n  event_ids: [b.event_id || `effect-${$execution.id}`], idempotency_key: `${$execution.id}-effect`,\n  action: { bot: String(b.bot), target: b.target, via: b.via, action: b.action, result: 'applied', applied_verified: b.applied_verified ?? null,\n    effect_verified: b.effect_verified, effect_verified_at: b.effect_verified_at || now, requested_at: now, finished_at: now,\n    n8n_execution_id: String($execution.id), detail: String(b.detail || '').slice(0, 300) } } }];\n"
+    }
+   },
+   {
+    "id": "c9e2256a-5090-54af-9c52-f4bbeb35d7f4",
+    "name": "검증 통과?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     480,
+     0
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "cb11347d-a2ed-54f0-b6e5-ad2bf00a58d5",
+        "leftValue": "={{ $json.bad !== true }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "5fed3e53-7674-5bc1-9a6d-15aeb14c7897",
+    "name": "효과 기록 (haedam-10 effect)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     720,
+     -60
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamResultLog01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "27757801-600b-55bf-8c91-682c91b7f72b",
+    "name": "응답 정리",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     960,
+     0
+    ],
+    "parameters": {
+     "jsCode": "const r = $input.first().json;\nif (r.bad) return [{ json: r }];\nreturn [{ json: { ok: r.ok, ticket_id: r.ticket_id || null, status: r.status || null, error: r.error || null, n8n_execution_id: $execution.id } }];\n"
+    }
+   },
+   {
+    "id": "728db901-8bb0-568c-a40f-cedf111fb4ef",
+    "name": "응답",
+    "type": "n8n-nodes-base.respondToWebhook",
+    "typeVersion": 1.1,
+    "position": [
+     1200,
+     0
+    ],
+    "parameters": {
+     "respondWith": "allIncomingItems",
+     "options": {}
+    }
+   }
+  ],
+  "connections": {
+   "Webhook": {
+    "main": [
+     [
+      {
+       "node": "보고 검증·기록 입력",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "보고 검증·기록 입력": {
+    "main": [
+     [
+      {
+       "node": "검증 통과?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "검증 통과?": {
+    "main": [
+     [
+      {
+       "node": "효과 기록 (haedam-10 effect)",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "응답 정리",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "효과 기록 (haedam-10 effect)": {
+    "main": [
+     [
+      {
+       "node": "응답 정리",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "응답 정리": {
+    "main": [
+     [
+      {
+       "node": "응답",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  }
+ }
+]

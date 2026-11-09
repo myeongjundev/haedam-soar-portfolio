@@ -1,0 +1,110 @@
+[
+ {
+  "id": "haedamPortalTest01",
+  "name": "haedam-02 포털 호출 시험 (dry_run 고정)",
+  "active": false,
+  "nodes": [
+   {
+    "id": "b9a6049b-774d-5868-a405-c813c633ea84",
+    "name": "Webhook",
+    "type": "n8n-nodes-base.webhook",
+    "typeVersion": 2,
+    "position": [
+     0,
+     0
+    ],
+    "parameters": {
+     "httpMethod": "POST",
+     "path": "haedam-portal-test",
+     "responseMode": "responseNode",
+     "options": {}
+    },
+    "webhookId": "haedam-portal-test"
+   },
+   {
+    "id": "b98f2c23-f428-5e3c-a917-62c87009b263",
+    "name": "입력",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     240,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// 포털 IP 차단 호출 시험용 입구. **dry_run을 항상 true로 고정**해 haedam-12의 보호 목록·키 형식·Idempotency-Key를 실제 호출 없이 확인한다.\nconst b = $input.first().json.body || {};\nreturn [{ json: { action: b.action || 'block', ip: b.ip, ticket_id: b.ticket_id || 'T-TEST-0001', dry_run: true, ctx: { purpose: 'portal_call_test', cfg: { dry_run: true } } } }];\n"
+    }
+   },
+   {
+    "id": "5ea11c72-000b-5a6b-9b6a-8125120d5a2b",
+    "name": "haedam-12 (dry_run 고정)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     480,
+     0
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamPortalIp01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "728db901-8bb0-568c-a40f-cedf111fb4ef",
+    "name": "응답",
+    "type": "n8n-nodes-base.respondToWebhook",
+    "typeVersion": 1.1,
+    "position": [
+     720,
+     0
+    ],
+    "parameters": {
+     "respondWith": "allIncomingItems",
+     "options": {}
+    }
+   }
+  ],
+  "connections": {
+   "Webhook": {
+    "main": [
+     [
+      {
+       "node": "입력",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "입력": {
+    "main": [
+     [
+      {
+       "node": "haedam-12 (dry_run 고정)",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "haedam-12 (dry_run 고정)": {
+    "main": [
+     [
+      {
+       "node": "응답",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  }
+ }
+]

@@ -1,0 +1,21 @@
+# 해담 SOAR n8n (D PC). 수업용 n8n 컨테이너를 같은 이름·같은 볼륨으로 대체한다.
+# - 볼륨 n8n_data는 수업 때 만든 외부 볼륨을 그대로 쓴다(워크플로·자격 증명·암호화 키 보존, 삭제 금지).
+# - 게시 주소는 BIND_IP로 정한다. 기본 127.0.0.1. 팀 VPN(team-d) 연결 뒤 그 주소로만 바꾼다.
+# - 버전은 고정한다. 올릴 때는 볼륨을 백업하고 이 파일의 태그를 PR로 바꾼다.
+name: n8n
+
+services:
+  n8n:
+    image: n8nio/n8n:2.39.5
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "${BIND_IP:-127.0.0.1}:5678:5678"
+    environment:
+      - WEBHOOK_URL=http://${BIND_IP:-127.0.0.1}:5678/
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
+    external: true

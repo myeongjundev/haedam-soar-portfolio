@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0", "incident_id": "sample-incident-01",
+  "title": "Synthetic timeline example", "status": "open",
+  "username": "zz_demo", "asset_id": "lab-portal",
+  "event_ids": ["sample-auth-failure-01", "sample-auth-success-01", "sample-role-change-01", "sample-data-read-01"],
+  "reason": "UI contract example only; no detector has evaluated these events.",
+  "response_state": "not_requested"
+}

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "haedam-portal"
+version = "0.1.0"
+description = "Haedam civic petitions portal"
+requires-python = ">=3.12"
+dependencies = ["Flask==3.1.3", "Flask-SQLAlchemy==3.1.1", "Flask-Migrate==4.1.0", "PyMySQL==1.2.3", "cryptography==50.0.2", "waitress==3.0.2"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

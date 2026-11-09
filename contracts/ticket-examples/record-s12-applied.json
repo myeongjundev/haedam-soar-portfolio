@@ -1,0 +1,20 @@
+{
+  "seat": "D",
+  "case_id": "S12",
+  "stage": "applied",
+  "group_key": "203.0.113.11",
+  "title": "포털 요청 폭주로 응답 지연",
+  "asset_id": "haedam-portal",
+  "src_ip": "203.0.113.11",
+  "username": null,
+  "event_ids": ["sample-graylog-s12-event-01"],
+  "condition_met_at": "2026-10-24T14:59:50+09:00",
+  "detected_at": "2026-10-24T14:59:57+09:00",
+  "received_at": "2026-10-24T14:59:58+09:00",
+  "action": {
+    "bot": "112", "target": "203.0.113.11", "via": "portal", "action": "block",
+    "result": "applied", "applied_verified": true, "effect_verified": null,
+    "requested_at": "2026-10-24T15:00:00+09:00", "finished_at": "2026-10-24T15:00:02+09:00",
+    "effect_verified_at": null, "n8n_execution_id": "sample-5678", "detail": "portal changed:true"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "제목은 5~120자로 입력해 주세요.",
+    "fields": {"title": "제목은 5~120자로 입력해 주세요."}
+  }
+}
