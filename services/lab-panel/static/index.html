@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>해담시청 · 보안 실습 제어판</title>
+  <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">본문 바로가기</a>
+<aside class="sidebar">
+  <a class="brand" href="/" aria-label="해담시청 제어판 홈"><span class="mark">H</span><span>해담시청<small>SECURITY LAB</small></span></a>
+  <p class="nav-label">개인 실습 공간</p>
+  <a class="nav-item selected" href="#main"><span>◈</span> 시나리오 제어판</a>
+  <a class="nav-item" href="#history"><span>↺</span> 실행 이력</a>
+  <div class="side-note"><span class="dot"></span> LOCAL WORKSPACE<p>김명준 · 개인 포트폴리오<br>허용된 랩 대상에서만 실행</p></div>
+</aside>
+<div class="workspace">
+  <header class="topbar"><span>해담 보안관제 <span class="separator">/</span> 실습 제어판</span><span class="local-tag">로컬 전용</span></header>
+  <main id="main">
+    <div class="intro"><div><p class="eyebrow">SCENARIO CONTROL</p><h1>입력부터 원복까지,<br class="mobile-only"> 한 화면에서.</h1><p class="muted">실제 경보와 티켓을 따라가며 보안 대응 흐름을 확인하세요.</p></div><button id="refresh" class="button secondary">↻ 환경 확인</button></div>
+    <section class="environment" aria-label="연결 환경"><div><span id="health-dot" class="dot gray"></span><strong id="health">환경 미확인</strong><span id="project" class="mono"></span></div><span id="health-time" class="muted">환경 확인 버튼으로 연결 상태를 조회하세요.</span></section>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <div class="section-heading"><h2>시나리오 선택</h2><span class="muted">실행 가능한 범위를 먼저 확인하세요.</span></div>
+    <section class="cases" aria-label="보안 시나리오">
+      <article class="case-card active"><div class="card-top"><span class="case-id">S7</span><span class="pill green">버튼 연결</span></div><h3>파일 무결성</h3><p>웹 파일 변경을 탐지하고<br>정상 파일 복구·추가 파일 격리</p><div class="card-footer">Wazuh <span>→</span> Graylog <span>→</span> n8n</div></article>
+      <article class="case-card muted-card"><div class="card-top"><span class="case-id">S8</span><span class="pill neutral">후속 연결</span></div><h3>탐색·인증 실패</h3><p>연계 신호 탐지와<br>출발지 IP 차단·해제</p><div class="card-footer">기존 CLI 실측 · 버튼 미연결</div></article>
+      <article class="case-card muted-card"><div class="card-top"><span class="case-id">H1</span><span class="pill neutral">후속 연결</span></div><h3>민원 작성 도배</h3><p>계정의 작성 권한만 제한하고<br>정상 이용 유지 확인</p><div class="card-footer">기존 CLI 실측 · 버튼 미연결</div></article>
+      <article class="case-card muted-card"><div class="card-top"><span class="case-id">S10</span><span class="pill amber">Claude 구성 중</span></div><h3>경계·다중 신호</h3><p>pfSense와 포털의<br>차단·원복 연계</p><div class="card-footer">별도 담당 작업 · 실행 잠금</div></article>
+    </section>
+    <section class="control-panel" aria-labelledby="control-title">
+      <div class="control-main"><p class="eyebrow">S7 · FILE INTEGRITY</p><h2 id="control-title">파일 무결성 실습</h2><p class="muted">무해한 시험 입력 후 자동 대응을 관찰하고, 해당 회차의 원복을 완료합니다.</p>
+        <label for="target">시험 대상</label><select id="target" aria-describedby="target-help"></select><p id="target-help" class="helper">설정에 등록된 대상만 선택할 수 있습니다.</p>
+        <div class="actions"><button id="attack" class="button primary" disabled>01 <span>시험 입력</span> ↗</button><button id="observe" class="button secondary" disabled>02 <span>탐지·대응 확인</span></button><button id="restore" class="button secondary" disabled>03 <span>원복 완료</span></button></div>
+        <p class="helper">자동 대응은 Graylog → n8n이 실행합니다. 제어판의 확인 버튼은 실제 결과를 관찰합니다.</p>
+      </div>
+      <aside class="run-summary"><span class="eyebrow">CURRENT RUN</span><h3 id="run-stage">실행을 기다리고 있습니다</h3><p id="run-id" class="mono muted">아직 실행 이력이 없습니다.</p><dl><div><dt>티켓</dt><dd id="ticket">—</dd></div><div><dt>홈 응답</dt><dd id="home-status">미관측</dd></div><div><dt>대상 응답</dt><dd id="target-status">미관측</dd></div><div><dt>마지막 관측</dt><dd id="observed-time">—</dd></div></dl><a id="evidence" class="text-link" hidden>증적 JSON 내려받기 ↗</a></aside>
+    </section>
+    <section class="flow-panel" aria-labelledby="flow-title"><div class="section-heading"><h2 id="flow-title">이번 회차의 진행</h2><span id="job-status" class="muted">관측한 단계만 표시합니다.</span></div><ol id="steps" class="steps"></ol><p class="helper">완료 표시는 마지막 관측 결과입니다. 현재 상태가 필요하면 ‘탐지·대응 확인’을 다시 실행하세요.</p></section>
+    <section class="bottom-grid"><div class="history-panel" id="history"><div class="section-heading"><h2>실행 이력</h2><span id="run-count" class="muted">0회</span></div><div id="history-list" class="history-list"><p class="empty">첫 실습을 시작하면 이곳에 회차별 기록이 남습니다.</p></div></div><div class="links-panel"><h2>근거 화면</h2><p class="muted">연결 확인 후 실제 랩 화면을 열 수 있습니다.</p><div id="links"></div><p class="helper">키·비밀번호는 브라우저로 전달하지 않습니다.</p></div></section>
+    <footer>HAEDAM SECURITY LAB <span>관측되지 않은 결과를 성공으로 표시하지 않습니다.</span></footer>
+  </main>
+</div>
+<dialog id="confirm"><form method="dialog"><p class="eyebrow">RUN S7</p><h2>시험 입력을 실행할까요?</h2><p id="confirm-target"></p><p class="muted">선택한 개인 랩 파일을 변경하고 실제 탐지·자동 대응이 시작됩니다. 완료 후 원복 상태를 확인하세요.</p><div class="dialog-actions"><button value="cancel" class="button secondary">취소</button><button value="run" class="button primary">시험 입력 실행</button></div></form></dialog>
+</body></html>

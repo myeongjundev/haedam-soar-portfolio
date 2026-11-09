@@ -116,6 +116,14 @@ py -3.12 tools/s7_auto_lab.py stop
 
 각 명령이 성공한 뒤 다음 명령을 실행합니다. Compose 2.24.4 이상이 필요합니다. 비밀값은 `.env.s7-auto`, 연결·감시 환경값은 [공통 설정](infra/s7-auto-settings.json)에서 관리합니다. 기존 개인 S7 및 다른 관제 실측과 순서를 맞춥니다. [계약](docs/s7-auto-contract.md) · [Claude 검토 카드](docs/s7-auto-review.md).
 
+## 버튼으로 실행하는 개인 제어판
+
+```powershell
+py -3.12 tools/panel.py
+```
+
+기본 `http://127.0.0.1:15800`에서 **환경 확인 → S7 시험 입력 → 탐지·대응 확인 → 원복 완료**를 실행합니다. 허용된 개인 랩만 대상으로 하며 Docker/VM을 켜거나 끄지 않습니다. S7 랩은 별도로 준비해야 합니다. [설치·설정·검증 범위](docs/panel-lab.md) · [API 계약](docs/panel-contract.md). S8/H1은 버튼 미연결, S10은 Claude 구성 중으로 표시합니다. 제어판 자체 테스트와 기존 CLI 실측을 구분하며 버튼을 통한 실제 S7 전체 재실측은 남아 있습니다.
+
 ## 작업 시작
 
 [공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 읽고 작업별 PR을 엽니다. 준비된 Claude IDE에서 별도의 개인 작업 폴더를 열고 [첫 문제 해결 카드](docs/claude-first-task.md)를 사용합니다.
