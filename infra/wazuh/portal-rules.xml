@@ -1,0 +1,23 @@
+<!-- Individual portal log ingestion. Team app already emits sanitized JSONL. -->
+<group name="haedam_portal,">
+  <rule id="100710" level="0">
+    <!-- 4.9's generic JSON event_type rule (86600) matches first. Refine that
+         branch by our exact source instead of silently losing portal events. -->
+    <if_sid>86600</if_sid>
+    <field name="source">^haedam-portal$</field>
+    <description>Haedam portal structured application event</description>
+  </rule>
+  <rule id="100711" level="3">
+    <if_sid>100710</if_sid>
+    <field name="event_type">^web.file_access$</field>
+    <field name="outcome">^success$</field>
+    <description>Haedam served file $(details.file_key)</description>
+    <group>haedam_file_access,</group>
+  </rule>
+  <rule id="100712" level="5">
+    <if_sid>100710</if_sid>
+    <field name="event_type">^auth.login_failed$</field>
+    <description>Haedam authentication failure</description>
+    <group>authentication_failed,</group>
+  </rule>
+</group>

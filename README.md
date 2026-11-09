@@ -98,6 +98,8 @@ py -3.12 tools/s7_verify.py
 
 각 명령의 성공을 확인하고 다음으로 진행합니다. 낮은 메모리에서는 기존 관제 환경과 번갈아 실행합니다. [S7 결과와 남은 범위](docs/s7-results.md) · [Claude 검토 카드](docs/s7-review.md).
 
+[프론트·백엔드 파일과 앱 로그 감시](docs/portal-wazuh-paths.md)를 연결했습니다. `ready` 이후 `py -3.12 tools/s7_paths_verify.py`로 백엔드 FIM과 실제 포털 접속 로그의 Wazuh 수집을 재현합니다.
+
 ## 작업 시작
 
 [공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 읽고 작업별 PR을 엽니다. 준비된 Claude IDE에서 별도의 개인 작업 폴더를 열고 [첫 문제 해결 카드](docs/claude-first-task.md)를 사용합니다.

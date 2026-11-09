@@ -50,8 +50,8 @@ Remove-Item Env:S7_PROJECT
 
 `compose.yaml`에 `compose.s7.yaml`을 겹쳐 씁니다. 이미지에서 초기화된 `s7-web` 볼륨을 포털은 `/app/frontend`에 읽기 전용, agent는 `/var/www/haedam`에 마운트합니다. 호스트 디렉터리·PID·Docker socket을 agent에 제공하지 않습니다. DB와 agent는 내부망에만 있으며 UI/API를 제공하는 서비스는 loopback 포트 공개를 위한 별도 access 망에도 연결됩니다. 완전한 외부 통신 차단 환경은 아닙니다.
 
-- `infra/wazuh/agent/ossec.conf`: 웹 루트만 실시간 감시. 파일 내용 diff 전송은 끄고 경로·해시만 사용합니다.
-- Wazuh 기본 ruleset 550(변경), 554(추가), 553(삭제)을 사용합니다. 규칙은 4.9.0 이미지에 포함되어 있으며 이번 단계에 사용자 정의 탐지 규칙은 없습니다.
+- `infra/wazuh/agent/ossec.conf`: 웹 루트와 실제 백엔드 소스를 실시간 감시합니다. 파일 내용 diff 전송은 끄고 경로·해시만 사용합니다. 실제 앱 JSONL도 읽기 전용 볼륨에서 수집합니다. [경로·재현·실측](portal-wazuh-paths.md).
+- Wazuh 기본 ruleset 550(변경), 554(추가), 553(삭제)을 사용합니다. 앱 로그에는 `infra/wazuh/portal-rules.xml`의 파일 접근 100711·인증 실패 100712를 추가합니다.
 - manager는 JSON alerts→Filebeat→TLS indexer `wazuh-alerts-*`로 전달합니다. Wazuh dashboard의 FIM에서 `agent.name: haedam-s7-agent`와 `syscheck.path`로 확인합니다.
 - `lab/s7/restore/s7_restore.py`, `s7-restore-ar`는 팀 원본을 보존했습니다. 컨테이너 환경변수로 경로만 지정합니다. 기준 파일은 원본으로 복구하고 신규 파일은 웹 루트 밖 격리 폴더로 이동합니다.
 - API의 `!s7-restore-ar` 호출 성공은 **명령 전달**입니다. 실제 성공은 해당 실행 ID의 복구 기록, 복구 후 파일 해시, HTTP 본문/상태로 별도 확인합니다.
