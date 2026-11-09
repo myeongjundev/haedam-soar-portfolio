@@ -1,3 +1,4 @@
 * text=auto
 *.sh text eol=lf
 Dockerfile text eol=lf
+lab/s7/restore/s7-restore-ar text eol=lf

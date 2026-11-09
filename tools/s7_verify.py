@@ -56,7 +56,8 @@ def ar(ident, path, run_id):
 
 def main():
     baseline()
-    ident = agent_id()
+    # First enrollment can trigger a short automatic restart after group sync.
+    ident = wait_for(agent_id)
     # Initial FIM inventory must exist before changing files.
     wait_for(lambda: api('/syscheck/' + ident + '?search=index.html').get('total_affected_items', 0) > 0)
     run_id = datetime.now(timezone.utc).strftime('S7-%Y%m%dT%H%M%SZ')
