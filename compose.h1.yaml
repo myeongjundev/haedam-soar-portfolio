@@ -1,0 +1,42 @@
+# H1-only override after compose.yaml + compose.soc.yaml; separate project/volumes.
+services:
+  portal:
+    environment:
+      RESPONSE_API_KEY: ${PORTAL_RESPONSE_KEY:?Run tools/h1_lab.py init}
+      RESPONSE_ALLOWED_CIDRS: 172.30.91.2/32
+    networks:
+      default: {}
+      h1-clients: {ipv4_address: 172.30.90.10}
+      h1-response:
+        ipv4_address: 172.30.91.3
+        aliases: [portal-response]
+  n8n:
+    environment:
+      N8N_CONCURRENCY_PRODUCTION_LIMIT: "1"
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: none
+      EXECUTIONS_DATA_SAVE_ON_ERROR: none
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+      EXECUTIONS_DATA_SAVE_ON_PROGRESS: "false"
+      EXECUTIONS_DATA_PRUNE: "false"
+    networks:
+      default: {}
+      h1-response: {ipv4_address: 172.30.91.2}
+  attacker:
+    image: python:3.12-slim
+    command: [python, -c, "import time; time.sleep(2147483647)"]
+    networks:
+      h1-clients: {ipv4_address: 172.30.90.21}
+  normal:
+    image: python:3.12-slim
+    command: [python, -c, "import time; time.sleep(2147483647)"]
+    networks:
+      h1-clients: {ipv4_address: 172.30.90.22}
+networks:
+  h1-clients:
+    internal: true
+    ipam:
+      config: [{subnet: 172.30.90.0/24}]
+  h1-response:
+    internal: true
+    ipam:
+      config: [{subnet: 172.30.91.0/29}]

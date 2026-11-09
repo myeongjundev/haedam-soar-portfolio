@@ -6,7 +6,7 @@
   "properties":{
     "schema_version":{"const":"1.0"},"event_id":{"type":"string","format":"uuid"},
     "timestamp":{"type":"string","format":"date-time"},"source":{"const":"haedam-portal"},
-    "event_type":{"enum":["auth.login_succeeded","auth.login_failed","auth.account_locked","auth.account_unlocked","auth.password_reset","iam.role_changed","web.not_found","web.request","web.file_access","web.ip_blocked","web.ip_unblocked","petition.created","petition.updated"]},
+    "event_type":{"enum":["auth.login_succeeded","auth.login_failed","auth.account_locked","auth.account_unlocked","auth.password_reset","iam.role_changed","web.not_found","web.request","web.file_access","web.ip_blocked","web.ip_unblocked","petition.created","petition.updated","petition.write_restricted","petition.write_released","petition.write_denied"]},
     "username":{"type":["string","null"],"maxLength":40},
     "src_ip":{"type":"string","anyOf":[{"format":"ipv4"},{"format":"ipv6"}]},
     "asset_id":{"type":"string","minLength":1},"outcome":{"enum":["success","failure","denied"]},
@@ -14,7 +14,7 @@
       "resource":{"type":"string","maxLength":120},"method":{"enum":["GET","POST","PATCH","DELETE","PUT","HEAD","OPTIONS","OTHER"]},"status":{"type":"integer","minimum":100,"maximum":599},"previous_role":{"enum":["citizen","staff","admin"]},"new_role":{"enum":["citizen","staff","admin"]},
       "file_key":{"type":"string","minLength":1,"maxLength":200,"pattern":"^(?![\\s\\S]*[\\u0000-\\u001f\\u007f])(?![A-Za-z]:)(?![\\s\\S]*(?:^|/)\\.{1,2}(?:/|$))(?:[^/?#\\\\]+/)*[^/?#\\\\]+$"},
       "target_ip":{"type":"string","anyOf":[{"format":"ipv4"},{"format":"ipv6"}]},
-      "actor_user_id":{"type":"integer"},"actor_username":{"type":"string","maxLength":40},"reason_code":{"enum":["false_positive"]}
+      "ticket_id":{"type":"string","pattern":"^T-[0-9]{8}-[0-9]{4}$"},"actor_user_id":{"type":"integer"},"actor_username":{"type":"string","maxLength":40},"reason_code":{"enum":["false_positive"]}
     }}
   }
 }

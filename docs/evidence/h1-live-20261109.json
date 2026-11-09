@@ -1,0 +1,496 @@
+{
+  "run_id": "H1-20261109T021122Z",
+  "kind": "actual-portal-http-with-synthetic-citizens",
+  "started_at": "2026-11-09T02:11:22.400284+00:00",
+  "threshold": {
+    "distinct_events": 5,
+    "window_seconds": 600,
+    "basis": "synthetic lab baseline, not citizen usage statistics"
+  },
+  "checks": {
+    "webhook_auth_and_scope": true,
+    "response_network_boundary": true,
+    "ticket_outage_before_action": {
+      "status": 503,
+      "new_receipts": 0
+    },
+    "no_cross_account_aggregation": true,
+    "concurrent_duplicates": {
+      "calls": 2,
+      "new_receipts": 0
+    },
+    "stale_release_rejected": true,
+    "duplicate_release_and_old_event": true,
+    "persisted_execution_privacy": {
+      "payload_rows": 0,
+      "rows_with_keys": 0
+    }
+  },
+  "source_sha256": [
+    {
+      "file": "Dockerfile",
+      "sha256": "2eee49c19a2351f35c9ef6372fe946d40ec2ee6a1f4d7ea4fd635d9e5fce99ef"
+    },
+    {
+      "file": "compose.yaml",
+      "sha256": "52fc55d9a340cba26ec17a43847ce50abcd41ce6d7634197c99c0694f1f159f9"
+    },
+    {
+      "file": "compose.soc.yaml",
+      "sha256": "751242339524331f1a28405bfc51ea2ebcf01dd80d5c439adc3df15188846fd5"
+    },
+    {
+      "file": "compose.h1.yaml",
+      "sha256": "579b0c75b7698f24596d94b363c4090e30da59372b9cabd1148d6db53525ac3d"
+    },
+    {
+      "file": "tools/build_h1_workflows.py",
+      "sha256": "0456a6d27b8fcc8fd6515e8efa0ff02ec317bec643ec9ab8a3c60713ad1d4826"
+    },
+    {
+      "file": "tools/h1_lab.py",
+      "sha256": "40018811dc366cef9c64eab7c649bc8fa4b8f846a3dc569b86d008d1370eeffb"
+    },
+    {
+      "file": "tools/h1_control.py",
+      "sha256": "439c773e8b7a61c081dadc72e395dcd009a8bdc5639f2e0926c42df640d965dc"
+    },
+    {
+      "file": "tools/h1_verify.py",
+      "sha256": "e39305d97211dfbb224263cef75c8a7e9c944d8657f2f89276a86f4225653075"
+    },
+    {
+      "file": "infra/graylog/h1-petition-flood.json",
+      "sha256": "151dc012c7cc2993f48986d2768c3f5778feb5a1a78bd78a3558986be21fc298"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/__init__.py",
+      "sha256": "3a2627467a0a23f8c773ebd01c94d10a0a2819532a1552acf9638193ef0da334"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/admin/__init__.py",
+      "sha256": "eb540e7e150ee8b5a49cdb8147920509b06495a6beaee5ca23c621510238114b"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/auth/__init__.py",
+      "sha256": "e9985d5ed94ebadb52d652c58b85e0ad6af44166298e3135d345a0fff2e35821"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/cli.py",
+      "sha256": "64218d127b74ea91adb8d083bb07dfae5eac453223e235afbbb09498ae67e922"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/common.py",
+      "sha256": "7dd394bc0b4fde4cafeb19522909a179872fb9e32209feda2b73948e6180a243"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/integration/__init__.py",
+      "sha256": "555158979e14355914ab1a71638616f8e3734e85913e5ca73d14f46899c6718c"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/integration/events.py",
+      "sha256": "07d4cb3cf624280147bd88a13a552090a5a44732efa0f454d9c13c8cab5aa985"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/integration/petition_restrictions.py",
+      "sha256": "771387fca01237fd0ebb236684a4a386f910ededa47cb282a6454c1300ea54ef"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/models.py",
+      "sha256": "93c4a505fced35ce43841ae5594d0ab488588fb94b09a9868f9e2b79dde37fa7"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/petitions/__init__.py",
+      "sha256": "1a7f9ad69d98f2da105ebffb6d5d4953429cd5299c5d12a9b5f4a78aae747f7c"
+    },
+    {
+      "file": "haedam-portal-backend/migrations/env.py",
+      "sha256": "89b2b586c74eb0e0735cd536c90a002336bb7ff105cda5525b038dfcd4a93734"
+    },
+    {
+      "file": "haedam-portal-backend/migrations/versions/04440ce16125_initial_portal_schema.py",
+      "sha256": "7850e4ece0cd602d3ec16f92d764181567bce4c8c16257967018647b2f0c310a"
+    },
+    {
+      "file": "haedam-portal-backend/migrations/versions/7c2e9a41d5b3_add_blocked_ips.py",
+      "sha256": "39da93b210e1ff8a96402e40dbb242055fb0dfc541f6088703c1bab62438ff43"
+    },
+    {
+      "file": "haedam-portal-backend/migrations/versions/91d4e218ac07_petition_write_restrictions.py",
+      "sha256": "e807f60800b49f6e9ba3b4a45afcb4566d5975d27ba93684c0b1338a10160d48"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/__init__.py",
+      "sha256": "eb823268d55fd203e3143db09a7d08f737f4dc95284591b663e74bc8803fce0a"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/__main__.py",
+      "sha256": "cc38a112ac187fdbcf7aaf1addf10409e5d2154f5113349226bc6a925e7fb81b"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/api_n8n.py",
+      "sha256": "9dd8d88ffd043731bf3baa610009d158aff79503c6086c54cd2714b53f59a12b"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/api_read.py",
+      "sha256": "53876ba6d017fdb6f503256317f3b0b55554d1f29804c119a7a4ab5b8bd44370"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/app.py",
+      "sha256": "6b5fa415b08982b6fbfec6a1d03c9c8ad364350f8e61fa15be0af05fe81be0cb"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/core.py",
+      "sha256": "21ebc5adef9a3372b923c9ef897ea7d9cd348d63882eed6bf96eb0543d0d0d28"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/dashboard.py",
+      "sha256": "47f0caf3089896032b66bc53721254b9a53b45980dfb64287017abc1ef88db2e"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/db.py",
+      "sha256": "c89ed616e59ca0dca56250a830c45c2d8808c840c088e0f63128ccd01c50cad3"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/s12_measurements.py",
+      "sha256": "272ece2409aa07cd2fc1a1717365b29fb566b04a6c29d6e1653668cb0d919ecb"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/samples.py",
+      "sha256": "ea679d6e4431c95a6c093ae3c847da7eeb1c41bd96b25cd14211a11cb3bd5b6b"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/validate.py",
+      "sha256": "98c49bb2f48b1321284f2e6c39fc9e4f984e825d5d1c08062683393d10df46da"
+    },
+    {
+      "file": "infra/n8n/portfolio-h1/h1-release.json",
+      "sha256": "bc557a95f917e8d722c14e483f7952ed2a822d1e2076399d367d259125f56fea"
+    },
+    {
+      "file": "infra/n8n/portfolio-h1/h1-restrict.json",
+      "sha256": "e86b77790c9713cc0479dd4e658798306d593afcc3afdaa2c39842bd358a067e"
+    }
+  ],
+  "baseline_normal": {
+    "username": "h1_normal",
+    "started_at": "2026-11-09T02:11:38.635002+00:00",
+    "writes": [
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:11:38.635017+00:00",
+        "finished_at": "2026-11-09T02:11:38.656939+00:00"
+      },
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:11:38.656949+00:00",
+        "finished_at": "2026-11-09T02:11:38.670688+00:00"
+      }
+    ],
+    "finished_at": "2026-11-09T02:11:38.670963+00:00"
+  },
+  "baseline_same_ip_other": {
+    "username": "h1_other",
+    "started_at": "2026-11-09T02:11:38.900686+00:00",
+    "writes": [
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:11:38.900697+00:00",
+        "finished_at": "2026-11-09T02:11:38.915513+00:00"
+      },
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:11:38.915523+00:00",
+        "finished_at": "2026-11-09T02:11:38.927821+00:00"
+      }
+    ],
+    "finished_at": "2026-11-09T02:11:38.928131+00:00"
+  },
+  "before_threshold": {
+    "username": "h1_abuse",
+    "started_at": "2026-11-09T02:11:39.177515+00:00",
+    "writes": [
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:11:39.177534+00:00",
+        "finished_at": "2026-11-09T02:11:39.197165+00:00"
+      },
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:11:39.197179+00:00",
+        "finished_at": "2026-11-09T02:11:39.214863+00:00"
+      },
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:11:39.214878+00:00",
+        "finished_at": "2026-11-09T02:11:39.229967+00:00"
+      },
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:11:39.229980+00:00",
+        "finished_at": "2026-11-09T02:11:39.247729+00:00"
+      }
+    ],
+    "finished_at": "2026-11-09T02:11:39.248177+00:00"
+  },
+  "threshold_write": {
+    "username": "h1_abuse",
+    "started_at": "2026-11-09T02:12:19.619338+00:00",
+    "writes": [
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:12:19.619357+00:00",
+        "finished_at": "2026-11-09T02:12:19.638241+00:00"
+      }
+    ],
+    "finished_at": "2026-11-09T02:12:19.638610+00:00"
+  },
+  "graylog_event": {
+    "id": "01M6Z1899TSW9JNVWP5Y5TAZAT",
+    "timestamp": "2026-11-09T02:12:23.425Z",
+    "timestamp_processing": "2026-11-09T02:12:33.722Z",
+    "event_definition_id": "6af12bca117f057e6b12727d",
+    "source_streams": [
+      "6af12bca117f057e6b127263"
+    ],
+    "fields": {
+      "case_id": "H1",
+      "username": "h1_abuse"
+    }
+  },
+  "restricted_write": {
+    "username": "h1_abuse",
+    "started_at": "2026-11-09T02:12:36.361679+00:00",
+    "writes": [
+      {
+        "status": 429,
+        "error": "PETITION_WRITE_RESTRICTED",
+        "started_at": "2026-11-09T02:12:36.361702+00:00",
+        "finished_at": "2026-11-09T02:12:36.370955+00:00"
+      }
+    ],
+    "finished_at": "2026-11-09T02:12:36.371375+00:00"
+  },
+  "preserved_session": {
+    "username": "h1_abuse",
+    "started_at": "2026-11-09T02:12:36.614008+00:00",
+    "session_status": 200,
+    "session_preserved": true,
+    "list_status": 200,
+    "detail_status": 200,
+    "finished_at": "2026-11-09T02:12:36.640933+00:00"
+  },
+  "new_login_other_ip": {
+    "username": "h1_abuse",
+    "started_at": "2026-11-09T02:12:36.864827+00:00",
+    "login_status": 200,
+    "finished_at": "2026-11-09T02:12:36.965473+00:00"
+  },
+  "same_ip_other_write": {
+    "username": "h1_other",
+    "started_at": "2026-11-09T02:12:37.429401+00:00",
+    "writes": [
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:12:37.429412+00:00",
+        "finished_at": "2026-11-09T02:12:37.447058+00:00"
+      }
+    ],
+    "finished_at": "2026-11-09T02:12:37.447327+00:00"
+  },
+  "normal_write": {
+    "username": "h1_normal",
+    "started_at": "2026-11-09T02:12:37.675254+00:00",
+    "writes": [
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:12:37.675269+00:00",
+        "finished_at": "2026-11-09T02:12:37.693624+00:00"
+      }
+    ],
+    "finished_at": "2026-11-09T02:12:37.693895+00:00"
+  },
+  "ticket_after_restrict": {
+    "actions": [
+      {
+        "action": "restrict_write",
+        "action_id": "h1-applied-T-20261109-0001-3",
+        "applied_verified": true,
+        "bot": "112",
+        "detail": "Write restriction read back; HTTP effect is measured separately.",
+        "duplicate": false,
+        "effect_verified": null,
+        "effect_verified_at": null,
+        "finished_at": "2026-11-09T02:12:34.167Z",
+        "n8n_execution_id": "3",
+        "recorded_at": "2026-11-09T02:12:34+00:00",
+        "requested_at": "2026-11-09T02:12:34.116Z",
+        "result": "applied",
+        "target": "h1_abuse",
+        "via": "portal"
+      }
+    ],
+    "asset_id": "haedam-portal",
+    "case_id": "H1",
+    "condition_met_at": null,
+    "created_at": "2026-11-09T02:12:34+00:00",
+    "data_origin": "live",
+    "detected_at": "2026-11-09T02:12:33.722Z",
+    "event_ids": [
+      "01M6Z1899TSW9JNVWP5Y5TAZAT"
+    ],
+    "first_attack_at": null,
+    "group_key": "H1:haedam-portal:h1_abuse",
+    "received_at": null,
+    "responded_at": "2026-11-09T02:12:34.167Z",
+    "restored_at": null,
+    "schema_version": "1.0",
+    "seat": "B",
+    "src_ip": null,
+    "status": "responding",
+    "ticket_id": "T-20261109-0001",
+    "title": "H1 민원 작성 도배",
+    "updated_at": "2026-11-09T02:12:34+00:00",
+    "username": "h1_abuse",
+    "verified_at": null
+  },
+  "input_events": [
+    {
+      "event_id": "8e29bb65-ca44-4cf0-9616-b7a75842a617",
+      "timestamp": "2026-11-09T02:12:19.634523+00:00",
+      "event_type": "petition.created",
+      "username": "h1_abuse",
+      "src_ip": "172.30.90.21"
+    },
+    {
+      "event_id": "6eeee8cc-f818-4502-9d18-1614c0fdbd41",
+      "timestamp": "2026-11-09T02:11:39.243051+00:00",
+      "event_type": "petition.created",
+      "username": "h1_abuse",
+      "src_ip": "172.30.90.21"
+    },
+    {
+      "event_id": "922662e3-efb9-458b-bc0a-1ed0777f5d06",
+      "timestamp": "2026-11-09T02:11:39.226381+00:00",
+      "event_type": "petition.created",
+      "username": "h1_abuse",
+      "src_ip": "172.30.90.21"
+    },
+    {
+      "event_id": "feb8ed45-c35b-4249-b1a3-5b7e636a604b",
+      "timestamp": "2026-11-09T02:11:39.210812+00:00",
+      "event_type": "petition.created",
+      "username": "h1_abuse",
+      "src_ip": "172.30.90.21"
+    },
+    {
+      "event_id": "6ee43dc6-e3a5-4e7a-85a4-c56c9269edfe",
+      "timestamp": "2026-11-09T02:11:39.192075+00:00",
+      "event_type": "petition.created",
+      "username": "h1_abuse",
+      "src_ip": "172.30.90.21"
+    }
+  ],
+  "timing_seconds": {
+    "condition_to_detection": 14.087477,
+    "detection_to_response": 0.445,
+    "condition_to_response": 14.532477
+  },
+  "restored_write": {
+    "username": "h1_abuse",
+    "started_at": "2026-11-09T02:12:41.277579+00:00",
+    "writes": [
+      {
+        "status": 201,
+        "error": null,
+        "started_at": "2026-11-09T02:12:41.277603+00:00",
+        "finished_at": "2026-11-09T02:12:41.295153+00:00"
+      }
+    ],
+    "finished_at": "2026-11-09T02:12:41.295512+00:00"
+  },
+  "ticket_final": {
+    "actions": [
+      {
+        "action": "restrict_write",
+        "action_id": "h1-applied-T-20261109-0001-3",
+        "applied_verified": true,
+        "bot": "112",
+        "detail": "Write restriction read back; HTTP effect is measured separately.",
+        "duplicate": false,
+        "effect_verified": null,
+        "effect_verified_at": null,
+        "finished_at": "2026-11-09T02:12:34.167Z",
+        "n8n_execution_id": "3",
+        "recorded_at": "2026-11-09T02:12:34+00:00",
+        "requested_at": "2026-11-09T02:12:34.116Z",
+        "result": "applied",
+        "target": "h1_abuse",
+        "via": "portal"
+      },
+      {
+        "action": "restrict_write",
+        "action_id": "h1-released-T-20261109-0001-7",
+        "applied_verified": true,
+        "bot": "112",
+        "detail": "Approved with H1 operator credential; no role or session changes.",
+        "duplicate": false,
+        "effect_verified": null,
+        "effect_verified_at": null,
+        "finished_at": "2026-11-09T02:12:41.006Z",
+        "n8n_execution_id": "7",
+        "recorded_at": "2026-11-09T02:12:41+00:00",
+        "requested_at": "2026-11-09T02:12:40.976Z",
+        "result": "released",
+        "target": "h1_abuse",
+        "via": "portal"
+      }
+    ],
+    "asset_id": "haedam-portal",
+    "case_id": "H1",
+    "condition_met_at": null,
+    "created_at": "2026-11-09T02:12:34+00:00",
+    "data_origin": "live",
+    "detected_at": "2026-11-09T02:12:33.722Z",
+    "event_ids": [
+      "01M6Z1899TSW9JNVWP5Y5TAZAT"
+    ],
+    "first_attack_at": null,
+    "group_key": "H1:haedam-portal:h1_abuse",
+    "received_at": null,
+    "responded_at": "2026-11-09T02:12:34.167Z",
+    "restored_at": "2026-11-09T02:12:41.006Z",
+    "schema_version": "1.0",
+    "seat": "B",
+    "src_ip": null,
+    "status": "restored",
+    "ticket_id": "T-20261109-0001",
+    "title": "H1 민원 작성 도배",
+    "updated_at": "2026-11-09T02:12:41+00:00",
+    "username": "h1_abuse",
+    "verified_at": null
+  },
+  "final_state": {
+    "portal_status": 200,
+    "restriction": {
+      "restricted": false,
+      "ticket_id": null,
+      "username": "h1_abuse"
+    },
+    "ticket_status": 200,
+    "claims": []
+  },
+  "result": "PASS",
+  "finished_at": "2026-11-09T02:12:43.940085+00:00"
+}

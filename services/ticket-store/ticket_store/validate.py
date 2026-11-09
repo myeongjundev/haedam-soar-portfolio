@@ -11,7 +11,7 @@ import ipaddress
 import re
 
 SEATS = ("A", "B", "C", "D")
-CASES = ("S1", "S4", "S7", "S8", "S10", "S12")
+CASES = ("S1", "S4", "S7", "S8", "S10", "S12", "H1")
 STAGES = ("detected", "applied", "effect", "released")
 VIA = ("portal", "wazuh-ar", "pfsense", "manual")
 RESULTS = ("applied", "already_applied", "failed", "rejected", "released")

@@ -114,7 +114,7 @@
       "properties": {
         "ticket_id": {"$ref": "#/$defs/ticket_id"},
         "seat": {"enum": ["A", "B", "C", "D"]},
-        "case_id": {"enum": ["S1", "S4", "S7", "S8", "S10", "S12"]},
+        "case_id": {"enum": ["S1", "S4", "S7", "S8", "S10", "S12", "H1"]},
         "title": {"type": "string", "minLength": 1},
         "status": {"$ref": "#/$defs/status"},
         "group_key": {"type": "string", "minLength": 1},

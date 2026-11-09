@@ -113,3 +113,12 @@ class LoginAttempt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     src_ip = db.Column(db.String(45), nullable=False, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=now, index=True)
+
+
+class PetitionWriteRestriction(db.Model):
+    """Keep released ownership records: an old ticket must never restrict again."""
+    __tablename__ = "petition_write_restrictions"
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    ticket_id = db.Column(db.String(15), primary_key=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=now)
+    released_at = db.Column(db.DateTime)

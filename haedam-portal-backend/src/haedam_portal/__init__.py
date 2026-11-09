@@ -42,6 +42,7 @@ def create_app(config=None):
     from .petitions import bp as petitions_bp, CATEGORIES
     from .admin import bp as admin_bp
     from .integration import bp as response_bp, ip_blocked
+    from .integration import petition_restrictions  # register H1 routes before the blueprint
     from .integration.events import emit
     from .cli import register_cli
     for bp in (auth_bp, petitions_bp, admin_bp, response_bp):

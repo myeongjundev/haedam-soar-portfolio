@@ -15,13 +15,13 @@ import sqlite3
 from flask import Blueprint, current_app, jsonify, render_template, request
 
 from . import db, s12_measurements
+from .validate import CASES
 
 bp = Blueprint("dashboard", __name__, template_folder="templates", static_folder="static",
                static_url_path="/static")
 
 KST = timezone(timedelta(hours=9), "KST")
 SEATS = ("A", "B", "C", "D")
-CASES = ("S1", "S4", "S7", "S8", "S10", "S12")
 OPEN_STATUSES = ("open", "responding", "verified", "restored")
 STATUS_LABELS = {"open": "열림", "responding": "대응 중", "verified": "효과 확인", "restored": "원복", "closed": "종료"}
 FAILED_RESULTS = ("failed", "rejected")

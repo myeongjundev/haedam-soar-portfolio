@@ -71,8 +71,21 @@ py -3.12 tools/s8_verify.py
 
 P01/P02와 S8은 포털 기본 포트가 같으므로 번갈아 실행합니다. 메모리가 작은 PC에서는 기존 관제 스택도 중지한 뒤 실행합니다. 도구는 다른 프로젝트를 자동 중지하지 않습니다. 실제 차단 대상은 개인 랩 IP 하나이며, [원복 인증과 티켓 계약](docs/s8-contract.md)을 따릅니다.
 
+## H1 민원 도배 · 작성 제한과 원복
+
+[H1 개인 랩](docs/h1-lab.md)은 반소람 님의 시청 업무 보안 제안을 개인 환경에 구현한 추가 케이스입니다. 실제 민원 등록 → 계정별 Graylog 탐지 → n8n 작성 제한·티켓 → 운영자 해제를 연결합니다. 제한 중에도 로그인·기존 민원 조회와 다른 시민의 작성은 유지합니다. 임계값은 합성 랩 기준이며 운영 기준으로 확정한 값이 아닙니다.
+
+```powershell
+py -3.12 tools/h1_lab.py init
+py -3.12 tools/h1_lab.py up
+py -3.12 tools/h1_lab.py configure
+py -3.12 tools/h1_verify.py
+```
+
+S8과 별도 프로젝트·포트·볼륨을 사용하며, 메모리가 작은 PC에서는 번갈아 실행합니다. [H1 실측 결과](docs/h1-results.md) · [H1 계약](docs/h1-contract.md) · [검토 카드](docs/h1-review.md).
+
 ## 작업 시작
 
-[공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 읽고 작업별 PR을 엽니다. Claude Code는 저장소 루트에서 `claude`로 실행하고 [첫 문제 해결 카드](docs/claude-first-task.md)를 전달합니다.
+[공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 읽고 작업별 PR을 엽니다. 준비된 Claude IDE에서 별도의 개인 작업 폴더를 열고 [첫 문제 해결 카드](docs/claude-first-task.md)를 사용합니다.
 
 마감은 **2026-11-12 오전 10시 KST**입니다. 개인 GitHub 주소, 김명준 명의 PPT, 설치·실측 완료 한 줄은 검증이 끝난 뒤 제출합니다.

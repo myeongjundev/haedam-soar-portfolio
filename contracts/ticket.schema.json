@@ -38,7 +38,7 @@
   },
   "$defs": {
     "seat": {"enum": ["A", "B", "C", "D"]},
-    "case_id": {"enum": ["S1", "S4", "S7", "S8", "S10", "S12"]},
+    "case_id": {"enum": ["S1", "S4", "S7", "S8", "S10", "S12", "H1"]},
     "group_key": {
       "description": "A = username, B/D = src_ip, C = {asset_id}:{file_key}",
       "type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\u0000-\\u001f\\u007f]+$"

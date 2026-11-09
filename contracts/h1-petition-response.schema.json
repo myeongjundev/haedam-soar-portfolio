@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:haedam:portfolio:h1-petition-response:1.0",
+  "description": "Authenticated POST /api/v1/response/petitions/restrict or /release; Idempotency-Key required. The path selects the operation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["username", "ticket_id"],
+  "properties": {
+    "username": {"type": "string", "pattern": "^[a-z0-9_]{3,40}$"},
+    "ticket_id": {"type": "string", "pattern": "^T-[0-9]{8}-[0-9]{4}$"}
+  }
+}

@@ -1,0 +1,728 @@
+{
+  "id": "portfolioH1Restrict",
+  "name": "[Portfolio H1] restrict",
+  "active": false,
+  "nodes": [
+    {
+      "id": "restrict-Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "haedam-h1-restrict",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "h1DetectionAuth",
+          "name": "h1DetectionAuth"
+        }
+      },
+      "webhookId": "haedam-h1-restrict"
+    },
+    {
+      "id": "restrict-Validate",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst b=r.body||{};\nif(b.case_id!=='H1'||b.asset_id!=='haedam-portal'||b.username!=='h1_abuse') return fail('invalid_scope',400);\nconst x={username:b.username,group_key:'H1:haedam-portal:'+b.username};\n\nif(!/^[0-9A-Z]{26}$/.test(b.event_id||'') || !Number.isFinite(Date.parse(b.detected_at))) return fail('invalid_event',400);\nx.event_id=b.event_id; x.detected_at=b.detected_at;\n\nconst record={seat:'B',case_id:'H1',group_key:x.group_key,title:'H1 민원 작성 도배',asset_id:'haedam-portal',\nusername:x.username,event_ids:[x.event_id],detected_at:x.detected_at,stage:'detected',action:null};\nreturn emit({...x,record});"
+      }
+    },
+    {
+      "id": "restrict-Validate-proceed",
+      "name": "Validate proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Validate-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "restrict-Record-detection",
+      "name": "Record detection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://ticket-store:8088/api/v1/tickets/record",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.record) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ 'h1-detected-' + $json.event_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "h1TicketAuth",
+          "name": "h1TicketAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "restrict-Detection-recorded",
+      "name": "Detection recorded",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nif(!good||r.body?.ok!==true) return fail('held_ticket_record');\nconst t=r.body, x=$('Validate').first().json;\nif(!/^T-[0-9]{8}-[0-9]{4}$/.test(t.ticket_id)||!['open','responding','verified'].includes(t.status)) return fail('held_old_event',409);\nreturn emit({...x,ticket_id:t.ticket_id});\n"
+      }
+    },
+    {
+      "id": "restrict-Detection-recorded-proceed",
+      "name": "Detection recorded proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Detection recorded-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "restrict-Current-ticket",
+      "name": "Current ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'http://ticket-store:8088/api/v1/tickets/open?seat=B&group_key='+encodeURIComponent($json.group_key) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "h1TicketAuth",
+          "name": "h1TicketAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "restrict-Check-current",
+      "name": "Check current",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Detection recorded').first().json,t=r.body;\nif(!good||t?.ok!==true||t.ticket_id!==x.ticket_id||!['open','responding','verified'].includes(t.status)||!Array.isArray(t.applied_actions)) return fail('held_current_ticket',409);\nif(t.applied_actions.some(a=>a.via==='portal'&&a.action==='restrict_write'&&a.target===x.username))\n return emit({ok:true,stop:true,status:200,verdict:'duplicate_no_action',ticket_id:x.ticket_id});\nreturn emit({...x,requested_at:new Date().toISOString()});\n"
+      }
+    },
+    {
+      "id": "restrict-Check-current-proceed",
+      "name": "Check current proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Check current-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "restrict-Restrict-portal",
+      "name": "Restrict portal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://portal-response:5000/api/v1/response/petitions/restrict",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({username:$json.username,ticket_id:$json.ticket_id}) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ 'h1-restrict-'+$json.ticket_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "h1PortalAuth",
+          "name": "h1PortalAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "restrict-Check-mutation",
+      "name": "Check mutation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Check current').first().json,d=r.body?.data;\nif(!good||r.body?.success!==true||d?.restricted!==true||d.ticket_id!==x.ticket_id||d.username!==x.username) return fail('held_portal_restrict');\nreturn emit({...x,finished_at:new Date().toISOString()});\n"
+      }
+    },
+    {
+      "id": "restrict-Check-mutation-proceed",
+      "name": "Check mutation proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Check mutation-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "restrict-Read-restriction",
+      "name": "Read restriction",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'http://portal-response:5000/api/v1/response/petitions/restrictions/'+$json.username }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "h1PortalAuth",
+          "name": "h1PortalAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "restrict-Prepare-applied",
+      "name": "Prepare applied",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Check mutation').first().json,d=r.body?.data;\nif(!good||r.body?.success!==true||d?.restricted!==true||d.ticket_id!==x.ticket_id||d.username!==x.username) return fail('held_portal_readback');\nconst action={bot:'112',via:'portal',action:'restrict_write',target:x.username,result:'applied',applied_verified:true,\neffect_verified:null,requested_at:x.requested_at,finished_at:x.finished_at,effect_verified_at:null,n8n_execution_id:String($execution.id),detail:'Write restriction read back; HTTP effect is measured separately.'};\nreturn emit({...x,record:{...x.record,stage:'applied',action}});\n"
+      }
+    },
+    {
+      "id": "restrict-Prepare-applied-proceed",
+      "name": "Prepare applied proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Prepare applied-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "restrict-Record-applied",
+      "name": "Record applied",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://ticket-store:8088/api/v1/tickets/record",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.record) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ 'h1-applied-'+$json.ticket_id+'-'+$execution.id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "h1TicketAuth",
+          "name": "h1TicketAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "restrict-Final",
+      "name": "Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Prepare applied').first().json;\nif(!good||r.body?.ok!==true||r.body.ticket_id!==x.ticket_id) return fail('held_applied_record');\nreturn emit({ok:true,status:200,verdict:'restricted',ticket_id:x.ticket_id});\n"
+      }
+    },
+    {
+      "id": "restrict-Respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3740,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": "={{ $json.status || 200 }}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Validate proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate proceed": {
+      "main": [
+        [
+          {
+            "node": "Record detection",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record detection": {
+      "main": [
+        [
+          {
+            "node": "Detection recorded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detection recorded": {
+      "main": [
+        [
+          {
+            "node": "Detection recorded proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detection recorded proceed": {
+      "main": [
+        [
+          {
+            "node": "Current ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Current ticket": {
+      "main": [
+        [
+          {
+            "node": "Check current",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check current": {
+      "main": [
+        [
+          {
+            "node": "Check current proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check current proceed": {
+      "main": [
+        [
+          {
+            "node": "Restrict portal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restrict portal": {
+      "main": [
+        [
+          {
+            "node": "Check mutation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check mutation": {
+      "main": [
+        [
+          {
+            "node": "Check mutation proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check mutation proceed": {
+      "main": [
+        [
+          {
+            "node": "Read restriction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read restriction": {
+      "main": [
+        [
+          {
+            "node": "Prepare applied",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare applied": {
+      "main": [
+        [
+          {
+            "node": "Prepare applied proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare applied proceed": {
+      "main": [
+        [
+          {
+            "node": "Record applied",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record applied": {
+      "main": [
+        [
+          {
+            "node": "Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

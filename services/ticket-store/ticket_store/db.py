@@ -333,7 +333,8 @@ def dashboard_work(conn, seat=None, include_sample=False, page=1, limit=50):
 
 def dashboard_cases(conn, seat=None, include_sample=False):
     groups = (("A", ("S1", "S4"), "기밀성"), ("B", ("S8", "S10"), "NIDS"),
-              ("C", ("S7",), "무결성"), ("D", ("S12",), "가용성"))
+              ("C", ("S7",), "무결성"), ("D", ("S12",), "가용성"),
+              ("B", ("H1",), "가용성 · 민원 작성"))
     result = []
     for group_seat, cases, principle in groups:
         if seat and group_seat != seat:

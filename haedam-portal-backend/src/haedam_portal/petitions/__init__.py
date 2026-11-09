@@ -3,7 +3,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm.exc import StaleDataError
 
 from ..common import body, fail, ok, pagination, require, text
-from ..models import Petition, PetitionHistory, db
+from ..models import Petition, PetitionHistory, User, db
 from ..integration.events import emit
 
 CATEGORIES = ["도로·교통", "환경·청소", "공원·녹지", "안전·시설", "생활·복지", "기타"]
@@ -52,6 +52,12 @@ def listing():
 @bp.post("")
 @require("citizen")
 def create():
+    from ..integration.petition_restrictions import active_restriction
+    # Share the account lock with restrict/release; no write may slip past a committed restriction.
+    db.session.execute(select(User.id).where(User.id == g.user.id).with_for_update())
+    if active_restriction(g.user.id):
+        emit('petition.write_denied', 'denied', 429, username=g.user.username)
+        fail(429, 'PETITION_WRITE_RESTRICTED', '민원 작성이 일시 제한되었습니다. 기존 민원 조회는 계속 이용할 수 있습니다.')
     data = body()
     title = text(data, "title", 5, 120)
     content = text(data, "content", 10, 5000)
