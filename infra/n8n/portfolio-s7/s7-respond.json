@@ -1,0 +1,854 @@
+{
+  "id": "portfolioS7Respond",
+  "name": "[Portfolio S7] respond",
+  "active": false,
+  "nodes": [
+    {
+      "id": "respond-Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "haedam-s7-respond",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s7DetectionAuth",
+          "name": "s7DetectionAuth"
+        }
+      },
+      "webhookId": "haedam-s7-respond"
+    },
+    {
+      "id": "respond-Validate",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst b=r.body||{};\nif(Object.keys(b).sort().join(',')!=='asset_id,case_id,detected_at,event_id,event_key') return fail('invalid_fields',400);\nif(b.case_id!=='S7'||b.asset_id!=='haedam-portal'||!/^[0-9a-f]{64}$/.test(b.event_key||'')||\n !/^[0-9A-Z]{26}$/.test(b.event_id||'')||!Number.isFinite(Date.parse(b.detected_at))) return fail('invalid_scope',400);\nreturn emit({event_key:b.event_key,graylog_event_id:b.event_id,detected_at:b.detected_at,execution_id:String($execution.id)});\n"
+      }
+    },
+    {
+      "id": "respond-Validate-proceed",
+      "name": "Validate proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Validate-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "respond-Claim-trusted-event",
+      "name": "Claim trusted event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://s7-response:8097/claim",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 45000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s7BridgeAuth",
+          "name": "s7BridgeAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "respond-Prepare-detection",
+      "name": "Prepare detection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nif(!good||r.body?.ok!==true) return fail('held_claim',r.statusCode===503?503:409);\nconst x=r.body.data;\n\nconst record={seat:'C',case_id:'S7',group_key:x.group_key,title:'S7 파일 무결성: '+x.file_key,\nasset_id:'haedam-portal',event_ids:[x.graylog_event_id,x.wazuh_event_id],\ndetected_at:x.detected_at,condition_met_at:x.alert_at,stage:'detected',action:null};\nreturn emit({...x,record});"
+      }
+    },
+    {
+      "id": "respond-Prepare-detection-proceed",
+      "name": "Prepare detection proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Prepare detection-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "respond-Record-detection",
+      "name": "Record detection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://ticket-store:8088/api/v1/tickets/record",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 45000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.record) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ 's7-detected-'+$json.event_key }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s7TicketAuth",
+          "name": "s7TicketAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "respond-Check-detection",
+      "name": "Check detection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nif(!good||r.body?.ok!==true) return fail('held_detection_record',r.statusCode===409?409:503);\nconst x=$('Prepare detection').first().json;\nif(!/^T-[0-9]{8}-[0-9]{4}$/.test(r.body.ticket_id)) return fail('invalid_ticket',409);\nreturn emit({...x,ticket_id:r.body.ticket_id});\n"
+      }
+    },
+    {
+      "id": "respond-Check-detection-proceed",
+      "name": "Check detection proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Check detection-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "respond-Current-ticket",
+      "name": "Current ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'http://ticket-store:8089/api/v1/tickets/'+$json.ticket_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 45000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s7TicketAuth",
+          "name": "s7TicketAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "respond-Check-ticket",
+      "name": "Check ticket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Check detection').first().json,t=r.body?.ticket;\nif(!good||r.body?.ok!==true||t?.ticket_id!==x.ticket_id||t.group_key!==x.group_key||t.case_id!=='S7'||\n !['open','responding','verified','restored'].includes(t.status)) return fail('held_ticket_scope',409);\nreturn emit({...x,already_restored:t.status==='restored'});\n"
+      }
+    },
+    {
+      "id": "respond-Check-ticket-proceed",
+      "name": "Check ticket proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Check ticket-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "respond-Guarded-response",
+      "name": "Guarded response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://s7-response:8097/respond",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 45000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({event_key:$json.event_key,ticket_id:$json.ticket_id}) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s7BridgeAuth",
+          "name": "s7BridgeAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "respond-Prepare-applied",
+      "name": "Prepare applied",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nif(!good||r.body?.ok!==true) return fail('held_response',r.statusCode===503?503:409);\nconst previous=$('Check ticket').first().json,x=r.body.data;\nif(x.ticket_id!==previous.ticket_id||x.event_key!==previous.event_key||x.result!=='applied') return fail('invalid_response',409);\nif(previous.already_restored) return emit({ok:true,stop:true,status:200,verdict:'already_restored',ticket_id:x.ticket_id});\n\nconst record={seat:'C',case_id:'S7',group_key:x.group_key,title:'S7 파일 무결성: '+x.file_key,\nasset_id:'haedam-portal',event_ids:[x.graylog_event_id,x.wazuh_event_id],\ndetected_at:x.detected_at,condition_met_at:x.alert_at,stage:'detected',action:null};\n\nconst action={bot:'117',via:'wazuh-ar',action:x.result==='released'?'complete_'+x.action:x.action,target:x.file_key,result:x.result,\napplied_verified:true,effect_verified:true,requested_at:x.requested_at,finished_at:x.finished_at,\neffect_verified_at:x.effect_verified_at,n8n_execution_id:x.execution_id,\ndetail:'Guarded agent receipt, full baseline hashes and real HTTP readback verified.'};\nreturn emit({...x,record:{...record,stage:'applied',action}});"
+      }
+    },
+    {
+      "id": "respond-Prepare-applied-proceed",
+      "name": "Prepare applied proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3080,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Prepare applied-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "respond-Record-applied",
+      "name": "Record applied",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://ticket-store:8088/api/v1/tickets/record",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 45000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.record) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ 's7-applied-'+$json.event_key }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s7TicketAuth",
+          "name": "s7TicketAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "respond-Prepare-effect",
+      "name": "Prepare effect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Prepare applied').first().json;\nif(!good||r.body?.ok!==true||r.body.ticket_id!==x.ticket_id) return fail('held_applied_record',r.statusCode===409?409:503);\nreturn emit({...x,record:{...x.record,stage:'effect'}});\n"
+      }
+    },
+    {
+      "id": "respond-Prepare-effect-proceed",
+      "name": "Prepare effect proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3740,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Prepare effect-gate",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "respond-Record-effect",
+      "name": "Record effect",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3960,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://ticket-store:8088/api/v1/tickets/record",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 45000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.record) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ 's7-effect-'+$json.event_key }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s7TicketAuth",
+          "name": "s7TicketAuth"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
+    },
+    {
+      "id": "respond-Final",
+      "name": "Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4180,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Prepare effect').first().json;\nif(!good||r.body?.ok!==true||r.body.ticket_id!==x.ticket_id||r.body.status!=='verified') return fail('held_effect_record',r.statusCode===409?409:503);\nreturn emit({ok:true,status:200,verdict:'verified',ticket_id:x.ticket_id,event_key:x.event_key});\n"
+      }
+    },
+    {
+      "id": "respond-Respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": "={{ $json.status || 200 }}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Validate proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate proceed": {
+      "main": [
+        [
+          {
+            "node": "Claim trusted event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim trusted event": {
+      "main": [
+        [
+          {
+            "node": "Prepare detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare detection": {
+      "main": [
+        [
+          {
+            "node": "Prepare detection proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare detection proceed": {
+      "main": [
+        [
+          {
+            "node": "Record detection",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record detection": {
+      "main": [
+        [
+          {
+            "node": "Check detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check detection": {
+      "main": [
+        [
+          {
+            "node": "Check detection proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check detection proceed": {
+      "main": [
+        [
+          {
+            "node": "Current ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Current ticket": {
+      "main": [
+        [
+          {
+            "node": "Check ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check ticket": {
+      "main": [
+        [
+          {
+            "node": "Check ticket proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check ticket proceed": {
+      "main": [
+        [
+          {
+            "node": "Guarded response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guarded response": {
+      "main": [
+        [
+          {
+            "node": "Prepare applied",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare applied": {
+      "main": [
+        [
+          {
+            "node": "Prepare applied proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare applied proceed": {
+      "main": [
+        [
+          {
+            "node": "Record applied",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record applied": {
+      "main": [
+        [
+          {
+            "node": "Prepare effect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare effect": {
+      "main": [
+        [
+          {
+            "node": "Prepare effect proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare effect proceed": {
+      "main": [
+        [
+          {
+            "node": "Record effect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record effect": {
+      "main": [
+        [
+          {
+            "node": "Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

@@ -31,6 +31,8 @@
 
 ## 개인 기여와 검증 근거
 
+개인 S7 자동 연결의 `compose.s7-auto.yaml`, `services/s7-response/`, `infra/wazuh/agent/s7_guard.py`, `tools/*s7_auto*`, `infra/n8n/portfolio-s7/`, `infra/graylog/s7-fim.json`은 김명준·Codex의 후속 구현입니다. 김상혁의 파일 복구 함수를 그대로 호출하며 팀 티켓 저장소에는 완료 조치 이름과 활성 조치/대시보드 판정 일치 수정만 추가했습니다. [설치와 범위](s7-auto-lab.md), [개인 연결 계약](s7-auto-contract.md). 반소람 님의 제어판 소개 HTML은 후속 UI 흐름 참고이며 실제 제어판 소스나 팀원 실측으로 반입하지 않았습니다.
+
 개인 S7의 `compose.s7.yaml`, `infra/wazuh/`, `tools/s7_lab.py`, `tools/s7_verify.py`는 김명준·Codex의 컨테이너 배치와 재실측 추가입니다. 김상혁의 `lab/s7/restore/` 두 실행 파일은 수정하지 않고 컨테이너 경로 환경변수로 사용합니다. Wazuh 설정은 [wazuh/wazuh-docker v4.9.0](https://github.com/wazuh/wazuh-docker/tree/cb63566719ce2e78b9d3c111a0a61d743fc699fc/single-node)의 indexer/dashboard/certs 설정을 반입·조정했습니다. 라이선스와 저작권 고지는 `infra/wazuh/LICENSE.upstream`에 보존했습니다. 개인 결과는 [S7 실측](s7-results.md)이며 팀의 n8n 자동 대응 실측을 대신하지 않습니다.
 
 H1 아이디어(민원 도배 탐지와 계정의 작성만 제한)는 반소람(whiteclover0542)이 2026-11-09 공유한 `MVP-설계.md` 7절·구현계획·진행 현황에서 채택했습니다. 해당 문서의 개인 경로·계정·환경 설정·성과는 김명준의 것으로 옮기지 않았습니다. `infra/n8n/portfolio-h1/`, `infra/graylog/h1-petition-flood.json`, `tools/*h1*`, 포털 제한 API·마이그레이션과 H1 계약/검증기는 김명준·Codex의 개인 후속 구현입니다. 김상혁의 티켓 저장소에는 H1 검증·목록·카드를 추가했으며 원본 출처를 유지합니다. [H1 작업과 인수 조건](h1-task.md).

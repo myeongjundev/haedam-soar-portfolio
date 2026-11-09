@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:haedam:portfolio:s7-auto-webhook:1.0",
+  "title": "Personal S7 authenticated n8n webhook bodies",
+  "description": "Synthetic schema only. respond uses the detection credential; complete uses a separate operator credential. Keys/paths/commands are never accepted here.",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["case_id", "asset_id", "event_key", "event_id", "detected_at"],
+      "properties": {
+        "case_id": {"const": "S7"}, "asset_id": {"const": "haedam-portal"},
+        "event_key": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "event_id": {"type": "string", "pattern": "^[0-9A-Z]{26}$"},
+        "detected_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["case_id", "asset_id", "event_key", "ticket_id"],
+      "properties": {
+        "case_id": {"const": "S7"}, "asset_id": {"const": "haedam-portal"},
+        "event_key": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "ticket_id": {"type": "string", "pattern": "^T-[0-9]{8}-[0-9]{4}$"}
+      }
+    }
+  ]
+}

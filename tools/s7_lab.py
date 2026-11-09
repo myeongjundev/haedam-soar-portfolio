@@ -59,10 +59,12 @@ def init():
     values = env_values()
     for key in ('MYSQL_ROOT_PASSWORD', 'MYSQL_PASSWORD', 'WAZUH_INDEXER_PASSWORD',
                 'WAZUH_API_PASSWORD', 'WAZUH_DASHBOARD_PASSWORD', 'WAZUH_ENROLL_PASSWORD'):
-        values.setdefault(key, secrets.token_hex(24) + 'aA1-')
+        if not values.get(key):
+            values[key] = secrets.token_hex(24) + 'aA1-'
     for key, value in dict(PORTAL_PORT='15020', WAZUH_API_PORT='15520',
                           WAZUH_INDEXER_PORT='19220', WAZUH_DASHBOARD_PORT='15620').items():
-        values.setdefault(key, value)
+        if not values.get(key):
+            values[key] = value
     private_file(ENV_FILE, ''.join(f'{k}={v}\n' for k, v in values.items()))
     private_file(LOCAL / 'authd.pass', values['WAZUH_ENROLL_PASSWORD'] + '\n')
     users = LOCAL / 'internal_users.yml'

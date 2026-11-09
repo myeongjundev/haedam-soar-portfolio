@@ -1,0 +1,79 @@
+# After compose.yaml + compose.soc.yaml + compose.s7.yaml. Owned personal lab only.
+services:
+  portal:
+    environment:
+      GELF_ENABLED: "0"
+  graylog-mongo:
+    mem_limit: 256m
+  graylog-search:
+    mem_limit: 1024m
+  graylog:
+    mem_limit: 1024m
+    networks: [default, graylog-backend, access]
+  n8n:
+    mem_limit: 768m
+    networks: [default, access]
+    environment:
+      NODE_OPTIONS: --max-old-space-size=512
+      N8N_CONCURRENCY_PRODUCTION_LIMIT: "1"
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: none
+      EXECUTIONS_DATA_SAVE_ON_ERROR: none
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+      EXECUTIONS_DATA_SAVE_ON_PROGRESS: "false"
+      EXECUTIONS_DATA_PRUNE: "false"
+  ticket-store:
+    mem_limit: 192m
+    networks: [default, access]
+  wazuh.manager:
+    volumes:
+      - ./infra/wazuh/manager-auto.conf:/wazuh-config-mount/etc/ossec.conf:ro
+      - ./.local/s7/certs/wazuh.manager.pem:/wazuh-config-mount/api/configuration/ssl/server.crt:ro
+      - ./.local/s7/certs/wazuh.manager-key.pem:/wazuh-config-mount/api/configuration/ssl/server.key:ro
+  s7-agent:
+    build:
+      target: automatic
+    volumes:
+      - s7-baseline:/opt/haedam-s7/state:ro
+      - s7-control:/var/lib/haedam-s7/control
+      - ./infra/wazuh/agent/auto.conf:/opt/haedam-s7/agent.conf:ro
+      - ./.local/s7-auto/manager-ca.pem:/run/secrets/manager-ca.pem:ro
+  s7-baseline:
+    profiles: [setup]
+    build:
+      context: .
+      dockerfile: infra/wazuh/agent/Dockerfile
+      target: agent
+    entrypoint: [python3, -I, /opt/haedam-s7/bin/s7_restore.py]
+    volumes:
+      - s7-web:/var/www/haedam:ro
+      - s7-baseline:/opt/haedam-s7/state
+      - s7-restore-logs:/var/log/haedam-s7
+    network_mode: none
+  s7-response:
+    build: ./services/s7-response
+    mem_limit: 128m
+    read_only: true
+    cap_drop: [ALL]
+    group_add: ["999"]  # pinned Wazuh 4.9 log reader group; mounts remain read-only
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp]
+    environment:
+      S7_AGENT_ID: ${S7_AGENT_ID:-001}
+      S7_BRIDGE_KEY: ${S7_BRIDGE_KEY:?Run s7_auto_lab.py init}
+      S7_COMPLETE_KEY: ${S7_COMPLETE_KEY:?Run s7_auto_lab.py init}
+      S7_WAZUH_PASSWORD: ${S7_WAZUH_PASSWORD:?Run s7_auto_lab.py init}
+    volumes:
+      - s7-web:/web:ro
+      - s7-baseline:/baseline:ro
+      - s7-control:/receipts:ro
+      - s7-manager-logs:/alerts:ro
+      - s7-response-data:/data
+      - ./.local/s7-auto/manager-ca.pem:/run/secrets/wazuh-ca.pem:ro
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8097/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+volumes:
+  s7-control:
+  s7-response-data:

@@ -195,7 +195,8 @@ def insert_action(conn, ticket_id, action, action_id, recorded_at, duplicate=Fal
 
 
 def action_key(action, released=False):
-    releases = {"unblock": "block", "unlock": "lock", "restore": "quarantine"}
+    releases = {"unblock": "block", "unlock": "lock", "restore": "quarantine",
+                "complete_restore": "restore", "complete_quarantine": "quarantine"}
     name = releases.get(action["action"], action["action"]) if released else action["action"]
     if action["via"] == "pfsense" and name == "fw_block":
         name = "block"  # Read legacy rows without rewriting evidence.
@@ -288,7 +289,9 @@ _WORK_CTE = """
 WITH normal AS (
  SELECT a.*, CASE WHEN action = 'unblock' THEN 'block'
                   WHEN action = 'unlock' THEN 'lock'
-                  WHEN action = 'restore' THEN 'quarantine'
+                  WHEN action = 'restore' AND result = 'released' THEN 'quarantine'
+                  WHEN action = 'complete_restore' AND result = 'released' THEN 'restore'
+                  WHEN action = 'complete_quarantine' AND result = 'released' THEN 'quarantine'
                   WHEN action = 'fw_block' AND via = 'pfsense' THEN 'block'
                   ELSE action END AS kind
  FROM actions a WHERE duplicate = 0
@@ -304,7 +307,7 @@ WITH normal AS (
           (a.result IN ('failed','rejected') OR (a.result IN ('applied','already_applied') AND a.applied_verified=0))) AS failed,
   EXISTS(SELECT 1 FROM lifecycle a WHERE a.ticket_id=t.ticket_id AND a.rn=1 AND a.result IN ('applied','already_applied') AND a.effect_verified IS NULL) AS effect_wait,
   EXISTS(SELECT 1 FROM lifecycle a WHERE a.ticket_id=t.ticket_id AND a.rn=1 AND a.result IN ('applied','already_applied') AND a.effect_verified=0) AS effect_failed,
-  EXISTS(SELECT 1 FROM lifecycle a WHERE a.ticket_id=t.ticket_id AND a.rn=1 AND a.result IN ('applied','already_applied') AND a.kind IN ('block','lock','quarantine')) AS restore_wait,
+  EXISTS(SELECT 1 FROM lifecycle a WHERE a.ticket_id=t.ticket_id AND a.rn=1 AND a.result IN ('applied','already_applied') AND a.kind IN ('block','lock','quarantine','restore')) AS restore_wait,
   EXISTS(SELECT 1 FROM lifecycle a JOIN lifecycle b ON a.target=b.target AND a.via=b.via AND a.kind=b.kind
          JOIN tickets other ON other.ticket_id=b.ticket_id
          WHERE a.ticket_id=t.ticket_id AND a.rn=1 AND b.rn=1 AND a.kind IN ('block','lock')

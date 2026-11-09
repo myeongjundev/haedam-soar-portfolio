@@ -14,3 +14,9 @@ RUN chmod 755 /entrypoint.sh /opt/haedam-s7/bin/s7_restore.py \
     && chown root:wazuh /var/ossec/active-response/bin/s7-restore-ar
 ENV S7_WEB_ROOT=/var/www/haedam S7_STATE_DIR=/opt/haedam-s7/state
 ENTRYPOINT ["/entrypoint.sh"]
+
+FROM agent AS automatic
+COPY infra/wazuh/agent/s7_guard.py /var/ossec/active-response/bin/s7-guarded
+RUN find /var/ossec/active-response/bin -maxdepth 1 -type f ! -name s7-guarded -delete \
+    && chmod 750 /var/ossec/active-response/bin/s7-guarded \
+    && chown root:wazuh /var/ossec/active-response/bin/s7-guarded
