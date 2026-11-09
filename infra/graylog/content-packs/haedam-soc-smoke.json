@@ -1,0 +1,322 @@
+{
+  "v": "1",
+  "id": "ede44edf-6f18-519b-a934-09af584fc1f3",
+  "rev": 1,
+  "name": "Haedam SOC smoke",
+  "summary": "GELF TCP to an n8n receipt workflow",
+  "description": "Synthetic P02 log, stream, alert and HTTP notification for the individual lab.",
+  "vendor": "NoBugs Haedam portfolio",
+  "url": "https://github.com/myeongjundev/haedam-soar-portfolio",
+  "created_at": "2026-11-09T00:36:25.301Z",
+  "server_version": "6.1.16",
+  "parameters": [],
+  "entities": [
+    {
+      "id": "a1855203-852a-43d8-9f41-06dc7bbd35d7",
+      "type": {
+        "name": "event_definition",
+        "version": "1"
+      },
+      "v": "1",
+      "data": {
+        "_scope": {
+          "@type": "string",
+          "@value": "DEFAULT"
+        },
+        "title": {
+          "@type": "string",
+          "@value": "Haedam SOC smoke detection"
+        },
+        "description": {
+          "@type": "string",
+          "@value": "Detect one marked synthetic event"
+        },
+        "remediation_steps": null,
+        "updated_at": "2026-11-09T00:32:39.166Z",
+        "matched_at": "2026-11-09T00:35:24.176Z",
+        "priority": {
+          "@type": "integer",
+          "@value": 1
+        },
+        "alert": {
+          "@type": "boolean",
+          "@value": true
+        },
+        "config": {
+          "type": "aggregation-v1",
+          "query": {
+            "@type": "string",
+            "@value": "lab_marker:haedamsocsmoke"
+          },
+          "query_parameters": [],
+          "filters": [],
+          "streams": [
+            "4026f789-23d6-44e3-9979-0d0c7a7be879"
+          ],
+          "stream_categories": [],
+          "group_by": [
+            "probe_id"
+          ],
+          "series": [
+            {
+              "type": "count",
+              "id": "count()",
+              "field": null
+            }
+          ],
+          "conditions": {
+            "expression": {
+              "expr": ">",
+              "left": {
+                "expr": "number-ref",
+                "ref": "count()"
+              },
+              "right": {
+                "expr": "number",
+                "value": 0.0
+              }
+            }
+          },
+          "search_within_ms": 15000,
+          "execute_every_ms": 15000,
+          "use_cron_scheduling": false,
+          "cron_expression": null,
+          "cron_timezone": null,
+          "event_limit": 25
+        },
+        "field_spec": {
+          "probe_id": {
+            "data_type": "string",
+            "providers": [
+              {
+                "type": "template-v1",
+                "template": "${source.probe_id}",
+                "require_values": true
+              }
+            ]
+          }
+        },
+        "key_spec": [
+          "probe_id"
+        ],
+        "notification_settings": {
+          "grace_period_ms": 60000,
+          "backlog_size": 0
+        },
+        "notifications": [
+          {
+            "notification_id": {
+              "@type": "string",
+              "@value": "6196a03a-4400-43ce-aa8d-f159579bcb77"
+            },
+            "notification_parameters": null
+          }
+        ],
+        "storage": [
+          {
+            "type": "persist-to-streams-v1",
+            "streams": [
+              "000000000000000000000002"
+            ]
+          }
+        ],
+        "is_scheduled": {
+          "@type": "boolean",
+          "@value": true
+        }
+      },
+      "constraints": [
+        {
+          "type": "server-version",
+          "version": ">=6.1.16+4a05695"
+        }
+      ]
+    },
+    {
+      "id": "289f1f94-cb6b-4476-9f13-4fd0a88c4c8d",
+      "type": {
+        "name": "input",
+        "version": "1"
+      },
+      "v": "1",
+      "data": {
+        "title": {
+          "@type": "string",
+          "@value": "Haedam GELF TCP"
+        },
+        "configuration": {
+          "recv_buffer_size": {
+            "@type": "integer",
+            "@value": 1048576
+          },
+          "port": {
+            "@type": "integer",
+            "@value": 12201
+          },
+          "tls_enable": {
+            "@type": "boolean",
+            "@value": false
+          },
+          "tcp_keepalive": {
+            "@type": "boolean",
+            "@value": true
+          },
+          "use_null_delimiter": {
+            "@type": "boolean",
+            "@value": true
+          },
+          "number_worker_threads": {
+            "@type": "integer",
+            "@value": 2
+          },
+          "max_message_size": {
+            "@type": "integer",
+            "@value": 2097152
+          },
+          "bind_address": {
+            "@type": "string",
+            "@value": "0.0.0.0"
+          }
+        },
+        "static_fields": {},
+        "type": {
+          "@type": "string",
+          "@value": "org.graylog2.inputs.gelf.tcp.GELFTCPInput"
+        },
+        "global": {
+          "@type": "boolean",
+          "@value": true
+        },
+        "extractors": []
+      },
+      "constraints": [
+        {
+          "type": "server-version",
+          "version": ">=6.1.16+4a05695"
+        }
+      ]
+    },
+    {
+      "id": "6196a03a-4400-43ce-aa8d-f159579bcb77",
+      "type": {
+        "name": "notification",
+        "version": "1"
+      },
+      "v": "1",
+      "data": {
+        "title": {
+          "@type": "string",
+          "@value": "Haedam SOC smoke to n8n"
+        },
+        "description": {
+          "@type": "string",
+          "@value": "Connectivity check with no response side effects"
+        },
+        "config": {
+          "type": "http-notification-v2",
+          "url": {
+            "@type": "string",
+            "@value": "http://n8n:5678/webhook/haedam-recv-check"
+          },
+          "skip_tls_verification": {
+            "@type": "boolean",
+            "@value": false
+          },
+          "method": {
+            "@type": "string",
+            "@value": "POST"
+          },
+          "time_zone": {
+            "@type": "string",
+            "@value": "UTC"
+          },
+          "content_type": {
+            "@type": "string",
+            "@value": "JSON"
+          },
+          "headers": {
+            "@type": "string",
+            "@value": ""
+          },
+          "body_template": {
+            "@type": "string",
+            "@value": "{\"event_id\":\"${event.id}\",\"asset_id\":\"haedam-portfolio\",\"src_ip\":\"192.0.2.10\"}"
+          }
+        }
+      },
+      "constraints": [
+        {
+          "type": "server-version",
+          "version": ">=6.1.16+4a05695"
+        }
+      ]
+    },
+    {
+      "id": "4026f789-23d6-44e3-9979-0d0c7a7be879",
+      "type": {
+        "name": "stream",
+        "version": "1"
+      },
+      "v": "1",
+      "data": {
+        "title": {
+          "@type": "string",
+          "@value": "Haedam SOC smoke"
+        },
+        "description": {
+          "@type": "string",
+          "@value": "Synthetic P02 connectivity marker"
+        },
+        "disabled": {
+          "@type": "boolean",
+          "@value": false
+        },
+        "matching_type": {
+          "@type": "string",
+          "@value": "AND"
+        },
+        "stream_rules": [
+          {
+            "type": {
+              "@type": "string",
+              "@value": "EXACT"
+            },
+            "field": {
+              "@type": "string",
+              "@value": "lab_marker"
+            },
+            "value": {
+              "@type": "string",
+              "@value": "haedamsocsmoke"
+            },
+            "inverted": {
+              "@type": "boolean",
+              "@value": false
+            },
+            "description": {
+              "@type": "string",
+              "@value": "Only synthetic P02 messages"
+            }
+          }
+        ],
+        "alert_conditions": [],
+        "alarm_callbacks": [],
+        "outputs": [],
+        "default_stream": {
+          "@type": "boolean",
+          "@value": false
+        },
+        "remove_matches": {
+          "@type": "boolean",
+          "@value": false
+        }
+      },
+      "constraints": [
+        {
+          "type": "server-version",
+          "version": ">=6.1.16+4a05695"
+        }
+      ]
+    }
+  ]
+}

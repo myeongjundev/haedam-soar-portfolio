@@ -15,7 +15,7 @@
 
 ## 포털과 DB 실행
 
-GitHub에서 처음 받는 경우 아래 명령을 실행합니다. 초안 PR 검증 중에는 새 폴더에서 `gh pr checkout 1`로 PR 코드를 받습니다.
+GitHub에서 처음 받는 경우 아래 명령을 실행합니다. 초안 PR 검증 중에는 새 폴더에서 해당 PR 브랜치를 checkout합니다.
 
 ```powershell
 git clone https://github.com/myeongjundev/haedam-soar-portfolio.git
@@ -47,7 +47,7 @@ if [ ! -f .env ]; then
 fi
 ```
 
-- 포털은 `http://127.0.0.1:15000`에서 열립니다. MySQL은 Compose 내부에서만 접근합니다.
+- 포털은 `http://127.0.0.1:15000`에서 열립니다. MySQL만 시작하려면 `docker compose up -d --wait db`를 사용합니다. MySQL 포트는 Compose 내부에서 접근합니다.
 - 새 DB에서는 포털 기동 시 Alembic 마이그레이션을 적용합니다. 시민은 화면에서 가입할 수 있습니다. 관리자는 `docker compose exec portal flask --app haedam_portal:create_app create-admin`으로 합성 계정을 만듭니다.
 - `docker compose stop`으로 멈추고 `docker compose up -d --wait`로 다시 실행하면 DB와 포털 이벤트 볼륨을 재사용합니다.
 - 이미 초기화된 볼륨은 최초 MySQL 비밀번호를 사용합니다. 환경값을 직접 넣을 때는 DB URL에 쓸 수 있는 16진수 값을 사용합니다.
@@ -56,7 +56,7 @@ fi
 
 ## 관제 설정 반입 상태
 
-팀 Graylog와 n8n Compose, 규칙, 워크플로는 [반입 목록](docs/sources.md#반입-경로)에서 확인할 수 있습니다. `compose.team.yaml`은 Claude가 개인 환경으로 이식할 참고본입니다. 이번 기동 확인은 포털과 MySQL에 해당합니다.
+[개인 관제 Docker 설치](docs/docker-soc.md)를 따르면 포털과 MySQL에 Graylog·MongoDB·OpenSearch·n8n·티켓 저장소를 추가할 수 있습니다. `compose.team.yaml`과 [팀 규칙·워크플로](docs/sources.md#반입-경로)는 출처와 시나리오 설정을 확인할 때 사용합니다.
 
 ## 작업 시작
 
