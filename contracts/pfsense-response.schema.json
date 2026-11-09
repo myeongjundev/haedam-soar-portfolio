@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nobugs:aleph:pfsense-response:1.0",
+  "title": "Restricted PF response output with explicit rule state (local candidate)",
+  "description": "JSON stdout of haedam-pf-response. Rule/table verification is distinct from traffic effect. This is not an HTTP API or an automatically connected n8n workflow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "result",
+    "reason"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "result": {
+      "enum": [
+        "status",
+        "applied",
+        "already_applied",
+        "released",
+        "rejected",
+        "failed"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "pattern": "^[a-z_]+$"
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "via": {
+      "const": "pfsense"
+    },
+    "action": {
+      "enum": [
+        "status",
+        "block",
+        "unblock"
+      ]
+    },
+    "target": {
+      "enum": [
+        "203.0.113.22",
+        "203.0.113.41"
+      ]
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+    },
+    "owner_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$"
+    },
+    "changed": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "replayed": {
+      "type": "boolean"
+    },
+    "applied_verified": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "effect_verified": {
+      "type": "null"
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "state": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "ready",
+        "configured",
+        "table_present",
+        "rule_present",
+        "covered_by_network",
+        "config_rule_present",
+        "runtime_rule_present"
+      ],
+      "properties": {
+        "ready": {
+          "type": "boolean"
+        },
+        "configured": {
+          "type": "boolean",
+          "description": "Exact target IP is in the configuration alias; does not mean a config rule exists."
+        },
+        "table_present": {
+          "type": "boolean"
+        },
+        "rule_present": {
+          "type": "boolean"
+        },
+        "covered_by_network": {
+          "type": "boolean"
+        },
+        "config_rule_present": {
+          "type": "boolean"
+        },
+        "runtime_rule_present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "failure_detail": {
+      "type": "string",
+      "pattern": "^[a-z_]+$"
+    },
+    "journal_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_owner_id",
+        "claim_target",
+        "pending_action",
+        "pending_request_id"
+      ],
+      "properties": {
+        "claim_owner_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "claim_target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pending_action": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pending_request_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "schema_version",
+          "via",
+          "action",
+          "target",
+          "request_id",
+          "owner_id",
+          "changed",
+          "replayed",
+          "applied_verified",
+          "effect_verified",
+          "state",
+          "requested_at",
+          "finished_at"
+        ]
+      }
+    }
+  ]
+}
