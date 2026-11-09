@@ -1,0 +1,54 @@
+# Isolated S8 lab. Apply after compose.yaml and compose.soc.yaml.
+services:
+  portal:
+    environment:
+      RESPONSE_API_KEY: ${PORTAL_RESPONSE_KEY:?Run tools/s8_lab.py init}
+      RESPONSE_ALLOWED_CIDRS: 172.30.89.2/32
+    networks:
+      default: {}
+      s8-clients: {ipv4_address: 172.30.88.10}
+      s8-response:
+        ipv4_address: 172.30.89.3
+        aliases: [portal-response]
+  n8n:
+    environment:
+      N8N_CONCURRENCY_PRODUCTION_LIMIT: "1"
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: none
+      EXECUTIONS_DATA_SAVE_ON_ERROR: none
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+      EXECUTIONS_DATA_SAVE_ON_PROGRESS: "false"
+      # 2.39.5 deleteInFlightExecution hard-deletes unsaved production runs
+      # only when pruning is off; default pruning leaves a soft-deleted payload.
+      EXECUTIONS_DATA_PRUNE: "false"
+    networks:
+      default: {}
+      s8-response: {ipv4_address: 172.30.89.2}
+  attacker:
+    image: python:3.12-slim
+    command: [python, -c, "import time; time.sleep(2147483647)"]
+    networks:
+      s8-clients: {ipv4_address: 172.30.88.21}
+  normal:
+    image: python:3.12-slim
+    command: [python, -c, "import time; time.sleep(2147483647)"]
+    networks:
+      s8-clients: {ipv4_address: 172.30.88.22}
+  scan-only:
+    image: python:3.12-slim
+    command: [python, -c, "import time; time.sleep(2147483647)"]
+    networks:
+      s8-clients: {ipv4_address: 172.30.88.23}
+  login-only:
+    image: python:3.12-slim
+    command: [python, -c, "import time; time.sleep(2147483647)"]
+    networks:
+      s8-clients: {ipv4_address: 172.30.88.24}
+networks:
+  s8-clients:
+    internal: true
+    ipam:
+      config: [{subnet: 172.30.88.0/24}]
+  s8-response:
+    internal: true
+    ipam:
+      config: [{subnet: 172.30.89.0/29}]

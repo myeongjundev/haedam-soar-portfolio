@@ -1,5 +1,7 @@
 # Claude 첫 작업 · 개인 Docker 관제 재현과 실패 원인 확인
 
+S8 수정 PR을 검토할 때는 최신 [S8 독립 검토 카드](s8-review.md)를 우선 사용합니다. 아래 P01/P02 카드는 초기 연결 검증 이력입니다.
+
 [공통 규칙](../AGENTS.md)을 확인합니다. 시작 전에 `gh pr list --state open`으로 P01 포털 PR과 P02 Docker PR의 현재 HEAD를 확인합니다. 브랜치는 `claude/graylog-n8n-fresh-start`를 사용합니다.
 
 1. P01은 [README](../README.md#포털과-db-실행)의 새 볼륨 기동을 독립 확인하고 해당 PR에 `[Claude]` 코멘트를 남깁니다.

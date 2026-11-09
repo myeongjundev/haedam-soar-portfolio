@@ -58,6 +58,19 @@ fi
 
 [개인 관제 Docker 설치](docs/docker-soc.md)를 따르면 포털과 MySQL에 Graylog·MongoDB·OpenSearch·n8n·티켓 저장소를 추가할 수 있습니다. `compose.team.yaml`과 [팀 규칙·워크플로](docs/sources.md#반입-경로)는 출처와 시나리오 설정을 확인할 때 사용합니다.
 
+## S8 실제 차단·티켓·원복
+
+[S8 개인 랩 설치와 실측](docs/s8-lab.md)은 별도 프로젝트 `haedam-s8-live`에 필요한 워크플로와 자격증명, 실제 Graylog 스트림·알림을 연결합니다. 공격·정상 클라이언트를 별도 컨테이너로 두고 실제 포털 404·로그인 실패 401 → 탐지 → IP 차단 403 → 티켓 검증 → 원복 200을 시험합니다.
+
+```powershell
+py -3.12 tools/s8_lab.py init
+py -3.12 tools/s8_lab.py up
+py -3.12 tools/s8_lab.py configure
+py -3.12 tools/s8_verify.py
+```
+
+P01/P02와 S8은 포털 기본 포트가 같으므로 번갈아 실행합니다. 메모리가 작은 PC에서는 기존 관제 스택도 중지한 뒤 실행합니다. 도구는 다른 프로젝트를 자동 중지하지 않습니다. 실제 차단 대상은 개인 랩 IP 하나이며, [원복 인증과 티켓 계약](docs/s8-contract.md)을 따릅니다.
+
 ## 작업 시작
 
 [공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 읽고 작업별 PR을 엽니다. Claude Code는 저장소 루트에서 `claude`로 실행하고 [첫 문제 해결 카드](docs/claude-first-task.md)를 전달합니다.

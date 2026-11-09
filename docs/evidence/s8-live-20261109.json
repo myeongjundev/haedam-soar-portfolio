@@ -1,0 +1,394 @@
+{
+  "run_id": "S8-20261109T013617Z",
+  "started_at": "2026-11-09T01:36:17.636575+00:00",
+  "kind": "actual-portal-http",
+  "checks": {
+    "webhook_auth": "7 unauthorized requests rejected with 403",
+    "response_network_boundary": "Correct portal key plus spoofed XFF from attacker still 403",
+    "scan_only": {
+      "status": 404,
+      "error": "NOT_FOUND",
+      "started_at": "2026-11-09T01:36:20.684622+00:00",
+      "finished_at": "2026-11-09T01:36:20.689703+00:00"
+    },
+    "login_only": {
+      "status": 401,
+      "error": "INVALID_CREDENTIALS",
+      "started_at": "2026-11-09T01:36:20.937875+00:00",
+      "finished_at": "2026-11-09T01:36:21.058371+00:00"
+    },
+    "no_cross_ip_correlation": true,
+    "concurrent_duplicate": {
+      "responses": [
+        "duplicate_no_action",
+        "duplicate_no_action"
+      ],
+      "new_portal_receipts": 0
+    },
+    "stale_release_rejected": 503,
+    "effect_recorded": "verified",
+    "ticket_outage": {
+      "http_status": 503,
+      "verdict": "held_ticket_check",
+      "new_portal_receipts": 0
+    },
+    "same_event_retry_after_recovery": "duplicate_no_action",
+    "no_active_response_after_restore": {
+      "portal_status": 200,
+      "ticket_status": 200,
+      "blocked_ips": [],
+      "active_claims": []
+    },
+    "duplicate_release": "nothing_to_release",
+    "old_event_after_restore": {
+      "http_status": 500,
+      "new_portal_receipts": 0
+    },
+    "persisted_execution_privacy": {
+      "payload_rows": 0,
+      "rows_with_keys": 0
+    }
+  },
+  "source_sha256": [
+    {
+      "file": "Dockerfile",
+      "sha256": "2eee49c19a2351f35c9ef6372fe946d40ec2ee6a1f4d7ea4fd635d9e5fce99ef"
+    },
+    {
+      "file": "compose.yaml",
+      "sha256": "52fc55d9a340cba26ec17a43847ce50abcd41ce6d7634197c99c0694f1f159f9"
+    },
+    {
+      "file": "compose.soc.yaml",
+      "sha256": "751242339524331f1a28405bfc51ea2ebcf01dd80d5c439adc3df15188846fd5"
+    },
+    {
+      "file": "compose.s8.yaml",
+      "sha256": "6045f57b337e0d7e84b2a5edd8c0ef00c97faedc6f7e3a3b604e7dc68f60064c"
+    },
+    {
+      "file": "tools/build_s8_workflows.py",
+      "sha256": "b475bdbb3f1c935c36afa90ec65bbee40f159d3b9c251c7ca7c7c398498fc13f"
+    },
+    {
+      "file": "tools/s8_lab.py",
+      "sha256": "fa25504c0c285e4b22405b568ee0451fe7c14479499bf58a40ff4ad9d450c29a"
+    },
+    {
+      "file": "tools/s8_verify.py",
+      "sha256": "d555456d759d14e34ab91dfd55822e2a9c52023398de00e7007843f2798c0249"
+    },
+    {
+      "file": "tools/s8_control.py",
+      "sha256": "642c725c41f8036f7d34fe7ae54ccebaa5a2a905b5a0d817879396b94cc44254"
+    },
+    {
+      "file": "infra/n8n/portfolio-s8/haedam-10-result-log.json",
+      "sha256": "85a1801603d210a7e3061f47bee72f48a44ef2ae5e18332e36ab25fb309616b1"
+    },
+    {
+      "file": "infra/n8n/portfolio-s8/haedam-11-discord-notify.json",
+      "sha256": "d44aa9b637568013fc4054f88baeed23de79bf0344f7a30fdba0153e7ad7a681"
+    },
+    {
+      "file": "infra/n8n/portfolio-s8/haedam-12-portal-ip-block.json",
+      "sha256": "5d27b95d8e3ef5fdb7576cddb8b1ce9a41179e9f0afad2f612603c7a09dfb242"
+    },
+    {
+      "file": "infra/n8n/portfolio-s8/haedam-14-pfsense-block.json",
+      "sha256": "92d09ed9e42c51b040a4281fcf568b6652cae501b80db6c51d85810b0a688b9a"
+    },
+    {
+      "file": "infra/n8n/portfolio-s8/haedam-32-s8-s10-main.json",
+      "sha256": "8083f1b69f8c09c5c5354818dc9bc16f1c14be04f36ca4f07b80522442b89641"
+    },
+    {
+      "file": "infra/n8n/portfolio-s8/haedam-40-effect-report.json",
+      "sha256": "4aa7ca7457e4e32581e6632db8b46aa11f34a919c30f1fe50b25d43a3fc5f051"
+    },
+    {
+      "file": "infra/n8n/portfolio-s8/haedam-50-release.json",
+      "sha256": "b76efcffe82dbc11c76f1a016e3f6778a312313fb526ebd6b512582725f9b049"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/__init__.py",
+      "sha256": "16d962952e5b65c46b5a723effd0674d818d4190e274b041d94eed955ddf108a"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/admin/__init__.py",
+      "sha256": "eb540e7e150ee8b5a49cdb8147920509b06495a6beaee5ca23c621510238114b"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/auth/__init__.py",
+      "sha256": "e9985d5ed94ebadb52d652c58b85e0ad6af44166298e3135d345a0fff2e35821"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/cli.py",
+      "sha256": "64218d127b74ea91adb8d083bb07dfae5eac453223e235afbbb09498ae67e922"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/common.py",
+      "sha256": "7dd394bc0b4fde4cafeb19522909a179872fb9e32209feda2b73948e6180a243"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/integration/__init__.py",
+      "sha256": "555158979e14355914ab1a71638616f8e3734e85913e5ca73d14f46899c6718c"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/integration/events.py",
+      "sha256": "07d4cb3cf624280147bd88a13a552090a5a44732efa0f454d9c13c8cab5aa985"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/models.py",
+      "sha256": "f2c00a371f722ccefe7dfcf98010f3fb1a489d6523fdba166de7cfda37eb9858"
+    },
+    {
+      "file": "haedam-portal-backend/src/haedam_portal/petitions/__init__.py",
+      "sha256": "519c91a95308ffd1c5dafbd7e6a3f6597573f8ed757e7c2cea2a60e8aa741980"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/__init__.py",
+      "sha256": "eb823268d55fd203e3143db09a7d08f737f4dc95284591b663e74bc8803fce0a"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/__main__.py",
+      "sha256": "cc38a112ac187fdbcf7aaf1addf10409e5d2154f5113349226bc6a925e7fb81b"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/api_n8n.py",
+      "sha256": "9dd8d88ffd043731bf3baa610009d158aff79503c6086c54cd2714b53f59a12b"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/api_read.py",
+      "sha256": "53876ba6d017fdb6f503256317f3b0b55554d1f29804c119a7a4ab5b8bd44370"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/app.py",
+      "sha256": "6b5fa415b08982b6fbfec6a1d03c9c8ad364350f8e61fa15be0af05fe81be0cb"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/core.py",
+      "sha256": "21ebc5adef9a3372b923c9ef897ea7d9cd348d63882eed6bf96eb0543d0d0d28"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/dashboard.py",
+      "sha256": "7dc8ac826ab40264a6ab7a22123b4f4cc1b47011c49de64c39288a24ad2d3e31"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/db.py",
+      "sha256": "ffe2018abb3cd746ebf3cee70ab2dceea50fe2b8140053fdab7e3b58f9410af1"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/s12_measurements.py",
+      "sha256": "272ece2409aa07cd2fc1a1717365b29fb566b04a6c29d6e1653668cb0d919ecb"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/samples.py",
+      "sha256": "ea679d6e4431c95a6c093ae3c847da7eeb1c41bd96b25cd14211a11cb3bd5b6b"
+    },
+    {
+      "file": "services/ticket-store/ticket_store/validate.py",
+      "sha256": "51c6866da8f29b2b278ec821467917970336b1323062e29b2d55f8c165fc7857"
+    }
+  ],
+  "attack_scan": {
+    "status": 404,
+    "error": "NOT_FOUND",
+    "started_at": "2026-11-09T01:36:21.310736+00:00",
+    "finished_at": "2026-11-09T01:36:21.316104+00:00"
+  },
+  "attack_login": {
+    "status": 401,
+    "error": "INVALID_CREDENTIALS",
+    "started_at": "2026-11-09T01:37:01.679060+00:00",
+    "finished_at": "2026-11-09T01:37:01.783117+00:00"
+  },
+  "graylog_event": {
+    "id": "01M6YZ7B2ARZ5RJMRK30Q0A3EG",
+    "event_definition_id": "6af1237c2df999055448abbd",
+    "timestamp": "2026-11-09T01:37:05.459Z",
+    "timestamp_processing": "2026-11-09T01:37:05.610Z",
+    "fields": {
+      "src_ip": "172.30.88.21",
+      "case_id": "S8"
+    },
+    "source_streams": [
+      "6af1237c2df999055448aba3"
+    ]
+  },
+  "blocked": {
+    "status": 403,
+    "error": "IP_BLOCKED",
+    "started_at": "2026-11-09T01:37:08.429473+00:00",
+    "finished_at": "2026-11-09T01:37:08.434210+00:00"
+  },
+  "normal_during_block": {
+    "status": 200,
+    "error": null,
+    "started_at": "2026-11-09T01:37:08.673154+00:00",
+    "finished_at": "2026-11-09T01:37:08.678809+00:00"
+  },
+  "ticket_after_block": {
+    "actions": [
+      {
+        "action": "block",
+        "action_id": "2-applied-1",
+        "applied_verified": true,
+        "bot": "112",
+        "detail": "200 changed:true / listed",
+        "duplicate": false,
+        "effect_verified": null,
+        "effect_verified_at": null,
+        "finished_at": "2026-11-09T01:37:06.303Z",
+        "n8n_execution_id": "2",
+        "recorded_at": "2026-11-09T01:37:06+00:00",
+        "requested_at": "2026-11-09T01:37:06.240Z",
+        "result": "applied",
+        "target": "172.30.88.21",
+        "via": "portal"
+      }
+    ],
+    "asset_id": "haedam-portal",
+    "case_id": "S8",
+    "condition_met_at": null,
+    "created_at": "2026-11-09T01:37:06+00:00",
+    "data_origin": "live",
+    "detected_at": "2026-11-09T01:37:05.610Z",
+    "event_ids": [
+      "01M6YZ7B2ARZ5RJMRK30Q0A3EG"
+    ],
+    "first_attack_at": null,
+    "group_key": "172.30.88.21",
+    "received_at": "2026-11-09T01:37:05.844Z",
+    "responded_at": "2026-11-09T01:37:06.303Z",
+    "restored_at": null,
+    "schema_version": "1.0",
+    "seat": "B",
+    "src_ip": "172.30.88.21",
+    "status": "responding",
+    "ticket_id": "T-20261109-0001",
+    "title": "S8 포털 스캔·로그인 반복",
+    "updated_at": "2026-11-09T01:37:06+00:00",
+    "username": null,
+    "verified_at": null
+  },
+  "input_events": [
+    {
+      "event_id": "0428bd94-fa79-4e2a-a425-bfc51720f7ec",
+      "timestamp": "2026-11-09T01:37:01.781775+00:00",
+      "src_ip": "172.30.88.21",
+      "event_type": "auth.login_failed"
+    },
+    {
+      "event_id": "84fadf53-e93d-48dc-bb23-5f378c73e67d",
+      "timestamp": "2026-11-09T01:36:21.315035+00:00",
+      "src_ip": "172.30.88.21",
+      "event_type": "web.not_found"
+    }
+  ],
+  "metrics": {
+    "basis": "Actual portal JSONL event timestamps collected by Graylog; ticket response timestamp",
+    "condition_met_at": "2026-11-09T01:37:01.781775+00:00",
+    "input_count": 2,
+    "condition_to_detection_seconds": 3.828,
+    "detection_to_response_seconds": 0.693,
+    "condition_to_response_seconds": 4.521
+  },
+  "release_response": {
+    "ok": true,
+    "verdict": "released",
+    "case_id": "S8",
+    "ip": "172.30.88.21",
+    "steps": [
+      {
+        "step": 2,
+        "result": "released",
+        "detail": "200 changed:true / listed"
+      }
+    ],
+    "ticket": {
+      "ticket_id": "T-20261109-0001",
+      "status": "restored"
+    },
+    "manual_required": [],
+    "discord_sent": false,
+    "n8n_execution_id": "25"
+  },
+  "restored_attacker": {
+    "status": 200,
+    "error": null,
+    "started_at": "2026-11-09T01:37:30.041742+00:00",
+    "finished_at": "2026-11-09T01:37:30.047440+00:00"
+  },
+  "restored_normal": {
+    "status": 200,
+    "error": null,
+    "started_at": "2026-11-09T01:37:30.287031+00:00",
+    "finished_at": "2026-11-09T01:37:30.292721+00:00"
+  },
+  "ticket_final": {
+    "actions": [
+      {
+        "action": "block",
+        "action_id": "2-applied-1",
+        "applied_verified": true,
+        "bot": "112",
+        "detail": "200 changed:true / listed",
+        "duplicate": false,
+        "effect_verified": true,
+        "effect_verified_at": "2026-11-09T01:37:12.292343+00:00",
+        "finished_at": "2026-11-09T01:37:06.303Z",
+        "n8n_execution_id": "2",
+        "recorded_at": "2026-11-09T01:37:06+00:00",
+        "requested_at": "2026-11-09T01:37:06.240Z",
+        "result": "applied",
+        "target": "172.30.88.21",
+        "via": "portal"
+      },
+      {
+        "action": "unblock",
+        "action_id": "25-released-2",
+        "applied_verified": true,
+        "bot": "112",
+        "detail": "승인 portfolio-operator",
+        "duplicate": false,
+        "effect_verified": null,
+        "effect_verified_at": null,
+        "finished_at": "2026-11-09T01:37:29.680Z",
+        "n8n_execution_id": "25",
+        "recorded_at": "2026-11-09T01:37:29+00:00",
+        "requested_at": "2026-11-09T01:37:29.644Z",
+        "result": "released",
+        "target": "172.30.88.21",
+        "via": "portal"
+      }
+    ],
+    "asset_id": "haedam-portal",
+    "case_id": "S8",
+    "condition_met_at": null,
+    "created_at": "2026-11-09T01:37:06+00:00",
+    "data_origin": "live",
+    "detected_at": "2026-11-09T01:37:05.610Z",
+    "event_ids": [
+      "01M6YZ7B2ARZ5RJMRK30Q0A3EG",
+      "release-skip-25-1",
+      "release-25-2"
+    ],
+    "first_attack_at": null,
+    "group_key": "172.30.88.21",
+    "received_at": "2026-11-09T01:37:05.844Z",
+    "responded_at": "2026-11-09T01:37:06.303Z",
+    "restored_at": "2026-11-09T01:37:29.680Z",
+    "schema_version": "1.0",
+    "seat": "B",
+    "src_ip": "172.30.88.21",
+    "status": "restored",
+    "ticket_id": "T-20261109-0001",
+    "title": "S8 포털 스캔·로그인 반복",
+    "updated_at": "2026-11-09T01:37:29+00:00",
+    "username": null,
+    "verified_at": "2026-11-09T01:37:12.292343+00:00"
+  },
+  "result": "PASS",
+  "finished_at": "2026-11-09T01:37:34.473567+00:00"
+}

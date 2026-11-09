@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Personal S8 operator release request",
+  "type": "object",
+  "required": ["seat", "case_id", "asset_id", "group_key", "ticket_id"],
+  "properties": {
+    "seat": {"const": "B"},
+    "case_id": {"const": "S8"},
+    "asset_id": {"const": "haedam-portal"},
+    "group_key": {"const": "172.30.88.21"},
+    "ticket_id": {"type": "string", "pattern": "^T-\\d{8}-\\d{4}$"},
+    "reason": {"type": "string"},
+    "approver": {"description": "Ignored. Identity comes from the operator credential.", "type": "string"}
+  }
+}
