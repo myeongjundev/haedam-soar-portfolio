@@ -21,6 +21,19 @@ def test_changed_webroot_cannot_be_accepted_as_baseline(monkeypatch):
     assert mutations == []
 
 
+def test_stale_backend_volume_is_not_reported_ready(monkeypatch):
+    # s7-backend shadows /app/src: after `up --build` the portal could keep running old code.
+    written = []
+    monkeypatch.setattr(s7_lab, 'run', lambda command, *a, **k:
+        'image-digest' if command[:3] == ['docker', 'image', 'inspect'] else '{"haedam_portal/__init__.py":"new"}')
+    monkeypatch.setattr(s7_lab, 'compose', lambda *a, **k: '{"haedam_portal/__init__.py":"old"}')
+    monkeypatch.setattr(s7_lab, 'private_file', lambda *a: written.append(a))
+    monkeypatch.setattr(s7_lab, 'wait_for', lambda *a, **k: pytest.fail('reached readiness checks'))
+    with pytest.raises(RuntimeError, match='stale'):
+        s7_lab.ready()
+    assert written == []
+
+
 def test_low_memory_up_does_not_stop_other_workloads(monkeypatch):
     mutations = []
     monkeypatch.setattr(s7_lab, 'run', lambda command, *a, **k:
