@@ -12,7 +12,7 @@
 | pfSense | 새 랩에서 실제 필터 경로·차단·원복, VM 방식 채점 확인 | 증거 부족 | P04 pfSense CE VM, 포트와 경로 검증 |
 | n8n | 기동, 워크플로·자격증명 설정, 자동 대응·티켓 | S8·H1·개인 S7 통과 | 개인 새 볼륨에서 실제 대응·티켓·원복 확인. [S8](s8-results.md), [H1](h1-results.md). 다른 케이스는 별도 검증 |
 | 시나리오별 재현 | 테스트 명령, 기대·실측 결과, 가린 캡처 | 증거 부족 | P05 아래 시나리오 순서로 실측 |
-| 개인 PPT | 7단계 본인 명의 PPT와 개인 실측 근거 | 증거 부족 | P06 팀 최종 PPT 확보 후 개인 슬라이드 작성 |
+| 개인 PPT | 7단계 본인 명의 PPT와 개인 실측 근거 | 22장 초안 작성·파일 검사 완료 | [PPT와 편집 원본](portfolio/README.md). 새 대시보드 캡처와 완료 후 S10 실측 반영은 후속 |
 
 pfSense는 FreeBSD 기반입니다. 공식 설치 경로는 ISO로 VM을 만드는 방식입니다. 한 PC에서 Compose와 pfSense CE VM을 함께 운영하는 구성을 우선 설계하고, 과제의 컨테이너 문구에 이 구성이 허용되는지 강사님 확인이 필요합니다. [Netgate 가상화 문서](https://docs.netgate.com/pfsense/en/latest/virtualization/)
 
