@@ -157,7 +157,7 @@ py -3.12 tools/s7_auto_lab.py stop
 py -3.12 tools/panel.py
 ```
 
-기본 `http://127.0.0.1:15800`에서 **환경 확인 → S7 시험 입력 → 탐지·대응 확인 → 원복 완료**를 실행합니다. 허용된 개인 랩만 대상으로 하며 Docker/VM을 켜거나 끄지 않습니다. S7 랩은 별도로 준비해야 합니다. [설치·설정·검증 범위](docs/panel-lab.md) · [API 계약](docs/panel-contract.md). S8/H1은 버튼 미연결, S10은 Claude 구성 중으로 표시합니다. 11/10 새 개인 랩에서 두 대상의 실제 버튼 입력→Wazuh→Graylog→n8n→복구/격리→티켓 원복을 확인했습니다. [실측 결과와 캡처](docs/panel-results-20261110.md).
+기본 `http://127.0.0.1:15800`에서 **환경 확인 → S7 시험 입력 → 탐지·대응 확인 → 원복 완료**를 실행합니다. 허용된 개인 랩만 대상으로 하며 Docker/VM을 켜거나 끄지 않습니다. S7 랩은 별도로 준비해야 합니다. [설치·설정·검증 범위](docs/panel-lab.md) · [API 계약](docs/panel-contract.md). S8/H1은 버튼 미연결, S10은 CLI 실측은 통과했지만(PR #13 반입) 버튼은 연결하지 않아 실행 잠금으로 표시합니다. 11/10 새 개인 랩에서 두 대상의 실제 버튼 입력→Wazuh→Graylog→n8n→복구/격리→티켓 원복을 확인했습니다. [실측 결과와 캡처](docs/panel-results-20261110.md).
 
 ## P04·S10 pfSense 경계 차단·포털 차단·원복
 
