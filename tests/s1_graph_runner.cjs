@@ -9,6 +9,7 @@ let faults={};
 const copy=x=>JSON.parse(JSON.stringify(x));
 const response=(body,statusCode=200)=>({statusCode,body});
 const active=t=>t.actions.filter(a=>['applied','already_applied'].includes(a.result) && !a.released);
+const ref=(a,withResult=false)=>({bot:a.bot,via:a.via,action:a.action,target:a.target,...(withResult?{result:a.result}:{})});
 function http(method,url,body,headers){
  const u=new URL(url),path=u.pathname;
  state.calls.push({method,url,body:copy(body),headers});
@@ -32,12 +33,12 @@ function http(method,url,body,headers){
  if(faults.ticketRead && method==='GET')return response({},503);
  if(path.endsWith('/active')){
   const resource=Object.fromEntries(u.searchParams);
-  const tickets=state.tickets.map(t=>({ticket_id:t.ticket_id,seat:t.seat,status:t.status,active_actions:active(t).filter(a=>a.target===resource.target && a.via===resource.via)})).filter(t=>t.active_actions.length);
+  const tickets=state.tickets.map(t=>({ticket_id:t.ticket_id,seat:t.seat,status:t.status,active_actions:active(t).filter(a=>a.target===resource.target && a.via===resource.via).map(a=>ref(a))})).filter(t=>t.active_actions.length);
   return response({ok:true,resource,tickets});
  }
  if(path.endsWith('/open')){
   const t=state.tickets.findLast(t=>t.seat===u.searchParams.get('seat') && t.group_key===u.searchParams.get('group_key') && t.status!=='closed');
-  return response({ok:true,exists:!!t,ticket_id:t?.ticket_id||null,status:t?.status||null,applied_actions:t?active(t):[]});
+  return response({ok:true,exists:!!t,ticket_id:t?.ticket_id||null,status:t?.status||null,applied_actions:t?active(t).map(a=>ref(a,true)):[]});
  }
  if(!path.endsWith('/record') || method!=='POST')throw Error('Unexpected ticket request');
  if(faults.recordStage===body.stage)return response({},503);

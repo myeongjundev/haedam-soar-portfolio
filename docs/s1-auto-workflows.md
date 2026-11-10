@@ -66,7 +66,7 @@ py -3.12 tools/s1_lab.py init --output .local/s1-auto
 
 ## 검증과 다음 작업
 
-`tests/s1_graph_runner.cjs`는 생성된 Code·IF·하위 워크플로 연결을 실행하고 HTTP 노드만 메모리 모델로 대체합니다. n8n 엔진·credential 인증 미들웨어·Graylog 검색기를 실행한 것이 아닙니다. 추가로 생성된 티켓 HTTP 요청 순서를 실제 Flask 저장소와 새 임시 SQLite에 적용해 계약·원복 상태를 확인합니다. 서버나 소켓을 열지 않습니다.
+`tests/s1_graph_runner.cjs`는 생성된 Code·IF·하위 워크플로 연결을 실행하고 HTTP 노드만 메모리 모델로 대체합니다. n8n 엔진·credential 인증 미들웨어·Graylog 검색기를 실행한 것이 아닙니다. 추가로 생성된 티켓 HTTP 요청 순서를 실제 Flask 저장소와 새 임시 SQLite에 적용합니다. 후속 [응답 계약 검토](s1-s4-review-20261110.md)에서 모델의 과도한 필드 때문에 놓친 중복·원복 실패를 수정했으며, 이제 `tests/generated_workflow_rpc.cjs`와 포털의 `tests/test_workflow_store_contract.py`가 실제 Flask 응답을 그래프에 직접 돌려주어 분기를 검증합니다. 서버나 소켓을 열지 않습니다.
 
 검사에는 정상 대응/원복, 새 사건 분리, 같은 사건·활성 중 새 알림 중복, 옛 이벤트 재전송, 다른 계정/티켓 소유권, 저장소 장애, 잘못된 200 응답, 반영 조회 실패, 기록 실패, 응답 유실 시 동일 키 재시도, 비활성 상태 원복과 스키마 거부가 포함됩니다. 기존 S1 입력기의 실제 요청은 실행하지 않았습니다.
 

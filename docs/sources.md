@@ -31,6 +31,8 @@
 
 ## 개인 기여와 검증 근거
 
+PR #17/#18 검토 인계 후 S1·S4 티켓 응답 소비 수정과 `tests/generated_workflow_rpc.cjs`, 포털 `tests/test_workflow_store_contract.py`는 김명준·Codex의 후속 작업입니다. 저장소 API를 변경하지 않고 실제 반환 필드에 맞춰 소비자·테스트 모델을 교정했습니다. Claude의 독립 승인이나 실제 n8n 실측으로 표시하지 않습니다. [실패 재현과 검토 기록](s1-s4-review-20261110.md).
+
 개인 S4의 `infra/s4-*.json`, `infra/n8n/s4-src/`, `infra/n8n/portfolio-s4/`, `infra/graylog/portfolio-s4.json`, `tools/*s4*`, 포털 `integration/s4_accounts.py`·소유권 모델/마이그레이션은 김명준·Codex의 후속 구현입니다. 반소람의 팀 S4 집계 기준과 김대훈의 티켓 하위 워크플로 10번, 김상혁의 티켓 저장소 계약을 사용합니다. PR #18 `40e180b`의 오프라인 S1 구조를 별도 파일로 확장하여 계정 ID·티켓 소유권·키 분리·세션 회수·오탐 해제를 추가했습니다. 팀 원본과 S1 구현은 수정하지 않았으며 개인 실제 배포·실측은 아직 아닙니다. [변경 범위와 검증 경계](s4-auto-workflows.md).
 
 개인 S1 자동 대응의 `infra/n8n/s1-src/`, `infra/n8n/portfolio-s1/`, `infra/graylog/portfolio-s1.json`, `infra/s1-integration-settings.json`, `tools/build_s1_workflows.py`는 김명준·Codex의 후속 구현입니다. 반소람의 팀 S1 집계 기준과 김대훈의 n8n 티켓/포털 하위 워크플로를 유지·분리하고, 개인 대상 제한·계정+IP 묶음·티켓 선기록·소유권/현재 상태 대조·운영자 원복을 추가했습니다. 원본 10/12는 수정하지 않고 생성기로 파생합니다. 오프라인 검증이며 개인 실측 완료가 아닙니다. [구성과 검증 경계](s1-auto-workflows.md).

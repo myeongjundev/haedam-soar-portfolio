@@ -1,6 +1,6 @@
 // CFG is injected by the offline builder, never taken from a webhook body.
 const out = j => [{json:j}];
-const held = (verdict, status=409) => out({ok:false,no_action:true,proceed:false,verdict,http_status:status});
+const held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});
 const idOK = v => typeof v==='string' && /^T-\d{8}-\d{4}$/.test(v);
 const states = ['open','responding','verified','restored','closed'];
 const activeOK = a => a && a.bot==='112' && a.via==='portal' && a.action==='block' && a.target===CFG.ip && ['applied','already_applied'].includes(a.result);
@@ -43,7 +43,7 @@ function run(stage,j,execution) {
  }
  if(stage==='owners' || stage==='owners_before_block') {
   const r=resource();
-  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='block' && a.target===CFG.ip && ['applied','already_applied'].includes(a.result) && typeof a.bot==='string'))) return held('held_resource_check',503);
+  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='block' && a.target===CFG.ip && typeof a.bot==='string'))) return held('held_resource_check',503);
   const own=x.snapshot.actions.length===1;
   if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='112'))) return held('held_other_resource_ticket');
   if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');
@@ -56,7 +56,7 @@ function run(stage,j,execution) {
    if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});
    return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unblock',ip:CFG.ip,dry_run:false});
   }
-  if(own) return blocked && x.snapshot.actions[0].applied_verified===true ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');
+  if(own) return blocked ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');
   if(blocked) return held('held_unowned_portal_block');
   if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'block',ip:CFG.ip,dry_run:false});
   return record(x,'detected',execution);
