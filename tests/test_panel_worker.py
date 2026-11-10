@@ -150,3 +150,19 @@ def test_drift_does_not_prevent_existing_incident_observation(harness):
     harness.verify.lab.require_current_portal=lambda:pytest.fail('New-input guard must not block readback')
     result=harness.invoke(action='observe')
     assert any(m.get('data',{}).get('stage')=='verified' for m in result)
+
+
+def test_open_incident_reports_its_own_reason_not_runtime_drift(harness):
+    # The real check compares the web volume with the built image, so an open
+    # incident's tampered file also counts as drift; its own reason must win.
+    def drift():
+        harness.calls.append('image_check')
+        if (harness.web/'index.html').read_bytes()!=(harness.base/'baseline/index.html').read_bytes():
+            raise RuntimeError('s7-web volume is stale vs the built portal image')
+    harness.verify.lab.require_current_portal=drift
+    (harness.web/'index.html').write_bytes(b'tampered by the open incident')
+    harness.verify.tickets=lambda:[{'status':'open'}]
+    with pytest.raises(RuntimeError,match='active_ticket'): harness.invoke()
+    harness.verify.tickets=lambda:[]
+    with pytest.raises(RuntimeError,match='dirty_target'): harness.invoke()
+    assert 'mutate' not in harness.calls
