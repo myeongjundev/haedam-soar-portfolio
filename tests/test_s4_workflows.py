@@ -56,6 +56,14 @@ class S4Workflows(unittest.TestCase):
         self.assertEqual([t['status'] for t in r['tickets']], ['closed', 'restored'])
         self.assertTrue(all(x.get('effect_verified') is None for x in r['results']))
 
+    def test_engine_rejects_dynamic_send_body_before_claiming_success(self):
+        broken = deepcopy(self.workflows)
+        node = next(n for n in broken['s4-portal.json']['nodes'] if n['name'] == 'Account API')
+        node['parameters']['sendBody'] = '={{ $json.action !== "list" }}'
+        with self.assertRaises(subprocess.CalledProcessError) as caught:
+            self.run_graph([self.respond()], workflows=broken)
+        self.assertIn('sendBody does not support expressions in n8n', caught.exception.stderr)
+
     def test_input_scope_age_disabled_and_override(self):
         for change in ({'username': self.s['accounts']['normal']}, {'src_ip': self.s['addresses']['normal']},
                        {'cfg': {}}, {'case_id': 'S1'}, {'detected_at': 'bad'},
