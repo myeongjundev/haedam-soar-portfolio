@@ -1,0 +1,347 @@
+{
+ "run_id": "S10-20261110T021934Z",
+ "started_at": "2026-11-10T02:19:34.117+00:00",
+ "checks": {
+  "both_layers_applied": true,
+  "duplicate_replay": [
+   [
+    200,
+    "duplicate_no_action"
+   ],
+   [
+    200,
+    "duplicate_no_action"
+   ]
+  ],
+  "stale_release": [
+   503,
+   "held_stale_release_ticket"
+  ],
+  "duplicate_release": [
+   200,
+   "nothing_to_release"
+  ]
+ },
+ "result": "PASS",
+ "source_head": "70c0ea64d031428623a26a761b81b5c793042bf2",
+ "source_dirty": false,
+ "preflight": {
+  "pfsense": {
+   "config_rule_present": false,
+   "configured": false,
+   "covered_by_network": false,
+   "ready": true,
+   "rule_present": false,
+   "runtime_rule_present": false,
+   "table_present": false
+  },
+  "portal_blocks": [
+   200,
+   []
+  ]
+ },
+ "baseline": {
+  "attacker": {
+   "at": "2026-11-10T02:19:37.395+00:00",
+   "result": 200,
+   "seconds": 0.019
+  },
+  "normal": {
+   "at": "2026-11-10T02:19:37.650+00:00",
+   "result": 200,
+   "seconds": 0.019
+  }
+ },
+ "input": {
+  "ping": {
+   "at": "2026-11-10T02:19:37.686+00:00",
+   "ping_exit": 1
+  },
+  "scan": {
+   "at": "2026-11-10T02:19:40.952+00:00",
+   "status": 404
+  },
+  "login": {
+   "at": "2026-11-10T02:19:41.215+00:00",
+   "status": 401
+  }
+ },
+ "graylog_event": {
+  "id": "01M71M2DFRHF0K6NFH4Y4MF8BK",
+  "timestamp": "2026-11-10T02:19:52.675Z",
+  "timestamp_processing": "2026-11-10T02:19:53.208Z",
+  "event_definition_id": "6af27ac491a6af3d8596e316",
+  "fields": {
+   "src_ip": "203.0.113.22",
+   "case_id": "S10"
+  }
+ },
+ "ticket_after_response": {
+  "actions": [
+   {
+    "action": "block",
+    "action_id": "53-applied-1",
+    "applied_verified": true,
+    "bot": "112",
+    "detail": "200 changed:true / listed",
+    "duplicate": false,
+    "effect_verified": null,
+    "effect_verified_at": null,
+    "finished_at": "2026-11-10T02:19:53.691Z",
+    "n8n_execution_id": "53",
+    "recorded_at": "2026-11-10T02:19:53+00:00",
+    "requested_at": "2026-11-10T02:19:53.634Z",
+    "result": "applied",
+    "target": "203.0.113.22",
+    "via": "portal"
+   },
+   {
+    "action": "block",
+    "action_id": "53-applied-2",
+    "applied_verified": true,
+    "bot": "112",
+    "detail": "applied:verified_managed_state",
+    "duplicate": false,
+    "effect_verified": null,
+    "effect_verified_at": null,
+    "finished_at": "2026-11-10T02:20:03.872Z",
+    "n8n_execution_id": "53",
+    "recorded_at": "2026-11-10T02:20:03+00:00",
+    "requested_at": "2026-11-10T02:19:53.940Z",
+    "result": "applied",
+    "target": "203.0.113.22",
+    "via": "pfsense"
+   }
+  ],
+  "asset_id": "haedam-portal",
+  "case_id": "S10",
+  "condition_met_at": null,
+  "created_at": "2026-11-10T02:19:53+00:00",
+  "data_origin": "live",
+  "detected_at": "2026-11-10T02:19:53.208Z",
+  "event_ids": [
+   "01M71M2DFRHF0K6NFH4Y4MF8BK"
+  ],
+  "first_attack_at": null,
+  "group_key": "203.0.113.22",
+  "received_at": "2026-11-10T02:19:53.346Z",
+  "responded_at": "2026-11-10T02:19:53.691Z",
+  "restored_at": null,
+  "schema_version": "1.0",
+  "seat": "B",
+  "src_ip": "203.0.113.22",
+  "status": "responding",
+  "ticket_id": "T-20261110-0003",
+  "title": "S10 스캔 → 침입 연쇄(경계 차단 포함)",
+  "updated_at": "2026-11-10T02:20:03+00:00",
+  "username": null,
+  "verified_at": null
+ },
+ "blocked": {
+  "attacker": {
+   "at": "2026-11-10T02:20:11.145+00:00",
+   "result": "URLError",
+   "seconds": 5.016
+  },
+  "normal": {
+   "at": "2026-11-10T02:20:11.400+00:00",
+   "result": 200,
+   "seconds": 0.021
+  },
+  "pfsense": {
+   "config_rule_present": true,
+   "configured": true,
+   "covered_by_network": false,
+   "ready": true,
+   "rule_present": true,
+   "runtime_rule_present": true,
+   "table_present": true
+  },
+  "portal_blocks": [
+   200,
+   [
+    "203.0.113.22"
+   ]
+  ],
+  "pf_rules": [
+   "block drop in quick on em0 inet from <EasyRuleBlockHostsWAN> to any label \"USER_RULE: Blocked via EasyRule\" label \"id:1794277198\" ridentifier 1794277198"
+  ]
+ },
+ "release_requested_at": "2026-11-10T02:20:32.916+00:00",
+ "release": {
+  "status": 200,
+  "body": {
+   "ok": true,
+   "verdict": "released",
+   "case_id": "S10",
+   "ip": "203.0.113.22",
+   "steps": [
+    {
+     "step": 1,
+     "result": "released",
+     "detail": "released:verified_managed_state"
+    },
+    {
+     "step": 2,
+     "result": "released",
+     "detail": "200 changed:true / listed"
+    }
+   ],
+   "ticket": {
+    "ticket_id": "T-20261110-0003",
+    "status": "restored"
+   },
+   "manual_required": [],
+   "discord_sent": false,
+   "n8n_execution_id": "69"
+  }
+ },
+ "restored": {
+  "attacker": {
+   "at": "2026-11-10T02:20:48.907+00:00",
+   "result": 200,
+   "seconds": 0.023
+  },
+  "normal": {
+   "at": "2026-11-10T02:20:49.170+00:00",
+   "result": 200,
+   "seconds": 0.018
+  },
+  "pfsense": {
+   "exit": 0,
+   "action": "status",
+   "applied_verified": false,
+   "changed": false,
+   "effect_verified": null,
+   "finished_at": "2026-11-10T02:20:51.675+00:00",
+   "journal_state": {
+    "claim_owner_id": null,
+    "claim_target": null,
+    "pending_action": null,
+    "pending_request_id": null
+   },
+   "ok": true,
+   "owner_id": "S10-20261110T021934Z",
+   "reason": "read_only_snapshot",
+   "replayed": false,
+   "request_id": "S10-20261110T021934Z-status-3",
+   "requested_at": "2026-11-10T02:20:51.202+00:00",
+   "result": "status",
+   "schema_version": "1.0",
+   "state": {
+    "config_rule_present": false,
+    "configured": false,
+    "covered_by_network": false,
+    "ready": true,
+    "rule_present": false,
+    "runtime_rule_present": false,
+    "table_present": false
+   },
+   "target": "203.0.113.22",
+   "via": "pfsense"
+  },
+  "portal_blocks": [
+   200,
+   []
+  ],
+  "pf_rules": [],
+  "ticket": {
+   "actions": [
+    {
+     "action": "block",
+     "action_id": "53-applied-1",
+     "applied_verified": true,
+     "bot": "112",
+     "detail": "200 changed:true / listed",
+     "duplicate": false,
+     "effect_verified": null,
+     "effect_verified_at": null,
+     "finished_at": "2026-11-10T02:19:53.691Z",
+     "n8n_execution_id": "53",
+     "recorded_at": "2026-11-10T02:19:53+00:00",
+     "requested_at": "2026-11-10T02:19:53.634Z",
+     "result": "applied",
+     "target": "203.0.113.22",
+     "via": "portal"
+    },
+    {
+     "action": "block",
+     "action_id": "53-applied-2",
+     "applied_verified": true,
+     "bot": "112",
+     "detail": "applied:verified_managed_state",
+     "duplicate": false,
+     "effect_verified": null,
+     "effect_verified_at": null,
+     "finished_at": "2026-11-10T02:20:03.872Z",
+     "n8n_execution_id": "53",
+     "recorded_at": "2026-11-10T02:20:03+00:00",
+     "requested_at": "2026-11-10T02:19:53.940Z",
+     "result": "applied",
+     "target": "203.0.113.22",
+     "via": "pfsense"
+    },
+    {
+     "action": "unblock",
+     "action_id": "69-released-1",
+     "applied_verified": true,
+     "bot": "112",
+     "detail": "승인 portfolio-operator",
+     "duplicate": false,
+     "effect_verified": null,
+     "effect_verified_at": null,
+     "finished_at": "2026-11-10T02:20:47.303Z",
+     "n8n_execution_id": "69",
+     "recorded_at": "2026-11-10T02:20:47+00:00",
+     "requested_at": "2026-11-10T02:20:33.285Z",
+     "result": "released",
+     "target": "203.0.113.22",
+     "via": "pfsense"
+    },
+    {
+     "action": "unblock",
+     "action_id": "69-released-2",
+     "applied_verified": true,
+     "bot": "112",
+     "detail": "승인 portfolio-operator",
+     "duplicate": false,
+     "effect_verified": null,
+     "effect_verified_at": null,
+     "finished_at": "2026-11-10T02:20:47.462Z",
+     "n8n_execution_id": "69",
+     "recorded_at": "2026-11-10T02:20:47+00:00",
+     "requested_at": "2026-11-10T02:20:47.428Z",
+     "result": "released",
+     "target": "203.0.113.22",
+     "via": "portal"
+    }
+   ],
+   "asset_id": "haedam-portal",
+   "case_id": "S10",
+   "condition_met_at": null,
+   "created_at": "2026-11-10T02:19:53+00:00",
+   "data_origin": "live",
+   "detected_at": "2026-11-10T02:19:53.208Z",
+   "event_ids": [
+    "01M71M2DFRHF0K6NFH4Y4MF8BK",
+    "release-69-1",
+    "release-69-2"
+   ],
+   "first_attack_at": null,
+   "group_key": "203.0.113.22",
+   "received_at": "2026-11-10T02:19:53.346Z",
+   "responded_at": "2026-11-10T02:19:53.691Z",
+   "restored_at": "2026-11-10T02:20:47.462Z",
+   "schema_version": "1.0",
+   "seat": "B",
+   "src_ip": "203.0.113.22",
+   "status": "restored",
+   "ticket_id": "T-20261110-0003",
+   "title": "S10 스캔 → 침입 연쇄(경계 차단 포함)",
+   "updated_at": "2026-11-10T02:20:47+00:00",
+   "username": null,
+   "verified_at": null
+  }
+ },
+ "finished_at": "2026-11-10T02:21:07.864+00:00"
+}

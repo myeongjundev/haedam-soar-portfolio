@@ -84,6 +84,30 @@ py -3.12 tools/h1_verify.py
 
 S8과 별도 프로젝트·포트·볼륨을 사용하며, 메모리가 작은 PC에서는 번갈아 실행합니다. [H1 실측 결과](docs/h1-results.md) · [H1 계약](docs/h1-contract.md) · [검토 카드](docs/h1-review.md).
 
+## P04·S10 pfSense 경계 차단·포털 차단·원복
+
+[P04·S10 개인 랩](docs/s10-lab.md)은 pfSense CE 2.7.2를 Docker 컨테이너 안의 QEMU VM(KVM 없음, 소프트웨어 에뮬레이션)으로 띄웁니다. 공격·정상 클라이언트의 실제 요청이 pfSense를 거쳐 포털에 닿습니다. S10은 이 경로에서 세 신호를 모읍니다.
+
+- pfSense ICMP 차단 로그
+- 포털 404
+- 포털 401
+
+이후 흐름은 Graylog 상관 탐지 → n8n 티켓 선기록 → 포털 IP 차단과 pfSense 차단 → 운영자 원복입니다.
+
+```powershell
+py -3.12 tools/pf_lab.py init --iso <ISO 경로>
+py -3.12 tools/pf_lab.py up pfsense        # 최초 1회 설치는 docs/s10-lab.md 순서
+py -3.12 tools/pf_verify.py                # P04: 경계 차단·정상 유지·원복
+py -3.12 tools/s10_lab.py init
+py -3.12 tools/s10_lab.py up
+py -3.12 tools/s10_lab.py pfsense
+py -3.12 tools/s10_lab.py configure
+py -3.12 tools/s10_verify.py               # S10 실제 경로
+py -3.12 tools/s10_failures.py             # 티켓 저장소·relay 장애
+```
+
+pfSense ISO는 Git에 넣지 않습니다. 실행 중에는 기존 관제 스택을 멈춥니다. 시험 대상은 팀 도구가 허용하는 개인 랩 출발지 하나입니다. [실측 결과](docs/s10-results-20261110.md) · [인수인계](docs/s10-handoff-20261110.md).
+
 ## 작업 시작
 
 [공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 읽고 작업별 PR을 엽니다. 준비된 Claude IDE에서 별도의 개인 작업 폴더를 열고 [첫 문제 해결 카드](docs/claude-first-task.md)를 사용합니다.

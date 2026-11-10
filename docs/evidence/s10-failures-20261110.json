@@ -1,0 +1,89 @@
+{
+ "run_id": "S10FAULT-20261110T020814Z",
+ "started_at": "2026-11-10T02:08:14.976+00:00",
+ "result": "PASS",
+ "source_head": "3f993545af4144a52bf3e740df1d1d612016b17a",
+ "source_dirty": false,
+ "F1_ticket_store_down": {
+  "status": 503,
+  "verdict": "held_ticket_check",
+  "after": {
+   "pfsense": {
+    "configured": false,
+    "table_present": false,
+    "rule_present": false
+   },
+   "portal_blocks": [],
+   "attacker": 200,
+   "normal": 200
+  },
+  "new_tickets": []
+ },
+ "F2_relay_down": {
+  "status": 503,
+  "verdict": "responded",
+  "after": {
+   "pfsense": {
+    "configured": false,
+    "table_present": false,
+    "rule_present": false
+   },
+   "portal_blocks": [
+    "203.0.113.22"
+   ],
+   "attacker": "HTTPError",
+   "normal": 200
+  },
+  "ticket": {
+   "id": "T-20261110-0002",
+   "status": "responding",
+   "actions": [
+    [
+     "portal",
+     "block",
+     "applied"
+    ],
+    [
+     "pfsense",
+     "block",
+     "failed"
+    ]
+   ]
+  }
+ },
+ "F2_release": {
+  "status": 200,
+  "verdict": "released",
+  "after": {
+   "pfsense": {
+    "configured": false,
+    "table_present": false,
+    "rule_present": false
+   },
+   "portal_blocks": [],
+   "attacker": 200,
+   "normal": 200
+  },
+  "ticket": {
+   "status": "restored",
+   "actions": [
+    [
+     "portal",
+     "block",
+     "applied"
+    ],
+    [
+     "pfsense",
+     "block",
+     "failed"
+    ],
+    [
+     "portal",
+     "unblock",
+     "released"
+    ]
+   ]
+  }
+ },
+ "finished_at": "2026-11-10T02:08:55.847+00:00"
+}
