@@ -31,7 +31,10 @@
     "evidence_mount": "/evidence",
     "health": "/api/v1/health",
     "session": "/api/v1/auth/me",
-    "login": "/api/v1/auth/login"
+    "login": "/api/v1/auth/login",
+    "register": "/api/v1/auth/register",
+    "private_mount": "/private/s4",
+    "integration_mount": "/run/s4/integration.json"
   },
   "portal_internal_port": 5000,
   "username_prefix": "zz_s4_",
@@ -48,5 +51,14 @@
   "accounts": {
     "target": "zz_s4_target",
     "normal": "zz_s4_normal"
+  },
+  "network_internal": {
+    "default": false,
+    "clients": true,
+    "response": true,
+    "graylog_backend": true
+  },
+  "observation": {
+    "ticket_read_url": "http://ticket-store:8089"
   }
 }

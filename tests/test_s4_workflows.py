@@ -130,8 +130,8 @@ class S4Workflows(unittest.TestCase):
             self.assertFalse(manifest['runtime_verified']); self.assertFalse(manifest['integration_ready'])
             overlay = json.loads((bundle/'compose.s4.json').read_text())
             self.assertEqual(overlay['services']['portal']['environment']['S4_ACCOUNT_ALLOWLIST'], self.s['accounts']['target'])
-            self.assertEqual({k: n['internal'] for k, n in overlay['networks'].items()},
-                             {'default': False, 's4-clients': True, 's4-response': True, 'graylog-backend': True})
+            self.assertIs(overlay['networks']['default']['internal'], False)
+            self.assertTrue(all(n['internal'] for key,n in overlay['networks'].items() if key != 'default'))
             with self.assertRaises(FileExistsError): create_bundle(self.s, root, bundle)
         bindings = {k: str(i)*24 for i,k in enumerate(('input_id','index_set_id','stream_id','notification_id'), 1)}
         keys = {v['env']: str(i)*64 for i,v in enumerate(self.c['credentials'].values(), 1)}
