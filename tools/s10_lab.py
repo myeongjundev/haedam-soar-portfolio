@@ -145,6 +145,14 @@ def configure():
     pipeline_id = (graylog('/system/pipelines/pipeline/' + pipeline['id'], {**body, 'id': pipeline['id']}, 'PUT')
                    if pipeline else graylog('/system/pipelines/pipeline', body))['id']
     graylog('/system/pipelines/connections/to_stream', {'stream_id': pfsense, 'pipeline_ids': [pipeline_id]})
+    # 6.1 runs the Pipeline Processor before stream routing by default, so a stream-connected pipeline never sees
+    # the pfSense messages (observed 11/10: stored unparsed). Run it after the stream processors (this lab only).
+    processors = graylog('/system/messageprocessors/config')
+    order = [p for p in processors['processor_order'] if p['name'] != 'Pipeline Processor']
+    stage = next(p for p in processors['processor_order'] if p['name'] == 'Pipeline Processor')
+    order.insert(max(i for i, p in enumerate(order) if p['name'] in ('Message Filter Chain', 'Stream Rule Processor')) + 1,
+                 stage)
+    graylog('/system/messageprocessors/config', {**processors, 'processor_order': order}, 'PUT')
     url = f'http://n8n:5678/webhook/{WEBHOOK}'
     allow = graylog('/system/urlwhitelist')
     entries = [e for e in allow.get('entries', []) if e.get('id') != 'portfolio-s10']
