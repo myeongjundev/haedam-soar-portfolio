@@ -22,7 +22,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
+        280,
         0
       ],
       "parameters": {
@@ -35,7 +35,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        480,
+        560,
         0
       ],
       "parameters": {
@@ -69,8 +69,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        720,
-        -120
+        840,
+        180
       ],
       "parameters": {
         "jsCode": "const p = $input.first().json;\nconst t = new Date().toISOString();\nreturn [{ json: { ok: false, result: p.result, detail: p.detail, applied_verified: false, requested_at: t, finished_at: t, ctx: p.ctx } }];\n"
@@ -82,8 +82,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        720,
-        80
+        840,
+        0
       ],
       "parameters": {
         "conditions": {
@@ -116,8 +116,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        -20
+        1120,
+        180
       ],
       "parameters": {
         "jsCode": "// 시험·기준선 측정 전에는 포털을 부르지 않는다(dry_run 기본값 true). 보낼 요청만 돌려준다. 키 값은 포함하지 않는다.\nconst p = $input.first().json;\nreturn [{ json: { ok: true, result: 'dry_run', detail: `would ${p.method} ${p.url}`, ip: p.ip, action: p.action, idempotency_key: p.idem,\n  applied_verified: null, requested_at: p.requested_at, finished_at: new Date().toISOString(), ctx: p.ctx } }];\n"
@@ -129,8 +129,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        960,
-        180
+        1120,
+        0
       ],
       "parameters": {
         "method": "={{ $('요청 준비').first().json.method }}",
@@ -181,8 +181,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        180
+        1400,
+        0
       ],
       "parameters": {
         "jsCode": "// 포털 응답을 결과 값으로 바꾼다(API-CONTRACT n8n 규칙 표). 시간 초과·연결 실패는 응답이 없다.\nconst j = $input.first().json;\nconst prev = $('요청 준비').first().json;\nconst status = j.statusCode ?? null;\nconst body = j.body ?? null;\nlet result = 'failed', retry = false, detail = '';\nif (status === null) { retry = true; detail = 'timeout_or_network:' + String((j.error && j.error.message) || j.message || '').slice(0, 120); }\nelse if (status === 200) {\n  const d = (body && body.data) || {};\n  if (prev.action === 'list') result = 'listed';\n  else if (prev.action === 'block') result = d.changed ? 'applied' : 'already_applied';\n  else result = d.changed ? 'released' : 'already_applied';\n  detail = `${status} changed:${d.changed}`;\n} else if (status === 403) { result = 'rejected'; detail = '403 FORBIDDEN'; }\nelse if (status === 409 || status >= 500) { retry = true; detail = `${status}`; }\nelse { detail = `${status} ${(body && body.error && body.error.code) || ''}`; }\nreturn [{ json: { result, retry, detail, status, body_data: (body && body.data) || null, ctx: prev.ctx, idem: prev.idem, ip: prev.ip, action: prev.action,\n  requested_at: prev.requested_at, finished_at: new Date().toISOString() } }];\n"
@@ -194,8 +194,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1440,
-        180
+        1680,
+        0
       ],
       "parameters": {
         "conditions": {
@@ -228,8 +228,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1680,
-        100
+        0,
+        500
       ],
       "parameters": {
         "method": "={{ $('요청 준비').first().json.method }}",
@@ -280,8 +280,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1920,
-        100
+        280,
+        500
       ],
       "parameters": {
         "jsCode": "// 포털 응답을 결과 값으로 바꾼다(API-CONTRACT n8n 규칙 표). 시간 초과·연결 실패는 응답이 없다.\nconst j = $input.first().json;\nconst prev = $('요청 준비').first().json;\nconst status = j.statusCode ?? null;\nconst body = j.body ?? null;\nlet result = 'failed', retry = false, detail = '';\nif (status === null) { retry = true; detail = 'timeout_or_network:' + String((j.error && j.error.message) || j.message || '').slice(0, 120); }\nelse if (status === 200) {\n  const d = (body && body.data) || {};\n  if (prev.action === 'list') result = 'listed';\n  else if (prev.action === 'block') result = d.changed ? 'applied' : 'already_applied';\n  else result = d.changed ? 'released' : 'already_applied';\n  detail = `${status} changed:${d.changed}`;\n} else if (status === 403) { result = 'rejected'; detail = '403 FORBIDDEN'; }\nelse if (status === 409 || status >= 500) { retry = true; detail = `${status}`; }\nelse { detail = `${status} ${(body && body.error && body.error.code) || ''}`; }\nreturn [{ json: { result, retry, detail, status, body_data: (body && body.data) || null, ctx: prev.ctx, idem: prev.idem, ip: prev.ip, action: prev.action,\n  requested_at: prev.requested_at, finished_at: new Date().toISOString() } }];\n"
@@ -293,8 +293,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2160,
-        180
+        560,
+        680
       ],
       "parameters": {
         "jsCode": "// 최종 결과 정리. 재시도는 같은 Idempotency-Key로 1회만 했다.\nconst j = $input.first().json;\nconst final = { ok: !['failed', 'rejected'].includes(j.result), result: j.result, detail: j.detail, ip: j.ip, action: j.action, idempotency_key: j.idem,\n  applied_verified: null, requested_at: j.requested_at, finished_at: j.finished_at, ctx: j.ctx };\nif (j.action === 'list') final.items = (j.body_data && j.body_data.items) || [];\nreturn [{ json: final }];\n"
@@ -306,8 +306,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2400,
-        180
+        840,
+        680
       ],
       "parameters": {
         "conditions": {
@@ -340,8 +340,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2640,
-        100
+        1120,
+        680
       ],
       "parameters": {
         "method": "GET",
@@ -372,8 +372,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2880,
-        100
+        1400,
+        680
       ],
       "parameters": {
         "jsCode": "// 반영 확인(applied_verified): 차단은 목록에 있어야, 해제는 목록에 없어야 한다. 목록을 못 읽으면 null(미확인).\nconst j = $input.first().json;\nconst prev = $('최종 결과').first().json;\nconst items = (j.statusCode === 200 && j.body && j.body.data && j.body.data.items) || null;\nlet v = null, note = '';\nif (items) { const has = items.some(i => i.ip === prev.ip); v = prev.action === 'block' ? has : !has; }\nelse note = ' / list_unavailable:' + (j.statusCode ?? 'no_response');\nreturn [{ json: { ...prev, applied_verified: v, detail: (prev.detail || '') + (v === null ? note : v ? ' / listed' : ' / list_mismatch') } }];\n"

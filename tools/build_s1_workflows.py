@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 from urllib.parse import urlsplit
 
+from n8n_layout import tidy_all
 from s1_settings import validate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -189,8 +190,8 @@ def materialize(settings,integration,bindings,secrets):
 
 def build(settings=None,integration=None):
     s,c=load_settings(settings,integration)
-    return {f's1-{role}.json':common_workflow(role,c,s) if role in ('ticket','portal') else flow(role,s,c)
-            for role in ('ticket','portal','respond','release')}
+    return tidy_all({f's1-{role}.json':common_workflow(role,c,s) if role in ('ticket','portal') else flow(role,s,c)
+            for role in ('ticket','portal','respond','release')})
 
 
 def main():

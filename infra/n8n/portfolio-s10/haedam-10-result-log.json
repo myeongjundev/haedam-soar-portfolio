@@ -22,7 +22,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
+        280,
         0
       ],
       "parameters": {
@@ -35,7 +35,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        480,
+        560,
         0
       ],
       "parameters": {
@@ -69,8 +69,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        720,
-        -160
+        840,
+        180
       ],
       "parameters": {
         "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst b=$input.first().json,ctx=b.ctx,sd=$getWorkflowStaticData('global');\nconst out=o=>[{json:{...o,ctx}}],fail=(code,message)=>out({ok:false,error:{code,message}});\nconst tickets=Object.values(sd.tickets||{});\nconst released=a=>({...a,action:({unblock:'block',unlock:'lock',restore:'quarantine'})[a.action]||a.action});\nconst activeOf=t=>{\n const active=new Map(),key=a=>JSON.stringify([a.bot,a.via,canon(a),a.target]);\n for(const a of t.actions) {\n  if(a.duplicate) continue;\n  if(['applied','already_applied','dry_run'].includes(a.result)) active.set(key(a),a);\n  else if(a.result==='released') active.delete(key(released(a)));\n }\n return [...active.values()];\n};\nif(b.mode==='active') {\n const r=b.resource;\n if(!r || !['asset_id','via','action','target'].every(k=>validText(r[k]))) return fail('VALIDATION_ERROR','invalid resource');\n return out({ok:true,resource:r,tickets:tickets.filter(t=>t.asset_id===r.asset_id).map(t=>({...t,active_actions:activeOf(t).filter(a=>a.via===r.via && canon(a)===r.action && a.target===r.target)})).filter(t=>t.active_actions.length).map(t=>({seat:t.seat,ticket_id:t.ticket_id,status:t.status,active_actions:t.active_actions}))});\n}\nif(b.mode==='check' && ((b.target && !b.group_key) || !b.seat && validText(b.group_key))) {\n const target=b.target && !b.group_key?b.target:null;\n if(target!==null && !validText(target)) return fail('VALIDATION_ERROR','invalid target');\n const list=tickets.filter(t=>target!==null || t.group_key===b.group_key && t.status!=='closed')\n   .map(t=>({seat:t.seat,ticket_id:t.ticket_id,status:t.status,\n     active_actions:activeOf(t).filter(a=>target===null || a.target===target)}))\n   .filter(t=>target===null || t.active_actions.length);\n return out({ok:true,mode:'check',tickets:list});\n}\nif(!['check','record'].includes(b.mode) || !['A','B','C','D'].includes(b.seat) || !validText(b.group_key)) return fail('VALIDATION_ERROR','invalid mode/seat/group');\n// 실제 조치(applied/already_applied)가 없고 마지막 기록이 30분보다 오래된 티켓은 끝난 시험 기록으로 보고 열린 티켓으로 쓰지 않는다(데이터는 그대로 둔다).\nconst STALE_DRY_MS=30*60*1000;\nconst lastAt=t=>Math.max(Date.parse(t.created_at)||0,...(t.actions||[]).map(a=>Date.parse(a.recorded_at||a.finished_at||a.requested_at)||0));\nconst staleDry=t=>!(t.actions||[]).some(a=>['applied','already_applied'].includes(a.result)) && Date.now()-lastAt(t)>=STALE_DRY_MS;\nconst open=tickets.find(t=>t.seat===b.seat && t.group_key===b.group_key && t.status!=='closed' && !staleDry(t));\nif(b.mode==='check') return out({ok:true,mode:'check',exists:!!open,ticket_id:open?.ticket_id||null,status:open?.status||null,actions:open?activeOf(open):[]});\nif(!['detected','applied','effect','released'].includes(b.stage) || !validText(b.asset_id) || !Array.isArray(b.event_ids) || !b.event_ids.length || !b.event_ids.every(validText)) return fail('VALIDATION_ERROR','invalid record');\nconst stable=v=>Array.isArray(v)?v.map(stable):v && typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,stable(v[k])])):v;\nconst fingerprint=JSON.stringify(stable(Object.fromEntries(Object.entries(b).filter(([k])=>!['ctx','real','idempotency_key'].includes(k)))));\nconst prev=(sd.idem||{})[b.idempotency_key];\nif(prev) return prev.fingerprint===fingerprint?out(prev.response):fail('IDEMPOTENCY_CONFLICT','key reused with different body');\nconst finish=res=>{\n sd.idem=sd.idem||{};\n if(b.idempotency_key) sd.idem[b.idempotency_key]={fingerprint,response:res};\n return out(res);\n};\nif(open && open.asset_id!==b.asset_id) return fail('INVALID_TRANSITION','asset_id differs from existing ticket');\nif(['detected','applied'].includes(b.stage)) {\n const owners=tickets.filter(t=>t.seat===b.seat && t.group_key===b.group_key && t.event_ids.some(e=>b.event_ids.includes(e)));\n const holder=owners.find(t=>t.ticket_id!==open?.ticket_id)||owners[0];\n if(holder && (!open || holder.ticket_id!==open.ticket_id || open.status==='restored')) return finish({ok:true,mode:'record',ticket_id:holder.ticket_id,created:false,duplicate:true,status:holder.status});\n}\nconst a=b.action||{},now=new Date().toISOString();\nconst starts=open?.status==='restored' && (b.stage==='detected' || b.stage==='applied' && ['applied','already_applied','dry_run'].includes(a.result));\nif(starts && activeOf(open).length) return fail('INVALID_TRANSITION','restored ticket still has active actions');\nlet t=open && !starts?JSON.parse(JSON.stringify(open)):null,created=!t,duplicate=false;\nif(!t) {\n if(['effect','released'].includes(b.stage)) return fail('VALIDATION_ERROR','no active action');\n t={ticket_id:`T-${now.slice(0,10).replace(/-/g,'')}-${String((sd.seq||0)+1).padStart(4,'0')}`,seat:b.seat,case_id:b.case_id,group_key:b.group_key,title:b.title,asset_id:b.asset_id,event_ids:[],status:'open',actions:[],created_at:now};\n}\nconst active=activeOf(t),line=active.find(x=>same(x,a));\nif(b.stage!=='detected') {\n if(!refOK(a,true) && a.result!=='released' && !['failed','rejected','skipped'].includes(a.result)) return fail('VALIDATION_ERROR','invalid action');\n if(b.stage==='effect') {\n  if(!line) return fail('VALIDATION_ERROR','no matching active action');\n  const since=Date.parse(line.finished_at||line.requested_at||line.recorded_at);\n  const at=Date.parse(a.effect_verified_at);\n  if(!Number.isFinite(at)) return fail('VALIDATION_ERROR','invalid effect time');\n  if(at<since) return fail('STALE_EFFECT','effect predates active action');\n  line.effect_verified=a.effect_verified;line.effect_verified_at=a.effect_verified_at;\n  if(a.effect_verified===true && t.status==='responding') t.status='verified';\n } else {\n  if(a.result==='released' && !active.some(x=>same(x,released(a)))) return fail('VALIDATION_ERROR','no matching active action');\n  duplicate=b.stage==='applied' && ['applied','already_applied','dry_run'].includes(a.result) && !!line;\n  t.actions.push({...a,recorded_at:now,duplicate});\n  if(['applied','already_applied','dry_run'].includes(a.result) && t.status==='open') t.status='responding';\n  if(a.result==='released' && ['responding','verified'].includes(t.status) && !activeOf(t).length) t.status='restored';\n }\n}\nfor(const e of b.event_ids) if(!t.event_ids.includes(e)) t.event_ids.push(e);\nif(starts) {open.status='closed';open.closed_at=now;open.close_note=`재차단: 새 회차로 분리 (${t.ticket_id})`;}\nsd.tickets=sd.tickets||{};sd.tickets[t.ticket_id]=t;\nif(created) sd.seq=(sd.seq||0)+1;\nreturn finish({ok:true,mode:'record',ticket_id:t.ticket_id,created,duplicate,status:t.status});\n"
@@ -82,8 +82,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        720,
-        80
+        840,
+        0
       ],
       "parameters": {
         "method": "={{ $('저장소 요청 만들기').first().json.method }}",
@@ -127,8 +127,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        80
+        1120,
+        0
       ],
       "parameters": {
         "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json, prev=$('저장소 요청 만들기').first().json, ctx=prev.ctx;\nconst status=j.statusCode ?? null, b=j.body;\nif (status === null || status >= 500) return [{json:{ok:false,retry:true,ctx,error:{code:status===null?'NETWORK':'SERVER_ERROR',message:'ticket store unavailable'}}}];\nif (![200,201].includes(status)) return [{json:{ok:false,retry:false,ctx,error:{code:b?.error?.code || 'HTTP_ERROR',message:'ticket request rejected'}}}];\nif (!b || b.ok !== true) return held(ctx,'held_invalid_ticket_response');\nif (prev.mode === 'active') {\n  const r=prev.resource;\n  if (!b.resource || Object.keys(b.resource).length!==4 || !['asset_id','via','action','target'].every(k=>b.resource[k]===r[k]) || !Array.isArray(b.tickets) || !b.tickets.every(t=>ticketId(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>refOK(a) && a.via===r.via && canon(a)===r.action && a.target===r.target))) return held(ctx,'held_invalid_resource_response');\n  return [{json:{ok:true,mode:'active',resource:b.resource,tickets:b.tickets,ctx}}];\n}\nif (prev.mode === 'check') {\n  if (['target','all_seats'].includes(prev.query_scope)) {\n    const target = prev.query_scope === 'target' ? prev.target : null;\n    if ((target !== null && !validText(target)) || !Array.isArray(b.tickets) || !b.tickets.every(t =>\n      ticketId(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) &&\n      Array.isArray(t.active_actions) && (target === null || t.active_actions.length > 0) &&\n      t.active_actions.every(a => refOK(a) && (target === null || a.target === target)))) return held(ctx,'held_invalid_ticket_list');\n    return [{json:{ok:true,mode:'check',tickets:b.tickets.map(t => ({...t,\n      active_actions:t.active_actions.map(a => ({...a,action:canon(a)}))})),ctx}}];\n  }\n  const result={ok:true,mode:'check',exists:b.exists,ticket_id:b.ticket_id,status:b.status,actions:b.applied_actions,ctx};\n  if (!snapshotOK(result)) return held(ctx,'held_invalid_ticket_response');\n  result.actions=result.actions.map(a=>({...a,action:canon(a)}));\n  return [{json:result}];\n}\nif (!ticketId(b.ticket_id) || !states.includes(b.status) || typeof b.created!=='boolean' || typeof b.duplicate!=='boolean') return held(ctx,'held_invalid_record_response');\nreturn [{json:{ok:true,mode:'record',ticket_id:b.ticket_id,status:b.status,created:b.created,duplicate:b.duplicate,ctx}}];\n"
@@ -140,8 +140,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1200,
-        80
+        1400,
+        0
       ],
       "parameters": {
         "conditions": {
@@ -174,7 +174,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1440,
+        1680,
         0
       ],
       "parameters": {
@@ -219,7 +219,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
+        1960,
         0
       ],
       "parameters": {
@@ -232,8 +232,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
-        200
+        1680,
+        180
       ],
       "parameters": {
         "jsCode": "return $input.all();   // 재시도 없이 끝난 경우: IF의 false 가지 결과를 하위 워크플로 출력으로 내보낸다"

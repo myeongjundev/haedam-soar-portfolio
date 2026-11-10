@@ -33,7 +33,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
+        280,
         0
       ],
       "parameters": {
@@ -46,7 +46,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        480,
+        560,
         0
       ],
       "parameters": {
@@ -80,8 +80,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        720,
-        -60
+        840,
+        0
       ],
       "parameters": {
         "source": "database",
@@ -99,8 +99,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        -60
+        1120,
+        0
       ],
       "parameters": {
         "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j = $input.first().json, x = j.ctx;\nif (!snapshotOK(j)) return held(x,'held_ticket_check');\nif (j.exists && (j.status==='closed' || j.status==='restored' && j.actions.length)) return held(x,'held_ticket_cycle');\nconst expected = x.expected || [{bot:'112',via:'portal',action:'block',target:x.src_ip}];\n// dry_run 기록은 30분 안의 것만 처리됨으로 센다(시각이 없거나 오래된 시험 기록이 그 출발지를 영구히 막지 않게).\nconst DRY_DEDUP_MS = 30 * 60 * 1000;\nconst fresh = a => { const t = Date.parse(a.finished_at || a.requested_at || ''); const age = Date.now() - t; return Number.isFinite(t) && age >= 0 && age < DRY_DEDUP_MS; };\nconst done = s => j.actions.some(a => same(a,s) && (['applied','already_applied'].includes(a.result) || (x.cfg.dry_run && a.result === 'dry_run' && fresh(a))));\nif (j.exists && expected.length && expected.every(done)) return [{json:{ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,event_id:x.event_id,case_id:x.case_id}}];\nreturn [{json:{ok:true,proceed:true,ctx:{...x,existing_ticket:j.ticket_id,new_round_required:j.exists && j.status==='restored'}}}];\n"
@@ -112,8 +112,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1200,
-        -60
+        1400,
+        0
       ],
       "parameters": {
         "conditions": {
@@ -146,8 +146,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
-        -140
+        1680,
+        0
       ],
       "parameters": {
         "jsCode": "// 조치 전에 티켓을 먼저 만든다(stage detected). 이미 열린 티켓이 있으면 그 티켓을 쓴다.\nconst x = $input.first().json.ctx;\nreturn [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id],\n  first_attack_at: x.times ? x.times.first_attack_at : null, condition_met_at: x.times ? x.times.condition_met_at : null, detected_at: x.times ? x.times.detected_at : null, received_at: x.times ? x.times.received_at : null,\n  idempotency_key: `${$execution.id}-detected` } }];\n"
@@ -159,8 +159,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1680,
-        -140
+        1960,
+        0
       ],
       "parameters": {
         "source": "database",
@@ -178,8 +178,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1800,
-        -140
+        2240,
+        0
       ],
       "parameters": {
         "conditions": {
@@ -212,8 +212,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1920,
-        140
+        0,
+        680
       ],
       "parameters": {
         "jsCode": "// 티켓 저장(detected)이 실패하면 조치를 하지 않는다. 기록 없는 차단을 막기 위해 조치 노드 앞에서 중단한다.\nconst r = $input.first().json;\nconst x = r.ctx || {};\nreturn [{ json: { ok: false, verdict: 'ticket_store_failed_no_action', case_id: x.case_id, event_id: x.event_id, src_ip: x.src_ip || null, username: x.username || null,\n  error: { code: (r.error && r.error.code) || 'STORE_FAILED' }, no_action: true, n8n_execution_id: $execution.id } }];\n"
@@ -225,8 +225,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2160,
-        140
+        280,
+        680
       ],
       "parameters": {
         "respondWith": "allIncomingItems",
@@ -241,8 +241,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2040,
-        -140
+        840,
+        500
       ],
       "parameters": {
         "jsCode": "if (($input.first().json.ctx?.results || []).some(s=>['failed','rejected'].includes(s.result))) throw new Error('PREVIOUS_ACTION_FAILED');\nconst record=$input.first().json;\nif (record.ok !== true || !record.ticket_id || !['open','responding','verified'].includes(record.status) || record.ctx?.new_round_required && record.ticket_id===record.ctx.existing_ticket) throw new Error('TICKET_RECORD_REQUIRED');\nif (record.ticket_current !== true) throw new Error('TICKET_CURRENT_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst ticket_id = r.ticket_id || x.ticket_id;\nreturn [{ json: { ctx: { ...x, ticket_id }, ticket_id, dry_run: x.cfg.dry_run, action: 'block', ip: x.src_ip } }];\n"
@@ -254,8 +254,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2280,
-        -140
+        1120,
+        500
       ],
       "parameters": {
         "source": "database",
@@ -273,8 +273,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2520,
-        -140
+        1400,
+        500
       ],
       "parameters": {
         "jsCode": "// 조치 결과를 티켓에 기록(stage applied). 중복 방지 키: {실행 ID}-applied-1\nconst r = $input.first().json;\nconst x = r.ctx;\nif (r.result === 'skipped') return [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id], idempotency_key: `${$execution.id}-skip-1` } }];\nconst res = { step: 1, result: r.result, applied_verified: r.applied_verified ?? null, detail: r.detail };\nreturn [{ json: { ctx: { ...x, results: [...(x.results || []), res] }, mode: 'record', stage: 'applied', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id], idempotency_key: `${$execution.id}-applied-1`,\n  action: { bot: '112', target: x.src_ip, via: 'portal', action: 'block', result: r.result,\n    applied_verified: r.result === 'dry_run' ? null : (r.applied_verified ?? null), effect_verified: null, effect_verified_at: null,\n    requested_at: r.requested_at, finished_at: r.finished_at, n8n_execution_id: String($execution.id), detail: r.detail } } }];\n"
@@ -286,8 +286,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2760,
-        -140
+        1680,
+        500
       ],
       "parameters": {
         "source": "database",
@@ -305,8 +305,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3000,
-        -140
+        280,
+        1000
       ],
       "parameters": {
         "jsCode": "if (($input.first().json.ctx?.results || []).some(s=>['failed','rejected'].includes(s.result))) throw new Error('PREVIOUS_ACTION_FAILED');\nconst record=$input.first().json;\nif (record.ok !== true || !record.ticket_id || !['open','responding','verified'].includes(record.status) || record.ctx?.new_round_required && record.ticket_id===record.ctx.existing_ticket) throw new Error('TICKET_RECORD_REQUIRED');\nif (record.ticket_current !== true) throw new Error('TICKET_CURRENT_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst ticket_id = r.ticket_id || x.ticket_id;\nreturn [{ json: { ctx: { ...x, ticket_id }, ticket_id, dry_run: x.cfg.dry_run, action: x.case_id === 'S10' ? 'block' : 'skip', ip: x.src_ip } }];\n"
@@ -318,8 +318,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3240,
-        -140
+        560,
+        1000
       ],
       "parameters": {
         "source": "database",
@@ -337,8 +337,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3480,
-        -140
+        840,
+        1000
       ],
       "parameters": {
         "jsCode": "// 조치 결과를 티켓에 기록(stage applied). 중복 방지 키: {실행 ID}-applied-2\nconst r = $input.first().json;\nconst x = r.ctx;\nif (r.result === 'skipped') return [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id], idempotency_key: `${$execution.id}-skip-2` } }];\nconst res = { step: 2, result: r.result, applied_verified: r.applied_verified ?? null, detail: r.detail };\nreturn [{ json: { ctx: { ...x, results: [...(x.results || []), res] }, mode: 'record', stage: 'applied', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id], idempotency_key: `${$execution.id}-applied-2`,\n  action: { bot: '112', target: x.src_ip, via: 'pfsense', action: 'block', result: r.result,\n    applied_verified: r.result === 'dry_run' ? null : (r.applied_verified ?? null), effect_verified: null, effect_verified_at: null,\n    requested_at: r.requested_at, finished_at: r.finished_at, n8n_execution_id: String($execution.id), detail: r.detail } } }];\n"
@@ -350,8 +350,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3720,
-        -140
+        1120,
+        1000
       ],
       "parameters": {
         "source": "database",
@@ -369,8 +369,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3960,
-        -140
+        1400,
+        1000
       ],
       "parameters": {
         "jsCode": "const record=$input.first().json;\nif (record.ok !== true || !record.ticket_id || !['open','responding','verified'].includes(record.status) || record.ctx?.new_round_required && record.ticket_id===record.ctx.existing_ticket) throw new Error('TICKET_RECORD_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst bad = (x.results || []).some(s => ['failed', 'rejected'].includes(s.result));\nreturn [{ json: { ctx: { ...x, ticket: { ok: r.ok, ticket_id: r.ticket_id, status: r.status } }, level: bad ? 'error' : 'warn', case_id: x.case_id, title: x.title,\n  src_ip: x.src_ip || undefined, ticket_id: r.ticket_id, result: (x.results || []).map(s => s.result).join(', '),\n  detail: (x.username ? `계정 ${x.username} ` : '') + (x.file_key ? `파일 ${x.file_key} ` : '') + (x.results || []).map(s => s.detail).join(' / ') } }];\n"
@@ -382,8 +382,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        4200,
-        -140
+        1680,
+        1000
       ],
       "parameters": {
         "source": "database",
@@ -401,8 +401,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4440,
-        -140
+        1960,
+        1000
       ],
       "parameters": {
         "jsCode": "const r = $input.first().json;\nconst x = r.ctx;\nreturn [{ json: { ok: !(x.results || [x.block]).filter(Boolean).some(s=>['failed','rejected'].includes(s.result) || (s.result !== 'skipped' && s.applied_verified !== true)) && (x.ticket || x.record)?.ok === true, verdict: x.cfg.dry_run ? 'dry_run' : 'responded', case_id: x.case_id, event_id: x.event_id, asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null,\n  steps: x.results, ticket: x.ticket, discord_sent: r.sent, discord_error: r.error, n8n_execution_id: $execution.id } }];\n"
@@ -414,8 +414,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        4680,
-        -140
+        2240,
+        1000
       ],
       "parameters": {
         "respondWith": "allIncomingItems",
@@ -430,8 +430,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
-        140
+        1680,
+        180
       ],
       "parameters": {
         "jsCode": "const j = $input.first().json;\nreturn [{ json: { ...j, no_action: true, n8n_execution_id: $execution.id } }];\n"
@@ -443,8 +443,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1680,
-        140
+        1960,
+        180
       ],
       "parameters": {
         "respondWith": "allIncomingItems",
@@ -459,8 +459,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1860,
-        -560
+        0,
+        500
       ],
       "parameters": {
         "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst r=$input.first().json,x=r.ctx;\nif(r.ok!==true || !ticketId(r.ticket_id) || !['open','responding','verified'].includes(r.status)) throw new Error('TICKET_RECORD_REQUIRED');\nconst seat=x?.seat||x?.cfg?.seat,group=x?.group_key||x?.src_ip;\nif(!['A','B','C','D'].includes(seat) || !validText(group)) throw new Error('TICKET_CURRENT_REQUIRED');\nreturn [{json:{mode:'check',seat,group_key:group,ctx:{...x,record_ack:{ticket_id:r.ticket_id,created:r.created,duplicate:r.duplicate,status:r.status}}}}];\n"
@@ -472,8 +472,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2100,
-        -560
+        280,
+        500
       ],
       "parameters": {
         "source": "database",
@@ -491,8 +491,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2340,
-        -560
+        560,
+        500
       ],
       "parameters": {
         "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json,x=j.ctx,a=x?.record_ack;\nif(!snapshotOK(j) || !j.exists || !a || j.ticket_id!==a.ticket_id || !['open','responding','verified'].includes(j.status)) throw new Error('TICKET_CURRENT_REQUIRED');\nconst {record_ack,...ctx}=x;\nreturn [{json:{...a,ok:true,status:j.status,ticket_current:true,ctx}}];\n"
@@ -504,8 +504,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2820,
-        -560
+        1960,
+        500
       ],
       "parameters": {
         "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst r=$input.first().json,x=r.ctx;\nif(r.ok!==true || !ticketId(r.ticket_id) || !['open','responding','verified'].includes(r.status)) throw new Error('TICKET_RECORD_REQUIRED');\nconst seat=x?.seat||x?.cfg?.seat,group=x?.group_key||x?.src_ip;\nif(!['A','B','C','D'].includes(seat) || !validText(group)) throw new Error('TICKET_CURRENT_REQUIRED');\nreturn [{json:{mode:'check',seat,group_key:group,ctx:{...x,record_ack:{ticket_id:r.ticket_id,created:r.created,duplicate:r.duplicate,status:r.status}}}}];\n"
@@ -517,8 +517,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3060,
-        -560
+        2240,
+        500
       ],
       "parameters": {
         "source": "database",
@@ -536,8 +536,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3300,
-        -560
+        0,
+        1000
       ],
       "parameters": {
         "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json,x=j.ctx,a=x?.record_ack;\nif(!snapshotOK(j) || !j.exists || !a || j.ticket_id!==a.ticket_id || !['open','responding','verified'].includes(j.status)) throw new Error('TICKET_CURRENT_REQUIRED');\nconst {record_ack,...ctx}=x;\nreturn [{json:{...a,ok:true,status:j.status,ticket_current:true,ctx}}];\n"

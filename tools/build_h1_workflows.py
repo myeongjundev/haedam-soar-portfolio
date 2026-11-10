@@ -7,6 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
+from n8n_layout import tidy_all
+
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / 'infra/n8n/portfolio-h1'
 
@@ -191,7 +193,7 @@ const x=$('Prepare released').first().json;
 if(!good||r.body?.ok!==true||r.body.ticket_id!==x.ticket_id||r.body.status!=='restored') return fail('held_release_record');
 return emit({ok:true,status:200,verdict:'restored',ticket_id:x.ticket_id});
 """, False)
-    return {'h1-restrict.json': restrict, 'h1-release.json': f.finish()}
+    return tidy_all({'h1-restrict.json': restrict, 'h1-release.json': f.finish()})
 
 
 def main():

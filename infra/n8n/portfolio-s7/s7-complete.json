@@ -33,7 +33,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
+        280,
         0
       ],
       "parameters": {
@@ -46,7 +46,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        440,
+        560,
         0
       ],
       "parameters": {
@@ -80,7 +80,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        660,
+        840,
         0
       ],
       "parameters": {
@@ -113,8 +113,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
-        0
+        0,
+        320
       ],
       "parameters": {
         "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Validate').first().json,t=r.body?.ticket;\nif(!good||r.body?.ok!==true||t?.ticket_id!==x.ticket_id||t.group_key!==\"S7:haedam-portal:\"+x.event_key||\n t.case_id!=='S7'||t.asset_id!==\"haedam-portal\"||!['verified','restored'].includes(t.status)) return fail('held_ticket_scope',409);\nreturn emit(x);\n"
@@ -126,8 +126,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1100,
-        0
+        280,
+        320
       ],
       "parameters": {
         "conditions": {
@@ -160,8 +160,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1320,
-        0
+        560,
+        320
       ],
       "parameters": {
         "method": "POST",
@@ -196,8 +196,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1540,
-        0
+        840,
+        320
       ],
       "parameters": {
         "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nif(!good||r.body?.ok!==true) return fail('held_completion',r.statusCode===503?503:409);\nconst x=r.body.data,p=$('Validate').first().json;\nif(x.event_key!==p.event_key||x.ticket_id!==p.ticket_id||x.result!=='released') return fail('invalid_completion',409);\n\nconst record={seat:'C',case_id:'S7',group_key:x.group_key,title:'S7 파일 무결성: '+x.file_key,\nasset_id:\"haedam-portal\",event_ids:[x.graylog_event_id,x.wazuh_event_id],\ndetected_at:x.detected_at,condition_met_at:x.alert_at,stage:'detected',action:null};\n\nconst action={bot:'117',via:'wazuh-ar',action:x.result==='released'?'complete_'+x.action:x.action,target:x.file_key,result:x.result,\napplied_verified:true,effect_verified:true,requested_at:x.requested_at,finished_at:x.finished_at,\neffect_verified_at:x.effect_verified_at,n8n_execution_id:x.execution_id,\ndetail:'Guarded agent receipt, full baseline hashes and real HTTP readback verified.'};\nreturn emit({...x,record:{...record,stage:'released',action}});"
@@ -209,8 +209,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1760,
-        0
+        0,
+        640
       ],
       "parameters": {
         "conditions": {
@@ -243,8 +243,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1980,
-        0
+        280,
+        640
       ],
       "parameters": {
         "method": "POST",
@@ -288,8 +288,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2200,
-        0
+        560,
+        640
       ],
       "parameters": {
         "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Prepare released').first().json;\nif(!good||r.body?.ok!==true||r.body.ticket_id!==x.ticket_id||r.body.status!=='restored') return fail('held_release_record',r.statusCode===409?409:503);\nreturn emit({ok:true,status:200,verdict:'restored',ticket_id:x.ticket_id,event_key:x.event_key});\n"
@@ -301,8 +301,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2420,
-        0
+        1120,
+        320
       ],
       "parameters": {
         "respondWith": "json",

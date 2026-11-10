@@ -33,7 +33,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
+        280,
         0
       ],
       "parameters": {
@@ -46,7 +46,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        480,
+        560,
         0
       ],
       "parameters": {
@@ -80,8 +80,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        720,
-        -60
+        1680,
+        0
       ],
       "parameters": {
         "source": "database",
@@ -99,8 +99,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        0
+        1960,
+        180
       ],
       "parameters": {
         "jsCode": "const r = $input.first().json;\nif (r.bad) return [{ json: r }];\nreturn [{ json: { ok: r.ok, ticket_id: r.ticket_id || null, status: r.status || null, error: r.error || null, n8n_execution_id: $execution.id } }];\n"
@@ -112,8 +112,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1200,
-        0
+        2240,
+        180
       ],
       "parameters": {
         "respondWith": "allIncomingItems",
@@ -128,8 +128,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        500,
-        300
+        840,
+        0
       ],
       "parameters": {
         "jsCode": "const r=$input.first().json; const id=$('Webhook').first().json.body.ticket_id;\nif (!/^T-\\d{8}-\\d{4}$/.test(id||'')) throw new Error('EFFECT_TICKET_REQUIRED');\nreturn [{json:{mode:'check',seat:r.seat,group_key:r.group_key,ctx:{cfg:r.ctx.cfg,expected_ticket_id:id,effect_record:r}}}];"
@@ -141,8 +141,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        700,
-        300
+        1120,
+        0
       ],
       "parameters": {
         "source": "database",
@@ -160,8 +160,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        500,
-        300
+        1400,
+        0
       ],
       "parameters": {
         "jsCode": "const r=$input.first().json;\nif(r.ok!==true || !r.exists || r.ticket_id!==r.ctx.expected_ticket_id || !['responding','verified'].includes(r.status)) throw new Error('STALE_EFFECT_TICKET');\nreturn [{json:r.ctx.effect_record}];"

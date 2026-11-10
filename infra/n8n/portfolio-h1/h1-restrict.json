@@ -33,7 +33,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
+        280,
         0
       ],
       "parameters": {
@@ -46,7 +46,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        440,
+        560,
         0
       ],
       "parameters": {
@@ -80,7 +80,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        660,
+        840,
         0
       ],
       "parameters": {
@@ -125,7 +125,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
+        1120,
         0
       ],
       "parameters": {
@@ -138,8 +138,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1100,
-        0
+        0,
+        320
       ],
       "parameters": {
         "conditions": {
@@ -172,8 +172,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1320,
-        0
+        280,
+        320
       ],
       "parameters": {
         "method": "GET",
@@ -205,8 +205,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1540,
-        0
+        560,
+        320
       ],
       "parameters": {
         "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Detection recorded').first().json,t=r.body;\nif(!good||t?.ok!==true||t.ticket_id!==x.ticket_id||!['open','responding','verified'].includes(t.status)||!Array.isArray(t.applied_actions)) return fail('held_current_ticket',409);\nconst duplicate=t.applied_actions.some(a=>a.via==='portal'&&a.action==='restrict_write'&&a.target===x.username);\nreturn emit({...x,duplicate,requested_at:new Date().toISOString()});\n"
@@ -218,8 +218,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1760,
-        0
+        840,
+        320
       ],
       "parameters": {
         "conditions": {
@@ -252,8 +252,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1980,
-        0
+        1120,
+        320
       ],
       "parameters": {
         "method": "GET",
@@ -285,8 +285,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2200,
-        0
+        0,
+        640
       ],
       "parameters": {
         "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Check current').first().json,d=r.body?.data;\nif(!good||r.body?.success!==true||d?.username!==x.username) return fail('held_portal_lookup');\nif(!x.duplicate) return emit(x);\nif(d.restricted===true&&d.ticket_id===x.ticket_id) return emit({ok:true,stop:true,status:200,verdict:'duplicate_no_action',ticket_id:x.ticket_id});\nreturn fail('held_portal_mismatch',409);\n"
@@ -298,8 +298,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2420,
-        0
+        280,
+        640
       ],
       "parameters": {
         "conditions": {
@@ -332,8 +332,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2640,
-        0
+        560,
+        640
       ],
       "parameters": {
         "method": "POST",
@@ -377,8 +377,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2860,
-        0
+        840,
+        640
       ],
       "parameters": {
         "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Check current').first().json,d=r.body?.data;\nif(!good||r.body?.success!==true||d?.restricted!==true||d.ticket_id!==x.ticket_id||d.username!==x.username) return fail('held_portal_restrict');\nreturn emit({...x,finished_at:new Date().toISOString()});\n"
@@ -390,8 +390,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3080,
-        0
+        1120,
+        640
       ],
       "parameters": {
         "conditions": {
@@ -424,8 +424,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3300,
-        0
+        0,
+        960
       ],
       "parameters": {
         "method": "GET",
@@ -457,8 +457,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3520,
-        0
+        280,
+        960
       ],
       "parameters": {
         "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Check mutation').first().json,d=r.body?.data;\nif(!good||r.body?.success!==true||d?.restricted!==true||d.ticket_id!==x.ticket_id||d.username!==x.username) return fail('held_portal_readback');\nconst action={bot:'112',via:'portal',action:'restrict_write',target:x.username,result:'applied',applied_verified:true,\neffect_verified:null,requested_at:x.requested_at,finished_at:x.finished_at,effect_verified_at:null,n8n_execution_id:String($execution.id),detail:'Write restriction read back; HTTP effect is measured separately.'};\nreturn emit({...x,record:{...x.record,stage:'applied',action}});\n"
@@ -470,8 +470,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3740,
-        0
+        560,
+        960
       ],
       "parameters": {
         "conditions": {
@@ -504,8 +504,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3960,
-        0
+        840,
+        960
       ],
       "parameters": {
         "method": "POST",
@@ -549,8 +549,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4180,
-        0
+        1120,
+        960
       ],
       "parameters": {
         "jsCode": "\nconst fail=(code,status=503)=>[{json:{ok:false,stop:true,status,verdict:code}}];\nconst emit=x=>[{json:x}];\nconst r=$input.first().json;\nconst good=r.statusCode>=200 && r.statusCode<300;\n\nconst x=$('Prepare applied').first().json;\nif(!good||r.body?.ok!==true||r.body.ticket_id!==x.ticket_id) return fail('held_applied_record');\nreturn emit({ok:true,status:200,verdict:'restricted',ticket_id:x.ticket_id});\n"
@@ -562,8 +562,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        4400,
-        0
+        1400,
+        480
       ],
       "parameters": {
         "respondWith": "json",

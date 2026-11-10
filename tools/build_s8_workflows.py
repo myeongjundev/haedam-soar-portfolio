@@ -7,6 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
+from n8n_layout import tidy_all
+
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'infra/n8n/workflows'
 OUTPUT = ROOT / 'infra/n8n/portfolio-s8'
@@ -119,7 +121,7 @@ def build(case='S8', attack_ip=ATTACK_IP, credentials=S8_CREDENTIALS):
             w['nodes'] = [trigger, output]
             w['connections'] = {trigger['name']: {'main': [[{'node': output['name'], 'type': 'main', 'index': 0}]]}}
         result[source.name] = w
-    return result
+    return tidy_all(result)
 
 
 def main():

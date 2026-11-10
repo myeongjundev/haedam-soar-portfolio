@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 import build_s8_workflows as s8
+from n8n_layout import tidy_all
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / 'infra/n8n/portfolio-s10'
@@ -65,7 +66,7 @@ def build():
     if not any(n['name'].startswith('pfSense relay') for n in nodes):
         raise ValueError('Upstream haedam-14 changed: SSH node not found')
     w['nodes'] = nodes
-    return result
+    return tidy_all(result)
 
 
 def main():

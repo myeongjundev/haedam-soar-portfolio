@@ -33,7 +33,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
+        280,
         0
       ],
       "parameters": {
@@ -46,7 +46,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        480,
+        560,
         0
       ],
       "parameters": {
@@ -80,8 +80,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        720,
-        -60
+        840,
+        0
       ],
       "parameters": {
         "source": "database",
@@ -99,8 +99,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        -60
+        1120,
+        0
       ],
       "parameters": {
         "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json,x=j.ctx;\nif (!snapshotOK(j)) return held(x,'held_ticket_check');\nif (!j.exists) return [{json:{ok:true,no_action:true,verdict:'no_open_ticket'}}];\nif (j.ticket_id !== x.requested_ticket_id) return held(x,'held_stale_release_ticket');\nconst actions=j.actions.map(a=>({...a,action:canon(a)}));\nif (['restored','closed'].includes(j.status) && actions.length) return held(x,'held_inconsistent_ticket_cycle');\nconst selected=actions.filter(a=>a.bot==='112' && a.action==='block' && ['portal','pfsense'].includes(a.via));\nconst ips=[...new Set(selected.map(a=>a.target))];\nif (!ips.length) return [{json:{ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:j.ticket_id}}];\nif (ips.length!==1) return held(x,'held_multiple_targets');\nconst resources=[...new Set(selected.map(a=>a.via))].sort().map(via=>({asset_id:x.asset_id,via,action:'block',target:ips[0]}));\nreturn [{json:{ok:true,mode:'active',resource:resources[0],ctx:{...x,ticket_id:j.ticket_id,ip:ips[0],resources,resource_index:0,hasFw:selected.some(a=>a.via==='pfsense'),hasApp:selected.some(a=>a.via==='portal'),manual_required:actions.filter(a=>!selected.includes(a)).map(a=>`${a.bot}:${a.via}:${a.action}:${a.target}`)}}}];\n"
@@ -112,8 +112,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1200,
-        -60
+        1400,
+        0
       ],
       "parameters": {
         "conditions": {
@@ -146,8 +146,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1440,
-        -140
+        0,
+        320
       ],
       "parameters": {
         "source": "database",
@@ -165,8 +165,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
-        -140
+        280,
+        320
       ],
       "parameters": {
         "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json,x=j.ctx,r=x.resources[x.resource_index];\nif (j.ok!==true || !j.resource || !['asset_id','via','action','target'].every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>ticketId(t.ticket_id) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>refOK(a,!!x.cfg.dry_run) && a.via===r.via && canon(a)===r.action && a.target===r.target))) return held(x,'held_resource_check');\nif (!j.tickets.some(t=>t.ticket_id===x.ticket_id && t.active_actions.some(a=>a.bot==='112'))) return held(x,'held_own_claim_missing');\nconst others=j.tickets.filter(t=>t.ticket_id!==x.ticket_id || t.active_actions.some(a=>a.bot!=='112'));\nif (others.length) return [{json:{ok:true,no_action:true,verdict:'held_other_resource_ticket',other_tickets:others.map(t=>t.ticket_id),ctx:x}}];\nconst next=x.resource_index+1;\nif (next<x.resources.length) return [{json:{ok:true,more_resources:true,mode:'active',resource:x.resources[next],ctx:{...x,resource_index:next}}}];\nreturn [{json:{ok:true,proceed:true,more_resources:false,ctx:x}}];\n"
@@ -178,8 +178,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1920,
-        -140
+        840,
+        320
       ],
       "parameters": {
         "conditions": {
@@ -212,8 +212,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2160,
-        -140
+        1120,
+        320
       ],
       "parameters": {
         "jsCode": "if ($input.first().json.ok !== true) throw new Error('RELEASE_RECORD_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst ticket_id = x.ticket_id;\nreturn [{ json: { ctx: x, ticket_id, dry_run: x.cfg.dry_run, action: x.abort || !x.hasFw ? 'skip' : 'unblock', ip: x.ip } }];\n"
@@ -225,8 +225,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2400,
-        -140
+        1400,
+        320
       ],
       "parameters": {
         "source": "database",
@@ -244,8 +244,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2640,
-        -140
+        0,
+        640
       ],
       "parameters": {
         "jsCode": "// 해제 결과를 티켓에 기록(stage released). 실패하면 기록하지 않고 중단 표시.\nconst r = $input.first().json;\nconst x = r.ctx;\nif (r.result === 'skipped') return [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title || x.case_id,\n  asset_id: x.asset_id, event_ids: [`release-skip-${$execution.id}-1`], idempotency_key: `${$execution.id}-skip-1` } }];\nif (r.applied_verified !== true) throw new Error('RELEASE_STATE_MISMATCH');\nconst ok = ['released', 'already_applied', 'dry_run'].includes(r.result);\nconst res = { step: 1, result: ok ? 'released' : r.result, detail: r.detail };\nif (!ok) return [{ json: { ctx: { ...x, abort: true, results: [...(x.results || []), res] }, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key,\n  title: x.title || x.case_id, asset_id: x.asset_id, event_ids: [`release-fail-${$execution.id}-1`], idempotency_key: `${$execution.id}-fail-1` } }];\nconst now = new Date().toISOString();\nreturn [{ json: { ctx: { ...x, results: [...(x.results || []), res] }, mode: 'record', stage: 'released', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title || x.case_id,\n  asset_id: x.asset_id, event_ids: [`release-${$execution.id}-1`], idempotency_key: `${$execution.id}-released-1`,\n  action: { bot: '112', target: x.ip, via: 'pfsense', action: 'unblock', result: 'released', applied_verified: r.applied_verified ?? null, effect_verified: null, effect_verified_at: null,\n    requested_at: r.requested_at || now, finished_at: r.finished_at || now, n8n_execution_id: String($execution.id), detail: `승인 ${x.approver}${r.result === 'already_applied' ? ' (이미 해제됨)' : ''}`.slice(0, 300) } } }];\n"
@@ -257,8 +257,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2880,
-        -140
+        280,
+        640
       ],
       "parameters": {
         "source": "database",
@@ -276,8 +276,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3120,
-        -140
+        560,
+        640
       ],
       "parameters": {
         "jsCode": "if ($input.first().json.ok !== true) throw new Error('RELEASE_RECORD_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst ticket_id = x.ticket_id;\nreturn [{ json: { ctx: x, ticket_id, dry_run: x.cfg.dry_run, action: x.abort || !x.hasApp ? 'skip' : 'unblock', ip: x.ip } }];\n"
@@ -289,8 +289,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3360,
-        -140
+        840,
+        640
       ],
       "parameters": {
         "source": "database",
@@ -308,8 +308,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3600,
-        -140
+        1120,
+        640
       ],
       "parameters": {
         "jsCode": "// 해제 결과를 티켓에 기록(stage released). 실패하면 기록하지 않고 중단 표시.\nconst r = $input.first().json;\nconst x = r.ctx;\nif (r.result === 'skipped') return [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title || x.case_id,\n  asset_id: x.asset_id, event_ids: [`release-skip-${$execution.id}-2`], idempotency_key: `${$execution.id}-skip-2` } }];\nif (r.applied_verified !== true) throw new Error('RELEASE_STATE_MISMATCH');\nconst ok = ['released', 'already_applied', 'dry_run'].includes(r.result);\nconst res = { step: 2, result: ok ? 'released' : r.result, detail: r.detail };\nif (!ok) return [{ json: { ctx: { ...x, abort: true, results: [...(x.results || []), res] }, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key,\n  title: x.title || x.case_id, asset_id: x.asset_id, event_ids: [`release-fail-${$execution.id}-2`], idempotency_key: `${$execution.id}-fail-2` } }];\nconst now = new Date().toISOString();\nreturn [{ json: { ctx: { ...x, results: [...(x.results || []), res] }, mode: 'record', stage: 'released', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title || x.case_id,\n  asset_id: x.asset_id, event_ids: [`release-${$execution.id}-2`], idempotency_key: `${$execution.id}-released-2`,\n  action: { bot: '112', target: x.ip, via: 'portal', action: 'unblock', result: 'released', applied_verified: r.applied_verified ?? null, effect_verified: null, effect_verified_at: null,\n    requested_at: r.requested_at || now, finished_at: r.finished_at || now, n8n_execution_id: String($execution.id), detail: `승인 ${x.approver}${r.result === 'already_applied' ? ' (이미 해제됨)' : ''}`.slice(0, 300) } } }];\n"
@@ -321,8 +321,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3840,
-        -140
+        1400,
+        640
       ],
       "parameters": {
         "source": "database",
@@ -340,8 +340,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4080,
-        -140
+        0,
+        960
       ],
       "parameters": {
         "jsCode": "if ($input.first().json.ok !== true) throw new Error('RELEASE_RECORD_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst failed = (x.results || []).some(s => !['released'].includes(s.result));\nreturn [{ json: { ctx: { ...x, ticket: { ticket_id: r.ticket_id, status: r.status } }, level: failed ? 'error' : 'info', case_id: x.case_id, title: failed ? '원복 중단(해제 실패)' : '원복 완료',\n  src_ip: x.ip, ticket_id: r.ticket_id, result: (x.results || []).map(s => s.result).join(', '),\n  detail: `승인 ${x.approver}` + (x.manual_required && x.manual_required.length ? ' / 사람이 직접 할 것: ' + x.manual_required.join(', ') : '') } }];\n"
@@ -353,8 +353,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        4320,
-        -140
+        280,
+        960
       ],
       "parameters": {
         "source": "database",
@@ -372,8 +372,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4560,
-        -140
+        560,
+        960
       ],
       "parameters": {
         "jsCode": "const r = $input.first().json;\nconst x = r.ctx;\nreturn [{ json: { ok: !(x.results || []).some(s => s.result !== 'released'), verdict: x.cfg.dry_run ? 'dry_run' : 'released', case_id: x.case_id, ip: x.ip, steps: x.results, ticket: x.ticket,\n  manual_required: x.manual_required, discord_sent: r.sent, n8n_execution_id: $execution.id } }];\n"
@@ -385,8 +385,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        4800,
-        -140
+        840,
+        960
       ],
       "parameters": {
         "respondWith": "allIncomingItems",
@@ -401,8 +401,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1920,
-        140
+        1680,
+        480
       ],
       "parameters": {
         "jsCode": "const j = $input.first().json;\nreturn [{ json: { ...j, no_action: true, n8n_execution_id: $execution.id } }];\n"
@@ -414,8 +414,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2160,
-        140
+        1960,
+        480
       ],
       "parameters": {
         "respondWith": "allIncomingItems",
@@ -430,8 +430,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1800,
-        -260
+        560,
+        320
       ],
       "parameters": {
         "conditions": {

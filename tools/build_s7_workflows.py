@@ -6,6 +6,7 @@ import argparse
 import json
 import sys
 from build_h1_workflows import Flow as BaseFlow, ROOT
+from n8n_layout import tidy_all
 
 sys.path.insert(0, str(ROOT / 'services/s7-response'))
 from settings import load_settings
@@ -132,7 +133,7 @@ const x=$('Prepare released').first().json;
 if(!good||r.body?.ok!==true||r.body.ticket_id!==x.ticket_id||r.body.status!=='restored') return fail('held_release_record',r.statusCode===409?409:503);
 return emit({ok:true,status:200,verdict:'restored',ticket_id:x.ticket_id,event_key:x.event_key});
 """, False)
-    return {'s7-respond.json': respond, 's7-complete.json': f.finish()}
+    return tidy_all({'s7-respond.json': respond, 's7-complete.json': f.finish()})
 
 
 if __name__ == '__main__':

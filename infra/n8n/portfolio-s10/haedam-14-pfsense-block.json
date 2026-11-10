@@ -22,7 +22,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
+        280,
         0
       ],
       "parameters": {
@@ -35,7 +35,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        480,
+        560,
         0
       ],
       "parameters": {
@@ -69,7 +69,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        720,
+        840,
         0
       ],
       "onError": "continueRegularOutput",
@@ -99,8 +99,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        -60
+        1120,
+        0
       ],
       "parameters": {
         "jsCode": "// 도구 출력(JSON 1개)을 결과 값으로 바꾼다. 출력 파싱 실패·비정상 종료·불확실한 결과는 성공으로 만들지 않고 재시도도 하지 않는다.\nconst j = $input.first().json;\nconst prev = $('요청 준비').first().json;\nconst fin = (o) => [{ json: { ok: !['failed', 'rejected'].includes(o.result), ip: prev.ip, action: prev.action, request_id: prev.request_id, applied_verified: o.applied_verified ?? false,\n  requested_at: prev.requested_at, finished_at: new Date().toISOString(), ctx: prev.ctx, ...o } }];\nif (j.error) return fin({ result: 'failed', detail: 'ssh_error:' + String((j.error && j.error.message) || j.error).slice(0, 160) });\nlet out = null;\ntry { out = JSON.parse(String(j.stdout || '').trim()); } catch (e) { /* 아래에서 처리 */ }\nif (!out || typeof out !== 'object') return fin({ result: 'failed', detail: `unparseable_output exit=${j.code ?? '?'} stderr=${String(j.stderr || '').slice(0, 100)}` });\nconst map = { applied: 'applied', already_applied: 'already_applied', released: 'released', status: 'listed', rejected: 'rejected', failed: 'failed' };\nconst result = out.ok === true ? (map[out.result] || 'failed') : (out.result === 'rejected' ? 'rejected' : 'failed');\nconst uncertain = out.changed === null;\nreturn fin({ result: uncertain ? 'failed' : result, detail: `${out.result}:${out.reason}${uncertain ? ' (changed:null — 운영자가 pfSense 설정·journal을 대조)' : ''}${out.replayed ? ' replayed' : ''}`,\n  applied_verified: out.ok === true ? (prev.action === 'unblock' ? (out.reason === 'verified_managed_state' && !!out.state && out.state.configured === false && out.state.table_present === false && out.state.rule_present === false) : (out.applied_verified ?? null)) : false, tool_state: out.state || null,\n  // 대조용(11/03 B 요청): 도구가 남긴 journal 상태와 실패 사유를 요약에도 넘긴다. 객체·문자열만, 길이 제한\n  journal_state: out.journal_state && typeof out.journal_state === 'object' && JSON.stringify(out.journal_state).length <= 2000 ? out.journal_state : null,\n  failure_detail: typeof out.failure_detail === 'string' ? out.failure_detail.slice(0, 200) : null });\n"
@@ -112,8 +112,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        0
+        1400,
+        180
       ],
       "parameters": {
         "jsCode": "const j = $input.first().json;\nreturn [{ json: j.stop ? j.final : j }];\n"
