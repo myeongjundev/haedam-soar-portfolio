@@ -10,6 +10,7 @@
     "response": "172.30.102.0/29",
     "graylog_backend": "172.30.103.0/29"
   },
+  "network_internal": {"default": false, "clients": true, "response": true, "graylog_backend": true},
   "addresses": {
     "portal_client": "172.30.101.10",
     "attacker": "172.30.101.21",

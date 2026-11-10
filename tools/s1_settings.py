@@ -13,7 +13,7 @@ def digest(value):
 def validate(s):
     required = {'schema_version', 'project', 'execution_enabled', 'asset_id', 'network_status', 'networks',
                 'addresses', 'host_ports', 'client_image', 'paths', 'portal_internal_port', 'username_prefix',
-                'policy', 'request_timeout_seconds', 'stop_filename'}
+                'policy', 'request_timeout_seconds', 'stop_filename', 'network_internal'}
     if not isinstance(s, dict) or set(s) != required:
         raise ValueError('invalid_settings_keys')
     groups = {'networks': {'default', 'clients', 'response', 'graylog_backend'},
@@ -24,6 +24,11 @@ def validate(s):
     for key, keys in groups.items():
         if not isinstance(s[key], dict) or set(s[key]) != keys:
             raise ValueError('invalid_settings_group')
+    isolation=s['network_internal']
+    if not isinstance(isolation,dict) or set(isolation)!=set(s['networks']):
+        raise ValueError('invalid_network_isolation')
+    if isolation['default'] is not False or any(isolation[k] is not True for k in ('clients','response','graylog_backend')):
+        raise ValueError('management_publish_and_internal_test_networks_required')
     for key in ('project', 'asset_id', 'network_status', 'client_image', 'username_prefix', 'stop_filename'):
         if not isinstance(s[key], str):
             raise ValueError('string_setting_required')

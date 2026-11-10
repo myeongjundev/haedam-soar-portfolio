@@ -36,7 +36,7 @@ def overlay(s, root, bundle):
                                      {'type': 'bind', 'source': str(bundle / 'runs'), 'target': paths['evidence_mount']}]}
     networks = {}
     for setting, name in [('default', 'default'), ('clients', 's1-clients'), ('response', 's1-response'), ('graylog_backend', 'graylog-backend')]:
-        networks[name] = {'internal': True, 'ipam': {'config': [{'subnet': s['networks'][setting]}]}}
+        networks[name] = {'internal': s['network_internal'][setting], 'ipam': {'config': [{'subnet': s['networks'][setting]}]}}
     return {'name': s['project'], 'services': services, 'networks': networks}
 
 

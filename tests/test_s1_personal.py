@@ -36,6 +36,17 @@ class FakeTransport:
 
 
 class SettingsTests(unittest.TestCase):
+    def test_management_ports_publish_while_test_networks_stay_internal(self):
+        s=settings();o=lab.overlay(s,ROOT,ROOT/'.local/test-s1')
+        self.assertIs(o['networks']['default']['internal'],False)
+        for name in ('s1-clients','s1-response','graylog-backend'):
+            self.assertIs(o['networks'][name]['internal'],True)
+        self.assertEqual(set(o['services']['attacker']['networks']),{'s1-clients'})
+        self.assertEqual(set(o['services']['normal']['networks']),{'s1-clients'})
+        for name in s['network_internal']:
+            changed=settings();changed['network_internal'][name]=not changed['network_internal'][name]
+            with self.assertRaises(ValueError):validate(changed)
+
     def test_policy_and_distinct_boundary_trigger_keys(self):
         a, b = plan(settings(), 'round1', 'boundary8'), plan(settings(), 'round1', 'trigger9')
         self.assertNotEqual(a['username'], b['username'])
