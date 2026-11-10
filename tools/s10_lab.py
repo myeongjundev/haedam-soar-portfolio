@@ -121,7 +121,7 @@ def configure():
     pfsense = find_create('/streams', 'streams', {
         'title': 'Portfolio S10 pfSense', 'description': 'pfSense syslog UDP input only', 'index_set_id': index,
         'matching_type': 'AND', 'remove_matches_from_default_stream': False,
-        'rules': [{'type': 9, 'field': 'gl2_source_input', 'value': syslog, 'inverted': False,
+        'rules': [{'type': 8, 'field': 'gl2_source_input', 'value': syslog, 'inverted': False,
                    'description': 'Match the pfSense syslog input'}]})
     for stream in (portal, pfsense):
         graylog(f'/streams/{stream}/resume', {}, 'POST')
