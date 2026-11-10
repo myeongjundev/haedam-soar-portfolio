@@ -1,5 +1,7 @@
 # S1 개인 실측 준비 — PR #20 이후
 
+**11/10 후속:** [실제 실측과 환경 재개](s1-results.md)를 완료했습니다. 아래 미실행·읽기 전용 설명은 최초 준비/사전 점검 당시의 기록입니다. 관리 포트와 하위 워크플로 반환 수정까지 포함된 코드에서 새 번들을 생성하세요. 실제 실행 시점의 자원·중지 허용 범위는 매번 확인합니다.
+
 2026-11-10, 김명준·Codex. 기준 PR #20 `1ecf3b4`. 최초 준비는 파일 생성과 오프라인 검증이며, PR #21 후속 검토에서 Docker·Windows 자원을 읽기 전용으로 조회했습니다. 기존 Docker·VM·서비스를 변경하거나 실제 경보·차단을 실행하지 않았습니다. 아래 기동 이후 절차는 **실측 시간에만 새 개인 랩에서** 실행합니다.
 
 ## PR #21 검토 후 설치 판정
@@ -126,7 +128,7 @@ Invoke-OwnedS1 $packet.command_argv.normal_baseline $normalPassword | Out-Null
 2. 8회 경계 검사는 다른 탐지 키(username `b_`)로 수행합니다. 해당 키의 지난 30분 로그·남은 조치가 없는지 확인하고 이벤트 정의를 예약(PUT `/events/definitions/{id}/schedule`)한 후 `Invoke-OwnedS1 $packet.command_argv.boundary8`을 실행합니다. 마지막 401이 Graylog에 들어온 뒤 최소 1,860초 관찰하여 S1 이벤트/차단이 없는지 확인합니다. 입력 완료만으로 미탐지를 판정하지 않습니다.
 3. 9회 입력 `Invoke-OwnedS1 $packet.command_argv.trigger9`를 실행합니다. 기본 입력 시간은 최소 800초입니다. 터미널을 강제 종료하지 말고 `runs/STOP` 파일로 중지합니다. 403/429/예상 외 응답이 나오면 자동 재시도하지 않습니다.
 4. 같은 username `t_`·공격 출발지의 Graylog 원천 401 9건을 확인합니다. 실제 event ID와 definition ID를 확인하고 `/events/search` 응답의 **해당 event 객체 하나**를 `graylog-event.json`으로 보관합니다. 웹훅을 직접 호출해 대신 만든 이벤트는 제외합니다.
-5. 티켓 대시보드의 GET `/api/v1/tickets/{실제 ticket_id}` 응답을 `ticket-blocked.json`으로 저장합니다. group_key/asset/event_ids/portal block을 대조합니다. 목록 summary 대신 ticket 상세 객체가 필요합니다.
+5. 티켓 대시보드의 GET `/api/v1/tickets/{실제 ticket_id}` 응답을 `ticket-blocked.json`으로 저장합니다. group_key/asset/event_ids/portal block을 대조합니다. 목록 summary 대신 ticket 상세 객체가 필요합니다. 목록에는 username이 없으므로 group_key로 후보를 찾은 뒤 상세의 username/src_ip를 확인합니다. 주기 평가로 이벤트가 여러 건 생길 수 있으므로 해당 티켓이 처음 수신한 event ID를 선택합니다. 전체 검색 결과가 반드시 1건이라고 가정하지 않습니다.
 6. `Invoke-OwnedS1 $packet.command_argv.attacker_blocked`, `Invoke-OwnedS1 $packet.command_argv.normal_blocked $normalPassword`를 실행합니다. 공격 health는 403 IP_BLOCKED, 정상 health/새 로그인/세션은 성공해야 합니다.
 
 ## 원복과 최종 증적
