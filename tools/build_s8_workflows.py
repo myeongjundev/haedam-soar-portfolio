@@ -20,7 +20,12 @@ def replace(code, old, new):
     return code.replace(old, new)
 
 
-def build():
+S8_CREDENTIALS = {'detection': 's8DetectionAuth', 'operator': 's8OperatorAuth',
+                  'ticket': 's8TicketAuth', 'portal': 's8PortalAuth'}
+
+
+def build(case='S8', attack_ip=ATTACK_IP, credentials=S8_CREDENTIALS):
+    """The personal deployment for one case and its single lab target. S10 reuses it (build_s10_workflows)."""
     result = {}
     for number in SELECTED:
         source = next(SOURCE.glob(f'haedam-{number}-*.json'))
@@ -28,7 +33,7 @@ def build():
         if isinstance(w, list):
             w, = w
         w['active'] = False
-        w['name'] = '[Portfolio S8] ' + w['name']
+        w['name'] = f'[Portfolio {case}] ' + w['name']
         w['settings'].update(saveDataSuccessExecution='none', saveDataErrorExecution='none',
                              saveManualExecutions=False, saveExecutionProgress=False)
         for node in w['nodes']:
@@ -37,10 +42,10 @@ def build():
                 p['url'] = p['url'].replace('http://portal:5000', 'http://portal-response:5000')
             if kind == 'webhook':
                 p['authentication'] = 'headerAuth'
-                credential = 's8DetectionAuth' if number == '32' else 's8OperatorAuth'
+                credential = credentials['detection'] if number == '32' else credentials['operator']
                 node['credentials'] = {'httpHeaderAuth': {'id': credential, 'name': credential}}
             if kind == 'httpRequest' and p.get('genericAuthType') == 'httpHeaderAuth':
-                credential = 's8TicketAuth' if number == '10' else 's8PortalAuth'
+                credential = credentials['ticket'] if number == '10' else credentials['portal']
                 node['credentials'] = {'httpHeaderAuth': {'id': credential, 'name': credential}}
             if kind == 'respondToWebhook':
                 # A completed n8n execution is not necessarily a successful action.
@@ -53,23 +58,23 @@ def build():
             if number in ('12', '32') and 'function protectedIp(ip)' in code:
                 start = code.index('function protectedIp(ip)')
                 end = code.index('\n}', start) + 2
-                code = code[:start] + f"function protectedIp(ip) {{ return ip === '{ATTACK_IP}' ? null : 'outside_s8_lab_target'; }}" + code[end:]
+                code = code[:start] + f"function protectedIp(ip) {{ return ip === '{attack_ip}' ? null : 'outside_{case.lower()}_lab_target'; }}" + code[end:]
             if number == '32' and "const t = { ...($input.first().json.body || {}) };" in code:
                 code = replace(code, "const t = { ...($input.first().json.body || {}) };",
                     "const t = { ...($input.first().json.body || {}) };\n"
-                    "if (t.case_id !== 'S8' || t.asset_id !== 'haedam-portal') return [{json:{ok:false,verdict:'invalid_input',no_action:true}}];")
+                    f"if (t.case_id !== '{case}' || t.asset_id !== 'haedam-portal') return [{{json:{{ok:false,verdict:'invalid_input',no_action:true}}}}];")
             if number == '40' and 'const CFG = { dry_run: true };' in code:
                 code = replace(code, 'const CFG = { dry_run: true };',
                     'const CFG = { dry_run: false, store_real: true };')
                 code = replace(code, 'const b = $input.first().json.body || {};',
                     "const b = $input.first().json.body || {};\n"
-                    f"if (b.seat !== 'B' || b.case_id !== 'S8' || b.asset_id !== 'haedam-portal' || b.group_key !== '{ATTACK_IP}' || b.target !== '{ATTACK_IP}' || b.via !== 'portal' || String(b.bot) !== '112' || b.action !== 'block') return [{{json:{{ok:false,bad:true,verdict:'invalid_input'}}}}];")
+                    f"if (b.seat !== 'B' || b.case_id !== '{case}' || b.asset_id !== 'haedam-portal' || b.group_key !== '{attack_ip}' || b.target !== '{attack_ip}' || b.via !== 'portal' || String(b.bot) !== '112' || b.action !== 'block') return [{{json:{{ok:false,bad:true,verdict:'invalid_input'}}}}];")
             if number == '50' and 'live_release_enabled: false' in code:
                 code = replace(code, 'const CFG = { dry_run: true, live_release_enabled: false };',
                     'const CFG = { dry_run: false, store_real: true, live_release_enabled: true };')
                 code = replace(code, 'const b = $input.first().json.body || {};',
                     "const b = {...($input.first().json.body || {}), approver: 'portfolio-operator'};\n"
-                    f"if (b.seat !== 'B' || b.case_id !== 'S8' || b.asset_id !== 'haedam-portal' || b.group_key !== '{ATTACK_IP}' || !/^T-\\d{{8}}-\\d{{4}}$/.test(b.ticket_id || '')) return [{{json:{{ok:false,stop:true,verdict:'invalid_input'}}}}];")
+                    f"if (b.seat !== 'B' || b.case_id !== '{case}' || b.asset_id !== 'haedam-portal' || b.group_key !== '{attack_ip}' || !/^T-\\d{{8}}-\\d{{4}}$/.test(b.ticket_id || '')) return [{{json:{{ok:false,stop:true,verdict:'invalid_input'}}}}];")
                 code = replace(code, 'const X = { seat: b.seat,', 'const X = { requested_ticket_id: b.ticket_id, seat: b.seat,')
             if number == '50' and "const selected=actions.filter" in code:
                 code = replace(code, 'const actions=j.actions.map',

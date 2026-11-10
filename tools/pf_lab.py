@@ -26,7 +26,15 @@ FILES = ['compose.yaml', 'compose.pf.yaml']
 def compose_env(settings=SETTINGS):
     """Variables compose.pf.yaml reads; Compose refuses to start if any is missing."""
     wan, lan = settings['wan'], settings['lan']
-    return {'PF_WAN_SUBNET': wan['subnet'], 'PF_WAN_GATEWAY': wan['docker_gateway'],
+    s10 = {}
+    if 's10' in settings:  # only compose.s10.yaml reads these
+        s = settings['s10']
+        s10 = {'PF_S10_GRAYLOG_IP': s['graylog_ip'], 'PF_S10_N8N_IP': s['n8n_ip'],
+               'PF_S10_RELAY_PORT': str(s['relay_port']), 'PF_S10_RESPONSE_SUBNET': s['response_subnet'],
+               'PF_S10_RESPONSE_GATEWAY': s['response_gateway'], 'PF_S10_N8N_RESPONSE_IP': s['n8n_response_ip'],
+               'PF_S10_PORTAL_RESPONSE_IP': s['portal_response_ip'],
+               'PF_CONTROLLER_SSH_USER': settings['controller']['ssh_user']}
+    return {**s10, 'PF_WAN_SUBNET': wan['subnet'], 'PF_WAN_GATEWAY': wan['docker_gateway'],
             'PF_WAN_BRIDGE_IP': wan['bridge_ip'], 'PF_WAN_PFSENSE_IP': wan['pfsense_ip'],
             'PF_LAN_SUBNET': lan['subnet'], 'PF_LAN_GATEWAY': lan['docker_gateway'],
             'PF_LAN_BRIDGE_IP': lan['bridge_ip'], 'PF_LAN_PFSENSE_IP': lan['pfsense_ip'],

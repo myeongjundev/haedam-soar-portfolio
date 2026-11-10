@@ -18,6 +18,7 @@ FORCED = ('command="{adapter}",from="{ip}",no-pty,no-port-forwarding,'
           'no-agent-forwarding,no-X11-forwarding {key}')
 RULE_DESCR = 'P04 WAN clients to portal'
 RULE_TRACKER = '1731100000'
+ICMP_DESCR = 'S10 WAN ICMP probe (logged block)'
 
 
 def interface(side):
@@ -99,6 +100,20 @@ def patch(root, public_key, settings, syslog=None):
     filt.insert(0, rule)
 
     if syslog:
+        # S10's pfSense signal (team definition): a logged block of ICMP to the WAN address, with a fixed tracker.
+        for old in filt.findall('rule'):
+            if old.findtext('descr') == ICMP_DESCR:
+                filt.remove(old)
+        icmp = ET.Element('rule')
+        for tag, value in (('id', ''), ('tracker', str(settings['s10']['icmp_tracker'])), ('type', 'block'),
+                           ('interface', 'wan'), ('ipprotocol', 'inet'), ('protocol', 'icmp'), ('icmptype', 'any'),
+                           ('statetype', 'keep state')):
+            put(icmp, tag, value)
+        put(child(icmp, 'source'), 'any')
+        put(child(icmp, 'destination'), 'address', settings['wan']['pfsense_ip'])
+        put(icmp, 'log')
+        put(icmp, 'descr', ICMP_DESCR)
+        filt.insert(1, icmp)
         logs = child(root, 'syslog')
         put(logs, 'enable')
         put(logs, 'remoteserver', syslog)
