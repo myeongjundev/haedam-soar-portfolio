@@ -1,6 +1,6 @@
 # 해담시청 SOAR 개인 포트폴리오 작업 규칙
 
-김명준이 최종 판단과 병합을 맡습니다. 마감은 2026-11-12 10:00 KST입니다. [검증표](docs/portfolio-plan.md)와 [원본 출처](docs/sources.md)를 먼저 확인합니다.
+김명준이 최종 판단과 병합을 맡습니다. 마감은 2026-11-11 17:30 KST입니다. [검증표](docs/portfolio-plan.md)와 [원본 출처](docs/sources.md)를 먼저 확인합니다.
 
 ## 역할과 PR 흐름
 

@@ -42,7 +42,7 @@ def harness(tmp_path,monkeypatch):
         changed=(base/'baseline'/key).read_bytes()+('\n<!-- '+marker+' -->\n').encode() if key=='index.html' else ('Harmless S7 personal test '+marker+'\n').encode()
         (web/key).write_bytes(changed)
         return hashlib.sha256(changed).hexdigest()
-    lab=SimpleNamespace(SETTINGS=settings,ROOT=ROOT,STATE=state,
+    lab=SimpleNamespace(SETTINGS=settings,ROOT=ROOT,STATE=state,require_current_portal=lambda:calls.append('image_check'),
         base=SimpleNamespace(run=lambda *a,**k:json.dumps(containers)),env_values=lambda:env,
         compose=lambda *a,**k:json.dumps(settings),agent_id=lambda:'001',
         graylog=lambda *a:calls.append(('graylog',len(a))) or {},http=lambda *a,**k:(200,{}))
@@ -134,3 +134,19 @@ def test_wrong_ticket_scope_prevents_current_effect_readback(harness):
     row,ticket=observed_setup(harness);ticket['group_key']='another-event'
     with pytest.raises(RuntimeError,match='scope_mismatch'): harness.invoke(action='observe')
     assert 'readback' not in harness.calls
+
+
+def test_stale_image_blocks_input_before_persisting_or_scheduling(harness):
+    def stale(): raise RuntimeError('stale volume')
+    harness.verify.lab.require_current_portal=stale
+    with pytest.raises(RuntimeError,match='stale_runtime'): harness.invoke()
+    assert 'mutate' not in harness.calls
+    assert ('graylog',3) not in harness.calls
+    assert (harness.web/'index.html').read_bytes()==(harness.base/'baseline/index.html').read_bytes()
+
+
+def test_drift_does_not_prevent_existing_incident_observation(harness):
+    observed_setup(harness)
+    harness.verify.lab.require_current_portal=lambda:pytest.fail('New-input guard must not block readback')
+    result=harness.invoke(action='observe')
+    assert any(m.get('data',{}).get('stage')=='verified' for m in result)

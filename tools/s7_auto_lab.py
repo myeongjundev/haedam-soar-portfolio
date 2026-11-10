@@ -208,6 +208,7 @@ def install_n8n():
 
 
 def configure():
+    require_current_portal()
     status, body = http('http://127.0.0.1:' + env_values()['TICKET_PORT'] + '/api/v1/tickets?status=open,responding,verified')
     if status != 200 or body.get('count', 0):
         raise RuntimeError('Complete existing S7 tickets before reconfiguration.')

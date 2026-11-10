@@ -81,6 +81,12 @@ print(json.dumps({'clean':safe and values==actual,'baseline_hash':hashlib.sha256
         if not result['clean']: raise RuntimeError('dirty_target')
         return result['baseline_hash']
     if action=='attack':
+        # Only before new input: web drift during an incident must not prevent
+        # observation or restoration of that incident.
+        try:
+            lab.require_current_portal()
+        except RuntimeError:
+            raise RuntimeError('stale_runtime') from None
         if any(t['status'] in ('open','responding','verified') for t in verify.tickets()):
             raise RuntimeError('active_ticket')
         baseline=clean()
@@ -158,6 +164,6 @@ if __name__=='__main__':
     try:
         main()
     except Exception as exc:
-        allowed={'lab_unavailable','scope_mismatch','active_ticket','dirty_target','awaiting_detection','held_restore','interrupted'}
+        allowed={'lab_unavailable','scope_mismatch','active_ticket','dirty_target','stale_runtime','awaiting_detection','held_restore','interrupted'}
         emit('error',code=str(exc) if str(exc) in allowed else 'worker_failed')
         raise SystemExit(1)

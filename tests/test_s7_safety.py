@@ -73,6 +73,15 @@ def test_drift_path_comes_from_the_compose_mount(monkeypatch):
         s7_lab.require_image_content('s7-web')
 
 
+def test_stale_runtime_prevents_reconfiguration(monkeypatch):
+    def stale():
+        raise RuntimeError('stale runtime')
+    monkeypatch.setattr(s7_auto_lab, 'require_current_portal', stale)
+    monkeypatch.setattr(s7_auto_lab, 'http', lambda *a, **k: pytest.fail('configuration began'))
+    with pytest.raises(RuntimeError, match='stale runtime'):
+        s7_auto_lab.configure()
+
+
 def test_low_memory_up_does_not_stop_other_workloads(monkeypatch):
     mutations = []
     monkeypatch.setattr(s7_lab, 'run', lambda command, *a, **k:
