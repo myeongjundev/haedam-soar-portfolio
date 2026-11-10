@@ -7,6 +7,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import secrets
 import subprocess
 import time
@@ -113,11 +114,12 @@ def shell(command, wait=5.0):
                   '(sleep 1; printf "\\r"; sleep 3; while IFS= read -r l; do printf "%s\\r" "$l"; sleep 2.5; done; '
                   'sleep "$1") | socat -t 1 - UNIX-CONNECT:/run/qemu/serial.sock',
                   'serial', str(wait), stdin='\n'.join(lines) + '\n', timeout=wait + 3 * len(lines) + 60)
-    if '__BEGIN__' not in out or '__END__' not in out:
+    # Markers printed by the shell start a line; the echoed input line ("echo __BEGIN__; ...") does not.
+    found = re.findall(r'(?:^|\n)__BEGIN__\r?\n(.*?)(?:^|\n)__END__(\d+)', out, re.S)
+    if not found:
         raise RuntimeError('No shell markers on the serial console; open the shell (menu option 8) first.')
-    body = out.rsplit('__BEGIN__', 1)[1]
-    text, status = body.rsplit('__END__', 1)
-    return int(status.split()[0]), text.strip('\r\n')
+    text, status = found[-1]
+    return int(status), text.strip('\r\n')
 
 
 def xfer_get(name, target):
