@@ -9,3 +9,10 @@ condition = "AND"
 paths = ['''^docs/evidence/s7-auto-(live|failures)-20261109\.json$''']
 regexTarget = "match"
 regexes = ['''event_key": "(?:af8d855a97bddcf376c0620a9e2c0b469527e51b050c7bbdadbbb2fcb16553a3|9643813b7f65ccfd6be25028daefc4aaacb750a79d427737a4aefca917a775c7|bcd3fa336af859ff8b7dd9b8814f1239fd784723e185142d49d5393b799fb655)"''']
+
+[[allowlists]]
+description = "Two public SHA-256 event identities from the 11/10 panel live run; not authentication keys"
+condition = "AND"
+paths = ['''^docs/evidence/panel-(index-live|probe-live|live-audit)-20261110\.json$''']
+regexTarget = "match"
+regexes = ['''event_key": "(?:a7cafb078edf4a4bf0258ffa8d0c31f7a2c3f687031d538de47da06525591bda|25c1b1ece68b7117b0d3b06f2ec90102dda12f76d875b036890ee15c71af5681)"''']

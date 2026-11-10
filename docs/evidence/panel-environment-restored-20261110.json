@@ -1,0 +1,29 @@
+{
+  "observed_at": "2026-11-10T00:24:21.737769+00:00",
+  "previously_running": [
+    "wazuh-dashboard",
+    "wazuh-indexer",
+    "wazuh-manager",
+    "gl-graylog",
+    "gl-mongo",
+    "gl-opensearch",
+    "flask_mysql"
+  ],
+  "running": [
+    "wazuh-dashboard",
+    "wazuh-indexer",
+    "wazuh-manager",
+    "gl-graylog",
+    "gl-mongo",
+    "gl-opensearch",
+    "flask_mysql"
+  ],
+  "same_running_set": true,
+  "services": {
+    "graylog": 200,
+    "wazuh_dashboard": 200,
+    "mysql_tcp": "connected"
+  },
+  "personal_s7_containers_running": 0,
+  "panel_listener_stopped": true
+}
