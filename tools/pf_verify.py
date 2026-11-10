@@ -57,9 +57,9 @@ def easyrule_rules():
     return [line for line in pf('pfctl -sr').splitlines() if '<EasyRuleBlockHostsWAN>' in line]
 
 
-def verify():
-    run_id = 'P04-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    owner, out = run_id, {'run_id': run_id, 'started_at': now(), 'checks': {}}
+def verify(out):
+    run_id = out['run_id']
+    owner = run_id
     out['appliance'] = {'version': pf('cat /etc/version'),
                         'adapter_sha256': pf('sha256 -q ' + S['adapter_path']),
                         'config_sha256': pf('sha256 -q /cf/conf/config.xml')}
@@ -108,11 +108,18 @@ def verify():
 
 def main():
     lab.LOCAL.mkdir(parents=True, exist_ok=True)
+    run_id = 'P04-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    out = {'run_id': run_id, 'started_at': now(), 'checks': {}, 'result': 'running',
+           'source_head': subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=lab.ROOT, capture_output=True, text=True).stdout.strip(),
+           'source_dirty': bool(subprocess.run(['git', 'status', '--porcelain'], cwd=lab.ROOT, capture_output=True, text=True).stdout.strip())}
+    path = lab.LOCAL / (run_id + '.json')
     try:
-        out = verify()
+        verify(out)
     except (AssertionError, RuntimeError, subprocess.TimeoutExpired) as error:
-        raise SystemExit('FAIL: ' + lab.scrub(f'{type(error).__name__}: {error}')[:2000])
-    path = lab.LOCAL / (out['run_id'] + '.json')
+        # Keep what was observed; a block that was applied stays in the evidence for manual release.
+        out.update(result='FAIL', error=lab.scrub(f'{type(error).__name__}: {error}')[:2000], finished_at=now())
+        path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding='utf-8')
+        raise SystemExit('FAIL: ' + out['error'] + ' -> ' + str(path))
     path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding='utf-8')
     print('PASS', path)
 

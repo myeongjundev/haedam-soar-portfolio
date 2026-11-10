@@ -4,6 +4,7 @@ The pfSense VM's screen and keyboard go through the QEMU monitor, its console th
 No global Docker, Windows, VMware or existing-container settings are changed.
 """
 import argparse
+import base64
 import json
 import os
 import secrets
@@ -97,8 +98,21 @@ def serial(text, wait=5.0):
 
 
 def shell(command, wait=5.0):
-    """Run one command in the pfSense shell on the serial console (console menu option 8 must be open)."""
-    out = serial(f'echo __BEGIN__; {command}; echo __END__$?\n', wait)
+    """Run one command in the pfSense shell on the serial console (console menu option 8 must be open).
+
+    pfSense's root shell runs `resizewin` around each prompt, which waits ~1s for a terminal size reply
+    and swallows input that arrives meanwhile, so the command is sent only after a settling newline.
+    That shell is tcsh, so the command travels base64-encoded and runs under /bin/sh (no quoting issues),
+    in short lines because the console's canonical input line is limited (about 255 bytes).
+    """
+    encoded = base64.b64encode(command.encode()).decode()
+    lines = ['rm -f /tmp/pfcmd.b64'] + [f'echo {encoded[i:i + 160]} >> /tmp/pfcmd.b64'
+                                        for i in range(0, len(encoded), 160)]
+    lines.append('echo __BEGIN__; b64decode -r < /tmp/pfcmd.b64 | /bin/sh; echo __END__$?')
+    out = compose('exec', '-T', 'pfsense', 'sh', '-c',
+                  '(sleep 1; printf "\\r"; sleep 3; while IFS= read -r l; do printf "%s\\r" "$l"; sleep 2.5; done; '
+                  'sleep "$1") | socat -t 1 - UNIX-CONNECT:/run/qemu/serial.sock',
+                  'serial', str(wait), stdin='\n'.join(lines) + '\n', timeout=wait + 3 * len(lines) + 60)
     if '__BEGIN__' not in out or '__END__' not in out:
         raise RuntimeError('No shell markers on the serial console; open the shell (menu option 8) first.')
     body = out.rsplit('__BEGIN__', 1)[1]

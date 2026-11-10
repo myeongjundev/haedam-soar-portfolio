@@ -61,13 +61,17 @@ services:
     networks:
       pf-wan: {ipv4_address: "${PF_NORMAL_IP:?Run through tools/pf_lab.py}"}
 
+# Not `internal: true`: Docker then drops every frame on the bridge whose destination is outside the
+# network's own subnet (DOCKER-INTERNAL chain, applied to bridged frames by bridge-nf-call-iptables),
+# which removed all routed traffic to and from pfSense while ARP still passed (observed 11/10).
+# NAT is off so the lab has no path to the outside; Docker still isolates these bridges from each other.
 networks:
   pf-wan:
-    internal: true
+    driver_opts: {com.docker.network.bridge.enable_ip_masquerade: "false"}
     ipam:
       config: [{subnet: "${PF_WAN_SUBNET}", gateway: "${PF_WAN_GATEWAY:?Run through tools/pf_lab.py}"}]
   pf-lan:
-    internal: true
+    driver_opts: {com.docker.network.bridge.enable_ip_masquerade: "false"}
     ipam:
       config: [{subnet: "${PF_LAN_SUBNET}", gateway: "${PF_LAN_GATEWAY:?Run through tools/pf_lab.py}"}]
 

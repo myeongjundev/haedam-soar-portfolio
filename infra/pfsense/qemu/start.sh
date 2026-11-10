@@ -9,6 +9,9 @@ bridge() { # name docker-assigned-address
   ip addr flush dev "$dev"
   ip link add "br-$1" type bridge
   ip link set "$dev" master "br-$1"
+  # Docker's outer bridge reflects frames back on our veth (hairpin), so the guest's own MAC would be
+  # learned on the Docker side and unicast to the guest dropped (observed 11/10). Learn only from the tap.
+  ip link set "$dev" type bridge_slave learning off
   ip tuntap add "tap-$1" mode tap
   ip link set "tap-$1" master "br-$1"
   for link in "$dev" "tap-$1" "br-$1"; do ip link set "$link" up; done
