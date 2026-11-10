@@ -123,8 +123,10 @@ def verify(out):
     out['input'] = {'ping': attack('ping', run_id), 'scan': attack('scan', run_id), 'login': attack('login', run_id)}
     assert out['input']['ping']['ping_exit'] != 0 and out['input']['scan']['status'] == 404 \
         and out['input']['login']['status'] == 401, out['input']
-    event = wait_for(lambda: next((e for e in events(definition) if e.get('fields', {}).get('src_ip') == TARGET), None),
-                     'Graylog S10 event')
+    started = out['input']['ping']['at']
+    # Only an event raised after this run's input counts (Graylog keeps earlier events in the search range).
+    event = wait_for(lambda: next((e for e in events(definition) if e.get('fields', {}).get('src_ip') == TARGET
+                                   and e.get('timestamp', '') >= started), None), 'Graylog S10 event')
     out['graylog_event'] = {k: event.get(k) for k in ('id', 'timestamp', 'timestamp_processing', 'event_definition_id', 'fields')}
 
     def responded():
