@@ -148,6 +148,13 @@ class S1WorkflowTests(unittest.TestCase):
                     self.assertEqual(n['credentials']['httpHeaderAuth']['id'],self.c['credentials'][role]['id'])
                     self.assertEqual(n['parameters']['authentication'],'headerAuth')
 
+    def test_secondary_terminal_branch_cannot_fake_primary_return(self):
+        broken=deepcopy(self.workflows)
+        broken['s1-portal.json']['connections']['반영 확인 필요?']['main'][1]=[]
+        with self.assertRaises(subprocess.CalledProcessError) as failure:
+            self.run_graph([self.respond()],workflows=broken)
+        self.assertIn('Empty primary output',failure.exception.stderr)
+
     def test_generated_ticket_http_trace_against_real_flask_sqlite_api(self):
         # Replays the generated graph's requests through the real app in-process;
         # no socket, running service or existing database is used.

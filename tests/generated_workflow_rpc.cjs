@@ -10,8 +10,6 @@ function rpc(request) {
  if(!line)throw Error('Flask transport closed');
  return JSON.parse(line);
 }
-// n8n returns only main[0] of the last executed node (team b3c4a1f): ending on an IF's
-// other branch yields no items, so the calling workflow stops before its Respond node.
 function run(id,input,execution) {
  const w=workflows[id],nodes=Object.fromEntries(w.nodes.map(n=>[n.name,n])),outputs={};
  const selector=name=>({first:()=>({json:outputs[name]})});
@@ -23,7 +21,7 @@ function run(id,input,execution) {
   if(kind==='code')j=new Function('$input','$execution','$','$getWorkflowStaticData',p.jsCode)(
     {first:()=>({json:j}),all:()=>[{json:j}]},{id:execution},selector,()=>{throw Error('Static-store fallback forbidden');})[0].json;
   else if(kind==='if')branch=expr(p.conditions.conditions[0].leftValue,j)===true?0:1;
-  else if(kind==='executeWorkflow'){j=run(p.workflowId.value,j,execution);if(j===null)return null;}
+  else if(kind==='executeWorkflow')j=run(p.workflowId.value,j,execution);
   else if(kind==='httpRequest') {
    const headers=Object.fromEntries((p.headerParameters?.parameters||[]).map(v=>[v.name,expr(v.value,j)]));
    const body=expr(p.sendBody,j)===false?null:p.jsonBody?JSON.parse(expr(p.jsonBody,j)):
@@ -33,11 +31,14 @@ function run(id,input,execution) {
   else if(!['webhook','executeWorkflowTrigger'].includes(kind))throw Error('Unsupported node '+kind);
   outputs[name]=JSON.parse(JSON.stringify(j));
   const edges=w.connections[name]?.main[branch]||[];
-  if(!edges.length)return branch===0?j:null;
+  if(!edges.length){
+   if(branch!==0)throw Error('Empty primary output: sub-workflow ended on a secondary branch');
+   return j;
+  }
   if(edges.length!==1)throw Error('Unexpected fanout');
   name=edges[0].node;
  }
  throw Error('Graph did not terminate');
 }
-const results=spec.requests.map((request,i)=>run(request.workflow,{body:request.body},'rpc-'+(i+1))??{verdict:'halted_without_response'});
+const results=spec.requests.map((request,i)=>run(request.workflow,{body:request.body},'rpc-'+(i+1)));
 process.stdout.write(JSON.stringify({type:'result',results})+'\n');

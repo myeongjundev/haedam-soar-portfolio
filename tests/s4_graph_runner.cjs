@@ -71,8 +71,6 @@ function http(method,url,body,headers){
  state.receipts.set(key,result);return result;
 }
 let seq=0;
-// n8n returns only main[0] of the last executed node (team b3c4a1f): ending on an IF's
-// other branch yields no items, so the calling workflow stops before its Respond node.
 function run(id,input,execution){
  const w=workflows[id],nodes=Object.fromEntries(w.nodes.map(n=>[n.name,n]));
  const outputs={};
@@ -83,7 +81,7 @@ function run(id,input,execution){
   const n=nodes[name],p=n.parameters,kind=n.type.split('.').pop();let branch=0;
   if(kind==='code')j=new Function('$input','$execution','$','$getWorkflowStaticData',p.jsCode)({first:()=>({json:j}),all:()=>[{json:j}]},{id:execution},selector,()=>{throw Error('Unexpected static-store fallback');})[0].json;
   else if(kind==='if')branch=expr(p.conditions.conditions[0].leftValue,j)===true?0:1;
-  else if(kind==='executeWorkflow'){j=run(p.workflowId.value,j,execution);if(j===null)return null;}
+  else if(kind==='executeWorkflow')j=run(p.workflowId.value,j,execution);
   else if(kind==='httpRequest'){
    const method=expr(p.method,j),url=expr(p.url,j);
    const headers=Object.fromEntries((p.headerParameters?.parameters||[]).map(v=>[v.name,expr(v.value,j)]));
@@ -93,7 +91,10 @@ function run(id,input,execution){
   else if(!['webhook','executeWorkflowTrigger'].includes(kind))throw Error('Unsupported node '+kind);
   outputs[name]=copy(j);
   const edge=w.connections[name]?.main[branch]||[];
-  if(!edge.length)return branch===0?copy(j):null;
+  if(!edge.length){
+   if(branch!==0)throw Error('Empty primary output: sub-workflow ended on a secondary branch');
+   return copy(j);
+  }
   if(edge.length!==1)throw Error('Unexpected fanout');
   name=edge[0].node;
  }
@@ -107,6 +108,6 @@ for(const request of spec.requests){
  const body={...request.body};
  if(body.ticket_id==='$latest')body.ticket_id=state.tickets.at(-1)?.ticket_id;
  const before=state.calls.length;
- results.push({...(run(request.workflow,{body},'offline-'+(++seq))??{verdict:'halted_without_response'}),http_calls:state.calls.length-before});
+ results.push({...run(request.workflow,{body},'offline-'+(++seq)),http_calls:state.calls.length-before});
 }
 process.stdout.write(JSON.stringify({results,tickets:state.tickets,blocks:[...state.blocks],calls:state.calls,account:state.account}));
