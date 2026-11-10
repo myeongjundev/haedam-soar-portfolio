@@ -22,6 +22,8 @@
 | `lab/s8s10/`, `tools/s8s10_input.py` | 김명준의 S8·S10 입력·검증과 김대훈의 Graylog 탐지·알림 |
 | `lab/s12/`, `tools/s12_*.py` | 김대훈의 S12 관제·실측과 김명준의 비교 입력·검사 지원 |
 | `contracts/` | 팀 공통 이벤트·포털·티켓 계약과 합성 예시 |
+| `lab/pfsense/`, `tools/build_pfsense_bundle.py`, `contracts/pfsense-*`, `tests/test_pfsense_*` | 김명준(B)의 S10 pfSense 제한 대응 도구와 설치 번들. 팀 저장소 `94451bf`(`codex/pf-reconcile-1103`, 팀 main 미병합 후보)를 수정 없이 반입했습니다. 장비 실측은 아직 없습니다 |
+| `infra/pfsense/`, `compose.pf.yaml`, `tools/pf_*.py`, `tests/test_pf_config.py` | Claude의 개인 QEMU pfSense 랩 준비(WIP). [인수인계](s10-handoff-20261109.md) |
 
 팀 VPN 주소는 문서용 IP로, 워크플로의 서비스 URL은 개인 Compose용 DNS 이름으로 치환했습니다. n8n 자격증명 참조 ID와 이름은 개인 랩에서 다시 연결할 자리표시자로 바꿨습니다. 워크플로는 비활성 상태로 보존했습니다. 기존 Graylog 콘텐츠 팩, Wazuh 배포 규칙, pfSense 설정 백업과 팀 최종 PPT는 별도 확보 대상으로 기록합니다.
 

@@ -159,9 +159,29 @@ py -3.12 tools/panel.py
 
 기본 `http://127.0.0.1:15800`에서 **환경 확인 → S7 시험 입력 → 탐지·대응 확인 → 원복 완료**를 실행합니다. 허용된 개인 랩만 대상으로 하며 Docker/VM을 켜거나 끄지 않습니다. S7 랩은 별도로 준비해야 합니다. [설치·설정·검증 범위](docs/panel-lab.md) · [API 계약](docs/panel-contract.md). S8/H1은 버튼 미연결, S10은 Claude 구성 중으로 표시합니다. 11/10 새 개인 랩에서 두 대상의 실제 버튼 입력→Wazuh→Graylog→n8n→복구/격리→티켓 원복을 확인했습니다. [실측 결과와 캡처](docs/panel-results-20261110.md).
 
-## pfSense와 S10 진행 상태
+## P04·S10 pfSense 경계 차단·포털 차단·원복
 
-pfSense/S10은 [Claude PR #13](https://github.com/myeongjundev/haedam-soar-portfolio/pull/13)의 별도 작업이며 이 제출 후보에는 아직 통합하지 않았습니다. Docker 내부 QEMU의 FreeBSD VM 설치 이후 연결·실측을 진행 중입니다. 위 명령으로 다섯 구성이 모두 설치되거나 S10이 완료되는 것은 아닙니다. 완료 후 검토된 설치 명령·설정·차단과 원복 증적을 반입합니다. [현재 제출 범위](docs/submission-readiness-20261110.md)를 확인합니다.
+[P04·S10 개인 랩](docs/s10-lab.md)은 pfSense CE 2.7.2를 Docker 컨테이너 안의 QEMU VM(KVM 없음, 소프트웨어 에뮬레이션)으로 띄웁니다. 공격·정상 클라이언트의 실제 요청이 pfSense를 거쳐 포털에 닿습니다. S10은 이 경로에서 세 신호를 모읍니다.
+
+- pfSense ICMP 차단 로그
+- 포털 404
+- 포털 401
+
+이후 흐름은 Graylog 상관 탐지 → n8n 티켓 선기록 → 포털 IP 차단과 pfSense 차단 → 운영자 원복입니다.
+
+```powershell
+py -3.12 tools/pf_lab.py init --iso <ISO 경로>
+py -3.12 tools/pf_lab.py up pfsense        # 최초 1회 설치는 docs/s10-lab.md 순서
+py -3.12 tools/pf_verify.py                # P04: 경계 차단·정상 유지·원복
+py -3.12 tools/s10_lab.py init
+py -3.12 tools/s10_lab.py up
+py -3.12 tools/s10_lab.py pfsense
+py -3.12 tools/s10_lab.py configure
+py -3.12 tools/s10_verify.py               # S10 실제 경로
+py -3.12 tools/s10_failures.py             # 티켓 저장소·relay 장애
+```
+
+pfSense ISO는 Git에 넣지 않습니다. 실행 중에는 기존 관제 스택을 멈춥니다. 시험 대상은 팀 도구가 허용하는 개인 랩 출발지 하나입니다. [실측 결과](docs/s10-results-20261110.md) · [인수인계](docs/s10-handoff-20261110.md).
 
 ## 작업 시작
 

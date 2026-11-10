@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "action": "block",
+  "target": "203.0.113.22",
+  "request_id": "sample-request-01",
+  "owner_id": "sample-owner-01",
+  "via": "pfsense",
+  "ok": true,
+  "result": "applied",
+  "reason": "verified_managed_state",
+  "changed": true,
+  "replayed": false,
+  "applied_verified": true,
+  "effect_verified": null,
+  "state": {
+    "ready": true,
+    "configured": true,
+    "table_present": true,
+    "rule_present": true,
+    "covered_by_network": false,
+    "config_rule_present": true,
+    "runtime_rule_present": true
+  },
+  "requested_at": "2026-10-26T07:00:00.000+00:00",
+  "finished_at": "2026-10-26T07:00:01.000+00:00"
+}

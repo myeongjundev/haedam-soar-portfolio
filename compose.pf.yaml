@@ -1,0 +1,79 @@
+# Personal P04 lab: real traffic from attacker/normal clients crosses a pfSense CE VM to the portal.
+# Apply after compose.yaml through tools/pf_lab.py, which passes the PF_* values from
+# infra/pfsense/lab-settings.json and the secrets/ISO path from .env.pf. Default layout:
+#
+#   attacker 203.0.113.22, normal 203.0.113.12
+#        | pf-wan 203.0.113.0/24 (internal)
+#   pfSense WAN em0 203.0.113.1  --  LAN em1 172.30.94.1
+#        | pf-lan 172.30.94.0/24 (internal)
+#   portal 172.30.94.10:5000, controller 172.30.94.100 (SSH to the adapter)
+
+services:
+  pfsense:
+    build: infra/pfsense/qemu
+    cap_add: [NET_ADMIN]
+    devices: [/dev/net/tun]
+    environment:
+      PF_WAN_BRIDGE_IP: ${PF_WAN_BRIDGE_IP:?Run through tools/pf_lab.py}
+      PF_LAN_BRIDGE_IP: ${PF_LAN_BRIDGE_IP:?Run through tools/pf_lab.py}
+      PF_MEMORY: ${PF_MEMORY:?Run through tools/pf_lab.py}
+    volumes:
+      - pf-vm:/vm
+      - type: bind
+        source: ${PFSENSE_ISO:?Run tools/pf_lab.py init --iso PATH}
+        target: /iso/pfsense.iso
+        read_only: true
+    networks:
+      pf-wan: {ipv4_address: "${PF_WAN_BRIDGE_IP}"}
+      pf-lan: {ipv4_address: "${PF_LAN_BRIDGE_IP}"}
+
+  portal:
+    networks:
+      default: {}
+      pf-lan: {ipv4_address: "${PF_PORTAL_IP:?Run through tools/pf_lab.py}"}
+  # Return path for the portal: the WAN clients are reached through pfSense, not the Docker gateway.
+  portal-route:
+    image: python:3.12-alpine
+    network_mode: service:portal
+    cap_add: [NET_ADMIN]
+    depends_on: [portal]
+    command: [sh, -c, "ip route replace ${PF_WAN_SUBNET:?Run through tools/pf_lab.py} via ${PF_LAN_PFSENSE_IP:?Run through tools/pf_lab.py} && exec sleep 2147483647"]
+
+  # Runs the team pfSense adapter over SSH (forced command, key bound to this address).
+  controller:
+    build: infra/pfsense/controller
+    command: [sleep, "2147483647"]
+    volumes:
+      - ./.local/pf/ssh:/ssh:ro
+    networks:
+      pf-lan: {ipv4_address: "${PF_CONTROLLER_IP:?Run through tools/pf_lab.py}"}
+
+  attacker:
+    image: python:3.12-alpine
+    cap_add: [NET_ADMIN]
+    command: [sh, -c, "ip route replace ${PF_LAN_SUBNET:?Run through tools/pf_lab.py} via ${PF_WAN_PFSENSE_IP:?Run through tools/pf_lab.py} && exec sleep 2147483647"]
+    networks:
+      pf-wan: {ipv4_address: "${PF_ATTACKER_IP:?Run through tools/pf_lab.py}"}
+  normal:
+    image: python:3.12-alpine
+    cap_add: [NET_ADMIN]
+    command: [sh, -c, "ip route replace ${PF_LAN_SUBNET} via ${PF_WAN_PFSENSE_IP} && exec sleep 2147483647"]
+    networks:
+      pf-wan: {ipv4_address: "${PF_NORMAL_IP:?Run through tools/pf_lab.py}"}
+
+# Not `internal: true`: Docker then drops every frame on the bridge whose destination is outside the
+# network's own subnet (DOCKER-INTERNAL chain, applied to bridged frames by bridge-nf-call-iptables),
+# which removed all routed traffic to and from pfSense while ARP still passed (observed 11/10).
+# NAT is off so the lab has no path to the outside; Docker still isolates these bridges from each other.
+networks:
+  pf-wan:
+    driver_opts: {com.docker.network.bridge.enable_ip_masquerade: "false"}
+    ipam:
+      config: [{subnet: "${PF_WAN_SUBNET}", gateway: "${PF_WAN_GATEWAY:?Run through tools/pf_lab.py}"}]
+  pf-lan:
+    driver_opts: {com.docker.network.bridge.enable_ip_masquerade: "false"}
+    ipam:
+      config: [{subnet: "${PF_LAN_SUBNET}", gateway: "${PF_LAN_GATEWAY:?Run through tools/pf_lab.py}"}]
+
+volumes:
+  pf-vm:

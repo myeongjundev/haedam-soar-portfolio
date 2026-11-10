@@ -1,0 +1,47 @@
+{
+  "project": "haedam-pf-lab",
+  "wan": {
+    "subnet": "203.0.113.0/24",
+    "docker_gateway": "203.0.113.254",
+    "bridge_ip": "203.0.113.253",
+    "pfsense_ip": "203.0.113.1",
+    "pfsense_if": "em0"
+  },
+  "lan": {
+    "subnet": "172.30.94.0/24",
+    "docker_gateway": "172.30.94.254",
+    "bridge_ip": "172.30.94.253",
+    "pfsense_ip": "172.30.94.1",
+    "pfsense_if": "em1"
+  },
+  "portal": {
+    "ip": "172.30.94.10",
+    "port": 5000,
+    "health_path": "/api/v1/health"
+  },
+  "controller": {
+    "ip": "172.30.94.100",
+    "ssh_user": "admin"
+  },
+  "clients": {
+    "attacker": "203.0.113.22",
+    "normal": "203.0.113.12"
+  },
+  "vm": {
+    "memory_mb": 1024
+  },
+  "adapter_path": "/usr/local/sbin/haedam-pf-response",
+  "s10": {
+    "graylog_ip": "172.30.94.20",
+    "syslog_port": 5514,
+    "n8n_ip": "172.30.94.30",
+    "relay_port": 8099,
+    "response_subnet": "172.30.95.0/29",
+    "response_gateway": "172.30.95.6",
+    "n8n_response_ip": "172.30.95.2",
+    "portal_response_ip": "172.30.95.3",
+    "icmp_tracker": "1731100001",
+    "window_minutes": 15,
+    "backend_subnet": "172.30.96.0/28"
+  }
+}

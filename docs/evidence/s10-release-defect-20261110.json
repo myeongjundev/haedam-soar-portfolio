@@ -1,0 +1,175 @@
+{
+ "run_id": "S10-20261110T020326Z",
+ "started_at": "2026-11-10T02:03:26.862+00:00",
+ "checks": {
+  "both_layers_applied": true,
+  "duplicate_replay": [
+   [
+    200,
+    "duplicate_no_action"
+   ],
+   [
+    200,
+    "duplicate_no_action"
+   ]
+  ],
+  "stale_release": [
+   503,
+   "held_stale_release_ticket"
+  ]
+ },
+ "result": "FAIL",
+ "source_head": "e297ab3194184c4fd3bd09619eaaf5cda5a96e3f",
+ "source_dirty": false,
+ "preflight": {
+  "pfsense": {
+   "config_rule_present": false,
+   "configured": false,
+   "covered_by_network": false,
+   "ready": true,
+   "rule_present": false,
+   "runtime_rule_present": false,
+   "table_present": false
+  },
+  "portal_blocks": [
+   200,
+   []
+  ]
+ },
+ "baseline": {
+  "attacker": {
+   "at": "2026-11-10T02:03:30.788+00:00",
+   "result": 200,
+   "seconds": 0.041
+  },
+  "normal": {
+   "at": "2026-11-10T02:03:31.216+00:00",
+   "result": 200,
+   "seconds": 0.034
+  }
+ },
+ "input": {
+  "ping": {
+   "at": "2026-11-10T02:03:31.250+00:00",
+   "ping_exit": 1
+  },
+  "scan": {
+   "at": "2026-11-10T02:03:34.680+00:00",
+   "status": 404
+  },
+  "login": {
+   "at": "2026-11-10T02:03:34.983+00:00",
+   "status": 401
+  }
+ },
+ "graylog_event": {
+  "id": "01M71K4Y5C60YT6SSXYPK18NWE",
+  "timestamp": "2026-11-10T02:03:46.239Z",
+  "timestamp_processing": "2026-11-10T02:03:47.244Z",
+  "event_definition_id": "6af27ac491a6af3d8596e316",
+  "fields": {
+   "src_ip": "203.0.113.22",
+   "case_id": "S10"
+  }
+ },
+ "ticket_after_response": {
+  "actions": [
+   {
+    "action": "block",
+    "action_id": "1-applied-1",
+    "applied_verified": true,
+    "bot": "112",
+    "detail": "200 changed:true / listed",
+    "duplicate": false,
+    "effect_verified": null,
+    "effect_verified_at": null,
+    "finished_at": "2026-11-10T02:03:48.323Z",
+    "n8n_execution_id": "1",
+    "recorded_at": "2026-11-10T02:03:48+00:00",
+    "requested_at": "2026-11-10T02:03:48.190Z",
+    "result": "applied",
+    "target": "203.0.113.22",
+    "via": "portal"
+   },
+   {
+    "action": "block",
+    "action_id": "1-applied-2",
+    "applied_verified": true,
+    "bot": "112",
+    "detail": "applied:verified_managed_state",
+    "duplicate": false,
+    "effect_verified": null,
+    "effect_verified_at": null,
+    "finished_at": "2026-11-10T02:03:58.876Z",
+    "n8n_execution_id": "1",
+    "recorded_at": "2026-11-10T02:03:58+00:00",
+    "requested_at": "2026-11-10T02:03:48.615Z",
+    "result": "applied",
+    "target": "203.0.113.22",
+    "via": "pfsense"
+   }
+  ],
+  "asset_id": "haedam-portal",
+  "case_id": "S10",
+  "condition_met_at": null,
+  "created_at": "2026-11-10T02:03:48+00:00",
+  "data_origin": "live",
+  "detected_at": "2026-11-10T02:03:47.244Z",
+  "event_ids": [
+   "01M71K4Y5C60YT6SSXYPK18NWE"
+  ],
+  "first_attack_at": null,
+  "group_key": "203.0.113.22",
+  "received_at": "2026-11-10T02:03:47.712Z",
+  "responded_at": "2026-11-10T02:03:48.323Z",
+  "restored_at": null,
+  "schema_version": "1.0",
+  "seat": "B",
+  "src_ip": "203.0.113.22",
+  "status": "responding",
+  "ticket_id": "T-20261110-0001",
+  "title": "S10 스캔 → 침입 연쇄(경계 차단 포함)",
+  "updated_at": "2026-11-10T02:03:58+00:00",
+  "username": null,
+  "verified_at": null
+ },
+ "blocked": {
+  "attacker": {
+   "at": "2026-11-10T02:04:05.326+00:00",
+   "result": "URLError",
+   "seconds": 5.013
+  },
+  "normal": {
+   "at": "2026-11-10T02:04:05.595+00:00",
+   "result": 200,
+   "seconds": 0.023
+  },
+  "pfsense": {
+   "config_rule_present": true,
+   "configured": true,
+   "covered_by_network": false,
+   "ready": true,
+   "rule_present": true,
+   "runtime_rule_present": true,
+   "table_present": true
+  },
+  "portal_blocks": [
+   200,
+   [
+    "203.0.113.22"
+   ]
+  ],
+  "pf_rules": [
+   "block drop in quick on em0 inet from <EasyRuleBlockHostsWAN> to any label \"USER_RULE: Blocked via EasyRule\" label \"id:1794276232\" ridentifier 1794276232"
+  ]
+ },
+ "release_requested_at": "2026-11-10T02:04:27.384+00:00",
+ "release": {
+  "status": 500,
+  "body": {
+   "message": "Error in workflow"
+  }
+ },
+ "error": "AssertionError: {'status': 500, 'body': {'message': 'Error in workflow'}}",
+ "finished_at": "2026-11-10T02:04:44.031+00:00"
+}

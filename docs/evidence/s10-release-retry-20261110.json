@@ -1,0 +1,131 @@
+{
+ "run_id": "S10REL-20261110T020701",
+ "ticket_id": "T-20261110-0001",
+ "source_head": "d37287c215e8d964125b621fbb3a396688b4540a",
+ "source_dirty": false,
+ "before": {
+  "ticket": "responding",
+  "actions": [
+   [
+    "portal",
+    "block",
+    "applied"
+   ],
+   [
+    "pfsense",
+    "block",
+    "applied"
+   ]
+  ],
+  "pfsense": {
+   "configured": false,
+   "table_present": false,
+   "rule_present": false
+  },
+  "portal_blocks": [
+   200,
+   [
+    "203.0.113.22"
+   ]
+  ],
+  "attacker": {
+   "at": "2026-11-10T02:07:10.066+00:00",
+   "result": "HTTPError",
+   "seconds": 0.028
+  },
+  "normal": {
+   "at": "2026-11-10T02:07:10.408+00:00",
+   "result": 200,
+   "seconds": 0.028
+  }
+ },
+ "release_requested_at": "2026-11-10T02:07:10.408+00:00",
+ "release": {
+  "status": 200,
+  "body": {
+   "ok": true,
+   "verdict": "released",
+   "case_id": "S10",
+   "ip": "203.0.113.22",
+   "steps": [
+    {
+     "step": 1,
+     "result": "released",
+     "detail": "released:verified_managed_state replayed"
+    },
+    {
+     "step": 2,
+     "result": "released",
+     "detail": "200 changed:true / listed"
+    }
+   ],
+   "ticket": {
+    "ticket_id": "T-20261110-0001",
+    "status": "restored"
+   },
+   "manual_required": [],
+   "discord_sent": false,
+   "n8n_execution_id": "22"
+  }
+ },
+ "after": {
+  "ticket": "restored",
+  "restored_at": "2026-11-10T02:07:13.846Z",
+  "actions": [
+   [
+    "portal",
+    "block",
+    "applied",
+    true
+   ],
+   [
+    "pfsense",
+    "block",
+    "applied",
+    true
+   ],
+   [
+    "pfsense",
+    "unblock",
+    "released",
+    true
+   ],
+   [
+    "portal",
+    "unblock",
+    "released",
+    true
+   ]
+  ],
+  "pfsense": {
+   "configured": false,
+   "table_present": false,
+   "rule_present": false
+  },
+  "journal": {
+   "claim_owner_id": null,
+   "claim_target": null,
+   "pending_action": null,
+   "pending_request_id": null
+  },
+  "portal_blocks": [
+   200,
+   []
+  ],
+  "attacker": {
+   "at": "2026-11-10T02:07:17.040+00:00",
+   "result": 200,
+   "seconds": 0.019
+  },
+  "normal": {
+   "at": "2026-11-10T02:07:17.300+00:00",
+   "result": 200,
+   "seconds": 0.018
+  },
+  "pf_rules": []
+ },
+ "duplicate_release": [
+  200,
+  "nothing_to_release"
+ ]
+}
