@@ -53,7 +53,8 @@ Graylog에는 GELF TCP 입력, 포털 스트림, `infra/graylog/h1-petition-floo
 
 ```powershell
 # 실제 대시보드에서 확인한 현재 H1 티켓 ID를 사용합니다.
-py -3.12 tools/h1_control.py release T-YYYYMMDD-NNNN
+$ticketId = Read-Host '원복할 실제 H1 티켓 ID'
+py -3.12 tools/h1_control.py release $ticketId
 ```
 
 해제 도구는 탐지를 먼저 정지하고 정확한 티켓 회차의 제한만 해제합니다. 계정 역할·잠금·비밀번호·세션을 바꾸지 않습니다. 종료 뒤에도 탐지는 정지 상태입니다. 승인 웹훅을 직접 호출할 경우에도 이전 10분 창이 재발동하지 않도록 먼저 탐지를 정지해야 합니다.
@@ -64,14 +65,16 @@ py -3.12 tools/h1_control.py release T-YYYYMMDD-NNNN
 
 ## 개발 검사
 
-백엔드 잠금 의존성이 설치된 `.venv` 인터프리터로 실행합니다.
+먼저 [개발 검사 환경](installation-guide.md#개발-검사-환경)의 bootstrap으로 백엔드 잠금 의존성을 설치합니다. 저장소 루트에서 생성된 가상환경의 절대 경로를 선택합니다.
 
 ```powershell
-python -m pytest tests -q
-python tools/build_h1_workflows.py --check
+$testPython = Join-Path (Get-Location) 'haedam-portal-backend/.venv/Scripts/python.exe'
+& $testPython -m pytest tests -q
+& $testPython tools/build_h1_workflows.py --check
 Push-Location haedam-portal-backend
-python -m pytest -q
-python tools/check_mysql.py
+& $testPython -m pytest -q
+# 아래 명령은 Docker 실측 순서를 맞춘 뒤 별도로 실행합니다.
+& $testPython tools/check_mysql.py
 Pop-Location
 ```
 

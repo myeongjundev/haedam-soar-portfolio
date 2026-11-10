@@ -60,8 +60,10 @@ py -3.12 tools/s8_lab.py stop
 장애 복구 후 같은 이벤트 재시도와 담당자 원복은 아래 도구로 수행할 수 있습니다. ID는 실제 Graylog 이벤트·티켓에서 확인합니다. 키를 터미널 명령이나 이력에 넣지 않습니다. 재시도는 최근 30분의 해당 랩 이벤트만 허용합니다.
 
 ```powershell
-py -3.12 tools/s8_control.py replay --event-id <실제-Graylog-이벤트-ID>
-py -3.12 tools/s8_control.py release --ticket-id <실제-티켓-ID>
+$eventId = Read-Host '재시도할 실제 Graylog 이벤트 ID'
+py -3.12 tools/s8_control.py replay --event-id $eventId
+$ticketId = Read-Host '원복할 실제 티켓 ID'
+py -3.12 tools/s8_control.py release --ticket-id $ticketId
 ```
 
 ## 검토에서 수정한 항목과 남은 범위

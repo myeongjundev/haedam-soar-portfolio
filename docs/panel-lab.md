@@ -6,6 +6,21 @@
 
 Python 3.12 표준 라이브러리만으로 제어판을 실행합니다. Docker 조작 권한을 웹 컨테이너에 마운트하지 않고 개인 PC의 제한된 실행기가 기존 S7 도구를 사용합니다.
 
+처음에는 같은 worktree에서 아래처럼 제어판 설정을 읽고 자동 S7을 준비합니다. 다른 담당이 실측 중이면 이 초기화도 기다립니다. `PANEL_CONFIG_FILE`을 사용할 경우 먼저 지정하고, 새 PowerShell 창마다 설정 선택 네 줄을 다시 실행합니다.
+
+```powershell
+$panelConfigPath = if ($env:PANEL_CONFIG_FILE) { $env:PANEL_CONFIG_FILE } else { 'infra/panel-settings.json' }
+$panelSettings = Get-Content -LiteralPath $panelConfigPath -Raw | ConvertFrom-Json
+$env:S7_PROJECT = $panelSettings.s7_project
+$env:S7_CONFIG_FILE = $panelSettings.s7_settings
+py -3.12 tools/s7_auto_lab.py init
+py -3.12 tools/s7_auto_lab.py up
+py -3.12 tools/s7_auto_lab.py ready
+py -3.12 tools/s7_auto_lab.py configure
+```
+
+각 단계가 성공해야 다음으로 넘어갑니다. 이미 초기화한 정상 랩을 재개할 때는 같은 설정을 선택한 뒤 `up → ready`만 실행합니다. 자동 S7 도구의 기본 프로젝트는 `haedam-s7-auto`, 제어판 기본 설정은 `haedam-s7-autocheck`이므로 설정 선택을 생략하지 않습니다.
+
 ```powershell
 py -3.12 tools/panel.py
 ```
