@@ -1,6 +1,6 @@
 # 개인 랩 설치 순서와 재개 안내
 
-이 문서는 [README](../README.md)의 Windows 설치 명령을 어떤 순서로 선택할지 설명합니다. 제출 후보는 `codex/personal-portfolio-deck` 브랜치입니다. pfSense/S10과 전체 다섯 구성의 통합 설치는 아직 미완료입니다. [정적 설치 점검 결과](installation-audit-20261110.md)는 실제 기동 검사와 구분합니다.
+이 문서는 [README](../README.md)의 Windows 설치 명령을 어떤 순서로 선택할지 설명합니다. 제출 후보는 PR #24의 `claude/submission-s10` 브랜치입니다. pfSense/S10은 개인 랩에서 실측했지만, 다섯 구성을 새 clone에서 실제로 기동하는 통합 설치 확인은 아직 미완료입니다. [정적 설치 점검 결과](installation-audit-20261110.md)는 실제 기동 검사와 구분합니다.
 
 ## 실행할 랩 선택
 
@@ -69,6 +69,9 @@ $testPython = Join-Path (Get-Location) 'haedam-portal-backend/.venv/Scripts/pyth
 & $testPython tools/build_s7_workflows.py --check
 & $testPython tools/build_s8_workflows.py --check
 & $testPython tools/build_h1_workflows.py --check
+& $testPython tools/build_s10_workflows.py --check
+& $testPython tools/build_s1_workflows.py --check
+& $testPython tools/build_s4_workflows.py --check
 Push-Location haedam-portal-backend
 & $testPython -m pytest -q
 Pop-Location

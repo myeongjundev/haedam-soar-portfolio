@@ -43,7 +43,8 @@ portal GELF ─(default net)→ Graylog        n8n ─(s10-response 172.30.95.0/
 ## P04 실행 순서
 
 ```powershell
-py -3.12 tools/pf_lab.py init --iso <pfSense-CE-2.7.2-RELEASE-amd64.iso 경로>
+$iso = Read-Host 'pfSense CE 2.7.2 ISO 파일 경로'
+py -3.12 tools/pf_lab.py init --iso $iso
 ssh-keygen -q -t ed25519 -N "" -C haedam-pf-controller -f .local/pf/ssh/controller
 py -3.12 tools/build_pfsense_bundle.py --out .local/pf/bundle
 docker ps --format "{{.Names}}"            # 시작 목록 기록. 메모리가 부족하면 합의된 범위만 정지

@@ -1,16 +1,16 @@
 # 11월 11일 개인 포트폴리오 제출 준비
 
-마감은 **2026-11-11 수요일 17:30 KST**입니다. 아래는 11/10 PR #16 기준 준비 상태이며 제출 완료 선언이 아닙니다. Claude의 pfSense/S10 실측(11/10, PR #13)은 이 통합 브랜치에 반입했고 Codex는 문안·증적·검증표를 정리합니다.
+마감은 **2026-11-11 수요일 17:30 KST**입니다. 아래는 11/10 PR #24(열린 PR #1~#23 포함) 기준 준비 상태이며 제출 완료 선언이 아닙니다. Claude의 pfSense/S10 실측(11/10, PR #13)은 이 통합 브랜치에 반입했고 Codex는 문안·증적·검증표를 정리합니다.
 
 ## 제출 파일과 경로
 
 | 항목 | 준비된 결과 | 남은 확인 |
 | --- | --- | --- |
-| 개인 GitHub | [저장소](https://github.com/myeongjundev/haedam-soar-portfolio), [통합 초안 PR #16](https://github.com/myeongjundev/haedam-soar-portfolio/pull/16) | 원격 PR은 미병합. 제출할 브랜치와 평가자 비공개 저장소 접근 확인 |
+| 개인 GitHub | [저장소](https://github.com/myeongjundev/haedam-soar-portfolio), [제출 라인 초안 PR #24](https://github.com/myeongjundev/haedam-soar-portfolio/pull/24) | 원격 PR은 미병합. 제출할 브랜치와 평가자 비공개 저장소 접근 확인 |
 | 개인 PPT | [27장 PPTX r4](../output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261110-r4.pptx), [내용과 편집 원본](portfolio/README.md) | [실제 UI 캡처](portfolio/capture-plan.md). S10 실측은 r4에 반영(17장). Codex 도구로 원본 재생성 시 배치 재확인 |
 | 이력서와 자기소개서 | [프로젝트 문안과 근거](application-materials.md) | 희망 직무·지원 회사에 맞춘 선택, 본인의 회고 표현 확인 |
 | 기여와 AI 활용 | [출처](sources.md), [개인 작업일지](../work-log/members/myeongjundev/2026-11-10.md) | 팀 공통 구현과 개인 변경 범위 유지 |
-| 설치 안내와 점검 | [랩 선택·설치·재개](installation-guide.md), [새 클론 점검 결과](installation-audit-20261110.md) | 실제 컨테이너 기동·전체 설치 검증은 후속 |
+| 설치 안내와 점검 | [랩 선택·설치·재개](installation-guide.md), [새 클론 점검 결과](installation-audit-20261110.md) | 11/10 오후 #24 새 clone 오프라인 점검 통과(설치·시험·설정 해석). 실제 컨테이너 기동·전체 설치 검증은 후속 |
 
 ## 실제 동작 확인 범위
 
@@ -29,7 +29,7 @@ pfSense는 Docker 내부 QEMU에서 실행하는 FreeBSD VM입니다(11/10 설�
 ## 이어서 실행할 순서
 
 1. Claude의 S10 결과를 독립 확인합니다(Codex 미확인). 같은 실행 ID로 실제 경계 차단, 정상 사용자 유지, 포털 차단, 티켓 생성과 양쪽 원복을 대조합니다. 성공 문서만 보지 않고 원천 증적과 최종 잔여 조치도 확인합니다.
-2. Docker 자원을 사용할 수 있게 되면 PR #16 코드로 S7 파일 복구·격리와 티켓 원복을 재실측합니다. 기존 성공 기록은 그대로 보존합니다.
+2. Docker 자원을 사용할 수 있게 되면 PR #24 코드로 S7 파일 복구·격리와 티켓 원복을 재실측합니다. 기존 성공 기록은 그대로 보존합니다.
 3. 새 폴더·빈 볼륨으로 최종 README의 설치 순서를 확인합니다. 설치하지 않은 구성이나 미실행 케이스는 완료로 표시하지 않습니다.
 4. n8n·Graylog·Wazuh·해담 보안 대시보드·포털 캡처를 추가합니다. 계정 비밀번호·토큰·키·웹훅 주소를 노출하지 않고, 캡처의 사건 ID와 결과를 증적에 연결합니다.
 5. PPT의 S10 망·실측 범위·개선 방향, 제출 검증표를 같은 결과로 갱신하고 비밀정보 검사를 다시 실행합니다.

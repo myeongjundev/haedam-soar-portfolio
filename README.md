@@ -33,10 +33,10 @@ S1은 [개인 설정·입력 도구](docs/s1-personal-prep.md)를 추가했습�
 
 ## 포털과 DB 실행
 
-현재 제출 후보는 **PR #16의 `codex/personal-portfolio-deck` 브랜치**이며 `main`에는 아직 병합하지 않았습니다. 처음 받는 경우 아래처럼 브랜치를 지정합니다. 비공개 저장소 접근 권한이 있는 GitHub 계정으로 Git 인증을 준비합니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다.
+현재 제출 후보는 **PR #24의 `claude/submission-s10` 브랜치**(열린 PR #1~#23 포함)이며 `main`에는 아직 병합하지 않았습니다. `main`에 병합한 뒤에는 `--branch main`을 사용합니다. 처음 받는 경우 아래처럼 브랜치를 지정합니다. 비공개 저장소 접근 권한이 있는 GitHub 계정으로 Git 인증을 준비합니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다.
 
 ```powershell
-git clone --single-branch --branch codex/personal-portfolio-deck https://github.com/myeongjundev/haedam-soar-portfolio.git
+git clone --single-branch --branch claude/submission-s10 https://github.com/myeongjundev/haedam-soar-portfolio.git
 Set-Location haedam-soar-portfolio
 git branch --show-current
 git rev-parse --short HEAD
@@ -178,7 +178,8 @@ py -3.12 tools/panel.py
 이후 흐름은 Graylog 상관 탐지 → n8n 티켓 선기록 → 포털 IP 차단과 pfSense 차단 → 운영자 원복입니다.
 
 ```powershell
-py -3.12 tools/pf_lab.py init --iso <ISO 경로>
+$iso = Read-Host 'pfSense CE 2.7.2 ISO 파일 경로'
+py -3.12 tools/pf_lab.py init --iso $iso
 py -3.12 tools/pf_lab.py up pfsense        # 최초 1회 설치는 docs/s10-lab.md 순서
 py -3.12 tools/pf_verify.py                # P04: 경계 차단·정상 유지·원복
 py -3.12 tools/s10_lab.py init

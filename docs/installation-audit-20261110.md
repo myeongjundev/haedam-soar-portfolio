@@ -46,3 +46,34 @@
 2. [설치 안내](installation-guide.md)의 같은 프로젝트 선택으로 S7 `init/up/ready/configure`를 실행하고, 버튼 입력·관찰·원복을 다시 검증합니다.
 3. pfSense/S10 완료 커밋을 독립 검토한 뒤 설치 절차를 합칩니다. 그 전에는 전체 다섯 구성 설치 완료 문구를 사용하지 않습니다.
 4. 검사할 티켓과 실행 버전을 고정해 README 순서의 실제 기동·효과·원복을 확인하고 대시보드 캡처와 PPT를 갱신합니다.
+
+## 11/10 오후 재점검 · PR #24 `1738175` (Claude)
+
+제출 라인 PR #24(열린 PR #1~#23 포함)를 GitHub에서 새 빈 폴더로 `--single-branch --branch claude/submission-s10` clone해 같은 방식으로 다시 점검했습니다. 이번에도 **컨테이너 생성·기동·정지, 이미지 빌드, VM 조작은 실행하지 않았습니다.** 기존 Docker·VM·서비스는 변경하지 않았습니다. 다섯 구성의 실제 새 설치 완료를 뜻하지 않습니다.
+
+| 확인 | 결과 | 의미와 한계 |
+| --- | --- | --- |
+| clone 직후 | 브랜치·커밋 일치, 작업 트리 clean | 이전 작업 폴더의 비밀값·가상환경·상태 파일을 복사하지 않음 |
+| 줄끝(`core.autocrlf=true`) | `eol=lf` 지정 파일 중 CRLF 0개. 컨테이너가 쓰는 `start.sh`·`entrypoint.sh`·Dockerfile 7개 LF | Windows clone에서 스크립트가 깨지지 않는지 확인. 실행은 아님 |
+| 백엔드 bootstrap | 성공(약 40초), SQLite 마이그레이션 4개 적용 | 잠금 의존성·editable 앱 설치. 로컬 pip 캐시 사용 |
+| 저장소 `pytest -q tests` | **207 passed, 57 subtests passed** | Python 3.12.10 새 가상환경 |
+| 백엔드 `pytest -q` | **87 passed, 6 skipped** | 건너뛴 6개(외부 MySQL 전용)는 통과로 세지 않음 |
+| 생성기 `--check` | S7·S8·H1·S10·S1·S4 모두 일치(2/7/2/7/4+1/4+1) | 배포 생성물 대조. n8n·Graylog 가져오기 아님 |
+| 파일만 만드는 `init` | S8·H1·S1·S4 성공. P04는 ISO 자리에 **빈 임시 파일**을 주고 성공, S10 성공 | 난수 환경 파일·번들 생성. S7 `init`은 컨테이너를 실행하므로 제외 |
+| Compose `config` 해석 | 포털 2·포털+관제 7·S8 11·H1 9·P04 7·S10 12·S1 9·S4 9개 서비스 모두 성공 | 게시 포트는 모두 `127.0.0.1`. S1/S4는 #23 수정대로 기본망만 internal 아님(3/4). 실제 up·리스너 확인 아님 |
+| init 후 Git 상태 | clean | `.env*`·`.local`·`.venv`가 Git 제외인지 확인 |
+| README·docs 로컬 링크 | 251개 중 깨진 링크 0 | 외부 URL 접속은 확인하지 않음 |
+| 추적 JSON | 152개 파싱 성공 | 스키마 전체 검증은 아님 |
+| 문서 PowerShell 블록 | 45개 중 3개 문법 오류 → 2개 수정 | Windows PowerShell 5.1 파서로 검사(이 PC에 PowerShell 7 없음). 실행은 아님 |
+| 비밀정보 패턴 | 추적 텍스트 파일에서 11건, 모두 시험용 합성 값(`Synthetic-test-password` 등) | gitleaks가 없어 정규식 검사로 대신함 |
+
+발견과 수정(이 커밋):
+
+| 발견 | 영향 | 수정 |
+| --- | --- | --- |
+| README·설치 안내가 제출 후보를 PR #16 `codex/personal-portfolio-deck`로 안내 | 새 clone이 S10·S1/S4·H1 수정이 빠진 브랜치를 받음 | PR #24 `claude/submission-s10`로 변경, 병합 뒤 `main` 사용 안내 |
+| P04 `init --iso <ISO 경로>` 꺾쇠 자리표시자(README, `docs/s10-lab.md`) | PowerShell에 그대로 붙이면 문법 오류 | `Read-Host`로 경로를 받는 형태로 변경. 대체된 `s10-handoff-20261109.md`는 기록이라 그대로 둠 |
+| 설치 안내의 생성기 검사가 S7·S8·H1만 나열 | S10·S1·S4 생성물 불일치를 놓칠 수 있음 | 세 줄 추가 |
+| 제출 준비 문서의 PR #16 기준 표기 | 현재 제출 라인과 다름 | PR #24 기준으로 변경 |
+
+남은 실제 설치 검사: 기존 학원 스택을 멈출 범위를 정한 뒤, 같은 clone에서 포털 → 관제 → 사례별 랩을 하나씩 `up`하고 효과·원복을 확인합니다. pfSense는 실제 ISO와 최초 설치 순서([s10-lab.md](s10-lab.md))가 필요합니다.
