@@ -21,3 +21,7 @@
 - H3/H4: 처리 결과 변경 이력·승인된 복원과 담당자 대량 조회 감사·권한 회수/복원을 후속 제안으로 표시합니다. 구현·실측 완료를 주장하지 않습니다.
 
 근거: [원본 출처](../sources.md), [H1 실측](../h1-results.md), [제어판 실측](../panel-results-20261110.md), [S7 증적 JSON](../evidence/panel-live-audit-20261110.json).
+
+## 11/10 S4 후속 화면 확보
+
+수정 후 실제 회차 `s4fix20261110`에서 [Graylog 경계 로그인 5건](../evidence/s4-fix-20261110/graylog-boundary-five.png), [n8n 계정 조회·잠금·해제 노드](../evidence/s4-fix-20261110/n8n-account-nodes.png), [잠금 티켓](../evidence/s4-fix-20261110/ticket-locked.png), [원복 티켓](../evidence/s4-fix-20261110/ticket-restored.png)을 확보했습니다. n8n은 게시된 구성 화면이며 실행 이력 화면이 아닙니다. PPT r5 반영과 Wazuh 추가 UI 촬영은 후속입니다. [실측 결과](../s4-results.md).
