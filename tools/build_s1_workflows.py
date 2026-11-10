@@ -83,6 +83,15 @@ def common_workflow(role,c,s):
             code=change(code,'(j.statusCode === 200 && j.body && j.body.data && j.body.data.items) || null',
                         "(j.statusCode === 200 && j.body?.success === true && Array.isArray(j.body?.data?.items) && j.body.data.items.every(i=>i && typeof i.ip==='string') ? j.body.data.items : null)")
         p['jsCode']=code
+    if role=='portal':
+        # n8n returns the last node's output channels to Execute Workflow.
+        # A terminal IF false branch leaves output 0 empty, so list/error
+        # responses silently stop the parent unless normalized by a Code node.
+        name='포털 결과 전달'
+        w['nodes'].append({'id':'s1-portal-result','name':name,'type':'n8n-nodes-base.code',
+                          'typeVersion':2,'position':[3080,300],
+                          'parameters':{'jsCode':'return $input.all();'}})
+        w['connections']['반영 확인 필요?']['main'][1]=[{'node':name,'type':'main','index':0}]
     return w
 
 

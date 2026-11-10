@@ -31,7 +31,10 @@ function run(id,input,execution) {
   else if(!['webhook','executeWorkflowTrigger'].includes(kind))throw Error('Unsupported node '+kind);
   outputs[name]=JSON.parse(JSON.stringify(j));
   const edges=w.connections[name]?.main[branch]||[];
-  if(!edges.length)return j;
+  if(!edges.length){
+   if(branch!==0)throw Error('Empty primary output: sub-workflow ended on a secondary branch');
+   return j;
+  }
   if(edges.length!==1)throw Error('Unexpected fanout');
   name=edges[0].node;
  }
