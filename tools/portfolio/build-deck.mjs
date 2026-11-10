@@ -1,5 +1,6 @@
 import {readFileSync} from 'node:fs';
 import {addNetworkSlides} from './network-slides.mjs';
+import {addReviewSlides} from './add-review-slides.mjs';
 // Run buildPortfolio(presentation, {root}) inside an Artifact Session callback.
 // Source facts are pinned to 2026-11-10, before Claude's S10 live verification.
 export function buildPortfolio(p, {root, inventory}) {
@@ -120,5 +121,10 @@ export function buildPortfolio(p, {root, inventory}) {
       else txt(s,String(i+1).padStart(2,'0'),1150,671,64,24,16,C.muted);
     });
   }
+  const beforeReview=p.slides.items.map(s=>s.id);
+  const reviewSlides=addReviewSlides(p,{root});
+  const reviewIndex=inventory?18:10;
+  p.slides.reorder([...beforeReview.slice(0,reviewIndex),...reviewSlides,...beforeReview.slice(reviewIndex)]);
+  p.slides.items.forEach((s,i)=>{const marker=s.shapes.items.find(x=>x.position.top===671&&x.position.left===1150);if(marker)marker.text=String(i+1).padStart(2,'0');else txt(s,String(i+1).padStart(2,'0'),1150,671,64,24,16,C.muted);});
   return {slideCount:p.slides.items.length,sourceCommit:'06fb3a4',statusAsOf:'2026-11-10 morning KST'};
 }

@@ -7,7 +7,7 @@
 | 항목 | 준비된 결과 | 남은 확인 |
 | --- | --- | --- |
 | 개인 GitHub | [저장소](https://github.com/myeongjundev/haedam-soar-portfolio), [통합 초안 PR #16](https://github.com/myeongjundev/haedam-soar-portfolio/pull/16) | 원격 PR은 미병합. 제출할 브랜치와 평가자 비공개 저장소 접근 확인 |
-| 개인 PPT | [22장 PPTX](../output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261110-r2.pptx), [내용과 편집 원본](portfolio/README.md) | 새 대시보드 캡처, S10 완료 후 실측 반영 |
+| 개인 PPT | [26장 PPTX](../output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261110-r3.pptx), [내용과 편집 원본](portfolio/README.md) | [실제 UI 캡처](portfolio/capture-plan.md), S10 완료 후 실측 반영 |
 | 이력서와 자기소개서 | [프로젝트 문안과 근거](application-materials.md) | 희망 직무·지원 회사에 맞춘 선택, 본인의 회고 표현 확인 |
 | 기여와 AI 활용 | [출처](sources.md), [개인 작업일지](../work-log/members/myeongjundev/2026-11-10.md) | 팀 공통 구현과 개인 변경 범위 유지 |
 | 설치 안내와 점검 | [랩 선택·설치·재개](installation-guide.md), [새 클론 점검 결과](installation-audit-20261110.md) | 실제 컨테이너 기동·전체 설치 검증은 후속 |
@@ -22,7 +22,7 @@
 | S8 | 실제 403 차단·정상 200·해제 후 200 | 제출 환경에서 재현 준비 |
 | H1 | 작성 429·조회 200·정상 작성 201·해제 후 201 | 추가 사례로 구분, 기존 필수 사례의 대체로 표시하지 않음 |
 | pfSense·S10 | 11/10 10:20 확인: 설치 완료 화면과 installed 표식, 로컬 설정 파일 생성 확인 | 설치 후 정상 부팅·필터 경로·차단·티켓·원복 실측 증적 확인 필요 |
-| S1·S4·S12 | 팀 코드·자료 출처 보존 | 개인 재실측 미완료 |
+| S1·S4·S12 | [설정 차이·경계값·정상 대조·원복 절차](s1-s4-s12-rehearsal-plan.md), 실행 비활성 설정 초안 | 개인 배포·재실측 미완료. 오프라인 검사만 수행 |
 
 pfSense는 Docker 내부 QEMU에서 실행하는 FreeBSD VM 계획입니다. 일반 Linux 컨테이너 서비스와 동일한 방식이라고 표현하지 않습니다. 과제의 다섯 구성 동작과 전체 설치 재현은 아직 완료되지 않았습니다.
 
