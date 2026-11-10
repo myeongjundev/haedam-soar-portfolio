@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:haedam:portfolio:s4-webhook:1.0",
+  "description": "Personal S4 webhook bodies. Runtime requires exact configured synthetic account, source IP, asset and bounded event age. Release uses separate operator authority.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "asset_id",
+        "src_ip",
+        "username",
+        "event_id",
+        "detected_at"
+      ],
+      "properties": {
+        "case_id": {
+          "const": "S4"
+        },
+        "asset_id": {
+          "const": "haedam-portal"
+        },
+        "src_ip": {
+          "type": "string",
+          "format": "ipv4"
+        },
+        "username": {
+          "type": "string",
+          "pattern": "^zz_[a-z0-9_]{1,37}$"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
+        "detected_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "asset_id",
+        "src_ip",
+        "username",
+        "ticket_id"
+      ],
+      "properties": {
+        "case_id": {
+          "const": "S4"
+        },
+        "asset_id": {
+          "const": "haedam-portal"
+        },
+        "src_ip": {
+          "type": "string",
+          "format": "ipv4"
+        },
+        "username": {
+          "type": "string",
+          "pattern": "^zz_[a-z0-9_]{1,37}$"
+        },
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^T-[0-9]{8}-[0-9]{4}$"
+        }
+      }
+    }
+  ]
+}

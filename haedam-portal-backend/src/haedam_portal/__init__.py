@@ -31,6 +31,9 @@ def create_app(config=None):
         GELF_ENABLED=os.environ.get("GELF_ENABLED", "0") == "1", GELF_HOST=os.environ.get("GELF_HOST", "127.0.0.1"),
         GELF_PORT=int(os.environ.get("GELF_PORT", "12201")), GELF_TRANSPORT=os.environ.get("GELF_TRANSPORT", "udp"),
         RESPONSE_API_KEY=os.environ.get("RESPONSE_API_KEY", ""),
+        S4_ENABLED=os.environ.get("S4_ENABLED", "0") == "1",
+        S4_ACCOUNT_ALLOWLIST=os.environ.get("S4_ACCOUNT_ALLOWLIST", "").split(","),
+        S4_RELEASE_KEY=os.environ.get("S4_RELEASE_KEY", ""),
         RESPONSE_ALLOWED_CIDRS=[x.strip() for x in os.environ.get("RESPONSE_ALLOWED_CIDRS", "").split(",") if x.strip()],
         DASHBOARD_URL=os.environ.get("DASHBOARD_URL", ""),
     )
@@ -43,6 +46,7 @@ def create_app(config=None):
     from .admin import bp as admin_bp
     from .integration import bp as response_bp, ip_blocked
     from .integration import petition_restrictions  # register H1 routes before the blueprint
+    from .integration import s4_accounts  # disabled unless the isolated S4 lab opts in
     from .integration.events import emit
     from .cli import register_cli
     for bp in (auth_bp, petitions_bp, admin_bp, response_bp):

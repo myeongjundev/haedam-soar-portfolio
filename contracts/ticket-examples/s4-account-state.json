@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "data": {
+    "user_id": 7,
+    "username": "zz_s4_target",
+    "locked": true,
+    "active_sessions": 0,
+    "owner_ticket_id": "T-20261110-0001"
+  }
+}

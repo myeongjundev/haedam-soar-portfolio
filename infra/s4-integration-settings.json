@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "detection_enabled": false,
+  "portal_url": "http://portal-response:5000",
+  "ticket_url": "http://ticket-store:8088",
+  "n8n_url": "http://n8n:5678",
+  "respond_path": "haedam-s4-respond",
+  "release_path": "haedam-s4-release",
+  "operator_name": "portfolio-s4-operator",
+  "event_max_age_seconds": 660,
+  "future_clock_tolerance_seconds": 30,
+  "credentials": {
+    "detection": {
+      "id": "s4DetectionAuth",
+      "header": "X-S4-Detection-Key",
+      "env": "S4_DETECTION_KEY"
+    },
+    "operator": {
+      "id": "s4OperatorAuth",
+      "header": "X-S4-Operator-Key",
+      "env": "S4_OPERATOR_KEY"
+    },
+    "portal": {
+      "id": "s4PortalAuth",
+      "header": "X-Response-Key",
+      "env": "PORTAL_RESPONSE_KEY"
+    },
+    "ticket": {
+      "id": "s4TicketAuth",
+      "header": "X-Response-Key",
+      "env": "TICKET_STORE_KEY"
+    },
+    "release": {
+      "id": "s4ReleaseAuth",
+      "header": "X-Response-Key",
+      "env": "S4_RELEASE_KEY"
+    }
+  }
+}

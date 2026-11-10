@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:haedam:portfolio:s4-account-request:1.0",
+  "description": "Lock body has user_id/ticket_id; unlock additionally requires reason_code=false_positive. Route/authority pairing enforced by portal.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "user_id",
+        "ticket_id"
+      ],
+      "properties": {
+        "user_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^T-[0-9]{8}-[0-9]{4}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "user_id",
+        "ticket_id",
+        "reason_code"
+      ],
+      "properties": {
+        "user_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^T-[0-9]{8}-[0-9]{4}$"
+        },
+        "reason_code": {
+          "const": "false_positive"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,436 @@
+{
+  "id": "portfolioS4Portal01",
+  "name": "[Portfolio S4] scoped account",
+  "active": false,
+  "nodes": [
+    {
+      "id": "account-Start",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "account-Prepare",
+      "name": "Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"username\": \"zz_s4_target\", \"portal_url\": \"http://portal-response:5000\"};\n// Narrow account adapter. All URLs and credential references come from the builder.\nconst out = j => [{json:j}];\nfunction validState(d) {\n return d && Number.isSafeInteger(d.user_id) && d.user_id>0 && d.username===CFG.username &&\n  typeof d.locked==='boolean' && Number.isSafeInteger(d.active_sessions) && d.active_sessions>=0 &&\n  (d.owner_ticket_id===null || /^T-\\d{8}-\\d{4}$/.test(d.owner_ticket_id));\n}\nfunction run(stage,j) {\n if(stage==='prepare') {\n  const valid=j.ctx?.username===CFG.username && ['list','lock','unlock'].includes(j.action) &&\n   (j.action==='list' || Number.isSafeInteger(j.ctx?.user_id) && j.ctx.user_id>0 && /^T-\\d{8}-\\d{4}$/.test(j.ticket_id));\n  const read_url=CFG.portal_url+'/api/v1/response/s4/accounts/'+encodeURIComponent(CFG.username);\n  const data=j.action==='list'?{}:{user_id:j.ctx.user_id,ticket_id:j.ticket_id,...(j.action==='unlock'?{reason_code:'false_positive'}:{})};\n  return out({...j,valid,read_url,url:read_url+(j.action==='list'?'':'/'+j.action),data,\n   idempotency_key:`s4-${j.ticket_id}-${j.ctx?.user_id}-${j.action}`,requested_at:new Date().toISOString()});\n }\n if(stage==='invalid') return out({ctx:j.ctx,ok:false,result:'rejected',applied_verified:false,requested_at:null,finished_at:null});\n if(stage==='done') return out(j);\n if(stage==='classify') {\n  const p=$('Prepare').first().json,d=j.body?.data;\n  const responseValid=j.statusCode===200 && j.body?.success===true && validState(d);\n  if(p.action==='list') return out({ctx:p.ctx,ok:responseValid,result:responseValid?'listed':'failed',account:responseValid?d:null,needs_readback:false});\n  return out({...p,mutation_ok:responseValid && typeof d.changed==='boolean' && d.user_id===p.ctx.user_id,\n    needs_readback:true});\n }\n if(stage==='verify') {\n  const p=$('Classify').first().json,d=j.body?.data;\n  const readable=j.statusCode===200 && j.body?.success===true && validState(d) && d.user_id===p.ctx.user_id;\n  const verified=readable && (p.action==='lock' ? d.locked && d.active_sessions===0 && d.owner_ticket_id===p.ticket_id : !d.locked && d.owner_ticket_id===null);\n  // A lost response can be recovered from an atomic, ticket-bound portal claim.\n  // Preserve an acknowledged mutation even if readback fails, so its ticket keeps ownership.\n  const applied=p.mutation_ok || verified;\n  return out({ctx:p.ctx,ok:verified,result:applied?(p.action==='lock'?'applied':'released'):'failed',\n    applied_verified:readable?verified:null,effect_verified:null,requested_at:p.requested_at,finished_at:new Date().toISOString()});\n }\n return out({ok:false,result:'rejected'});\n}\n\nreturn run(\"prepare\", $input.first().json);"
+      }
+    },
+    {
+      "id": "account-Valid",
+      "name": "Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Valid",
+              "leftValue": "={{ $json.valid === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "account-Invalid",
+      "name": "Invalid",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"username\": \"zz_s4_target\", \"portal_url\": \"http://portal-response:5000\"};\n// Narrow account adapter. All URLs and credential references come from the builder.\nconst out = j => [{json:j}];\nfunction validState(d) {\n return d && Number.isSafeInteger(d.user_id) && d.user_id>0 && d.username===CFG.username &&\n  typeof d.locked==='boolean' && Number.isSafeInteger(d.active_sessions) && d.active_sessions>=0 &&\n  (d.owner_ticket_id===null || /^T-\\d{8}-\\d{4}$/.test(d.owner_ticket_id));\n}\nfunction run(stage,j) {\n if(stage==='prepare') {\n  const valid=j.ctx?.username===CFG.username && ['list','lock','unlock'].includes(j.action) &&\n   (j.action==='list' || Number.isSafeInteger(j.ctx?.user_id) && j.ctx.user_id>0 && /^T-\\d{8}-\\d{4}$/.test(j.ticket_id));\n  const read_url=CFG.portal_url+'/api/v1/response/s4/accounts/'+encodeURIComponent(CFG.username);\n  const data=j.action==='list'?{}:{user_id:j.ctx.user_id,ticket_id:j.ticket_id,...(j.action==='unlock'?{reason_code:'false_positive'}:{})};\n  return out({...j,valid,read_url,url:read_url+(j.action==='list'?'':'/'+j.action),data,\n   idempotency_key:`s4-${j.ticket_id}-${j.ctx?.user_id}-${j.action}`,requested_at:new Date().toISOString()});\n }\n if(stage==='invalid') return out({ctx:j.ctx,ok:false,result:'rejected',applied_verified:false,requested_at:null,finished_at:null});\n if(stage==='done') return out(j);\n if(stage==='classify') {\n  const p=$('Prepare').first().json,d=j.body?.data;\n  const responseValid=j.statusCode===200 && j.body?.success===true && validState(d);\n  if(p.action==='list') return out({ctx:p.ctx,ok:responseValid,result:responseValid?'listed':'failed',account:responseValid?d:null,needs_readback:false});\n  return out({...p,mutation_ok:responseValid && typeof d.changed==='boolean' && d.user_id===p.ctx.user_id,\n    needs_readback:true});\n }\n if(stage==='verify') {\n  const p=$('Classify').first().json,d=j.body?.data;\n  const readable=j.statusCode===200 && j.body?.success===true && validState(d) && d.user_id===p.ctx.user_id;\n  const verified=readable && (p.action==='lock' ? d.locked && d.active_sessions===0 && d.owner_ticket_id===p.ticket_id : !d.locked && d.owner_ticket_id===null);\n  // A lost response can be recovered from an atomic, ticket-bound portal claim.\n  // Preserve an acknowledged mutation even if readback fails, so its ticket keeps ownership.\n  const applied=p.mutation_ok || verified;\n  return out({ctx:p.ctx,ok:verified,result:applied?(p.action==='lock'?'applied':'released'):'failed',\n    applied_verified:readable?verified:null,effect_verified:null,requested_at:p.requested_at,finished_at:new Date().toISOString()});\n }\n return out({ok:false,result:'rejected'});\n}\n\nreturn run(\"invalid\", $input.first().json);"
+      }
+    },
+    {
+      "id": "account-Is release",
+      "name": "Is release",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Is release",
+              "leftValue": "={{ $json.action === \"unlock\" }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "account-Account API",
+      "name": "Account API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "method": "={{ $json.action === \"list\" ? \"GET\" : \"POST\" }}",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.idempotency_key }}"
+            }
+          ]
+        },
+        "sendBody": "={{ $json.action !== \"list\" }}",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.data) }}"
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s4PortalAuth",
+          "name": "s4PortalAuth"
+        }
+      }
+    },
+    {
+      "id": "account-Release API",
+      "name": "Release API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "method": "={{ $json.action === \"list\" ? \"GET\" : \"POST\" }}",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.idempotency_key }}"
+            }
+          ]
+        },
+        "sendBody": "={{ $json.action !== \"list\" }}",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.data) }}"
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s4ReleaseAuth",
+          "name": "s4ReleaseAuth"
+        }
+      }
+    },
+    {
+      "id": "account-Classify",
+      "name": "Classify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"username\": \"zz_s4_target\", \"portal_url\": \"http://portal-response:5000\"};\n// Narrow account adapter. All URLs and credential references come from the builder.\nconst out = j => [{json:j}];\nfunction validState(d) {\n return d && Number.isSafeInteger(d.user_id) && d.user_id>0 && d.username===CFG.username &&\n  typeof d.locked==='boolean' && Number.isSafeInteger(d.active_sessions) && d.active_sessions>=0 &&\n  (d.owner_ticket_id===null || /^T-\\d{8}-\\d{4}$/.test(d.owner_ticket_id));\n}\nfunction run(stage,j) {\n if(stage==='prepare') {\n  const valid=j.ctx?.username===CFG.username && ['list','lock','unlock'].includes(j.action) &&\n   (j.action==='list' || Number.isSafeInteger(j.ctx?.user_id) && j.ctx.user_id>0 && /^T-\\d{8}-\\d{4}$/.test(j.ticket_id));\n  const read_url=CFG.portal_url+'/api/v1/response/s4/accounts/'+encodeURIComponent(CFG.username);\n  const data=j.action==='list'?{}:{user_id:j.ctx.user_id,ticket_id:j.ticket_id,...(j.action==='unlock'?{reason_code:'false_positive'}:{})};\n  return out({...j,valid,read_url,url:read_url+(j.action==='list'?'':'/'+j.action),data,\n   idempotency_key:`s4-${j.ticket_id}-${j.ctx?.user_id}-${j.action}`,requested_at:new Date().toISOString()});\n }\n if(stage==='invalid') return out({ctx:j.ctx,ok:false,result:'rejected',applied_verified:false,requested_at:null,finished_at:null});\n if(stage==='done') return out(j);\n if(stage==='classify') {\n  const p=$('Prepare').first().json,d=j.body?.data;\n  const responseValid=j.statusCode===200 && j.body?.success===true && validState(d);\n  if(p.action==='list') return out({ctx:p.ctx,ok:responseValid,result:responseValid?'listed':'failed',account:responseValid?d:null,needs_readback:false});\n  return out({...p,mutation_ok:responseValid && typeof d.changed==='boolean' && d.user_id===p.ctx.user_id,\n    needs_readback:true});\n }\n if(stage==='verify') {\n  const p=$('Classify').first().json,d=j.body?.data;\n  const readable=j.statusCode===200 && j.body?.success===true && validState(d) && d.user_id===p.ctx.user_id;\n  const verified=readable && (p.action==='lock' ? d.locked && d.active_sessions===0 && d.owner_ticket_id===p.ticket_id : !d.locked && d.owner_ticket_id===null);\n  // A lost response can be recovered from an atomic, ticket-bound portal claim.\n  // Preserve an acknowledged mutation even if readback fails, so its ticket keeps ownership.\n  const applied=p.mutation_ok || verified;\n  return out({ctx:p.ctx,ok:verified,result:applied?(p.action==='lock'?'applied':'released'):'failed',\n    applied_verified:readable?verified:null,effect_verified:null,requested_at:p.requested_at,finished_at:new Date().toISOString()});\n }\n return out({ok:false,result:'rejected'});\n}\n\nreturn run(\"classify\", $input.first().json);"
+      }
+    },
+    {
+      "id": "account-Readback needed",
+      "name": "Readback needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Readback needed",
+              "leftValue": "={{ $json.needs_readback === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "account-Done",
+      "name": "Done",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"username\": \"zz_s4_target\", \"portal_url\": \"http://portal-response:5000\"};\n// Narrow account adapter. All URLs and credential references come from the builder.\nconst out = j => [{json:j}];\nfunction validState(d) {\n return d && Number.isSafeInteger(d.user_id) && d.user_id>0 && d.username===CFG.username &&\n  typeof d.locked==='boolean' && Number.isSafeInteger(d.active_sessions) && d.active_sessions>=0 &&\n  (d.owner_ticket_id===null || /^T-\\d{8}-\\d{4}$/.test(d.owner_ticket_id));\n}\nfunction run(stage,j) {\n if(stage==='prepare') {\n  const valid=j.ctx?.username===CFG.username && ['list','lock','unlock'].includes(j.action) &&\n   (j.action==='list' || Number.isSafeInteger(j.ctx?.user_id) && j.ctx.user_id>0 && /^T-\\d{8}-\\d{4}$/.test(j.ticket_id));\n  const read_url=CFG.portal_url+'/api/v1/response/s4/accounts/'+encodeURIComponent(CFG.username);\n  const data=j.action==='list'?{}:{user_id:j.ctx.user_id,ticket_id:j.ticket_id,...(j.action==='unlock'?{reason_code:'false_positive'}:{})};\n  return out({...j,valid,read_url,url:read_url+(j.action==='list'?'':'/'+j.action),data,\n   idempotency_key:`s4-${j.ticket_id}-${j.ctx?.user_id}-${j.action}`,requested_at:new Date().toISOString()});\n }\n if(stage==='invalid') return out({ctx:j.ctx,ok:false,result:'rejected',applied_verified:false,requested_at:null,finished_at:null});\n if(stage==='done') return out(j);\n if(stage==='classify') {\n  const p=$('Prepare').first().json,d=j.body?.data;\n  const responseValid=j.statusCode===200 && j.body?.success===true && validState(d);\n  if(p.action==='list') return out({ctx:p.ctx,ok:responseValid,result:responseValid?'listed':'failed',account:responseValid?d:null,needs_readback:false});\n  return out({...p,mutation_ok:responseValid && typeof d.changed==='boolean' && d.user_id===p.ctx.user_id,\n    needs_readback:true});\n }\n if(stage==='verify') {\n  const p=$('Classify').first().json,d=j.body?.data;\n  const readable=j.statusCode===200 && j.body?.success===true && validState(d) && d.user_id===p.ctx.user_id;\n  const verified=readable && (p.action==='lock' ? d.locked && d.active_sessions===0 && d.owner_ticket_id===p.ticket_id : !d.locked && d.owner_ticket_id===null);\n  // A lost response can be recovered from an atomic, ticket-bound portal claim.\n  // Preserve an acknowledged mutation even if readback fails, so its ticket keeps ownership.\n  const applied=p.mutation_ok || verified;\n  return out({ctx:p.ctx,ok:verified,result:applied?(p.action==='lock'?'applied':'released'):'failed',\n    applied_verified:readable?verified:null,effect_verified:null,requested_at:p.requested_at,finished_at:new Date().toISOString()});\n }\n return out({ok:false,result:'rejected'});\n}\n\nreturn run(\"done\", $input.first().json);"
+      }
+    },
+    {
+      "id": "account-Readback",
+      "name": "Readback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.read_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s4PortalAuth",
+          "name": "s4PortalAuth"
+        }
+      }
+    },
+    {
+      "id": "account-Verified",
+      "name": "Verified",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"username\": \"zz_s4_target\", \"portal_url\": \"http://portal-response:5000\"};\n// Narrow account adapter. All URLs and credential references come from the builder.\nconst out = j => [{json:j}];\nfunction validState(d) {\n return d && Number.isSafeInteger(d.user_id) && d.user_id>0 && d.username===CFG.username &&\n  typeof d.locked==='boolean' && Number.isSafeInteger(d.active_sessions) && d.active_sessions>=0 &&\n  (d.owner_ticket_id===null || /^T-\\d{8}-\\d{4}$/.test(d.owner_ticket_id));\n}\nfunction run(stage,j) {\n if(stage==='prepare') {\n  const valid=j.ctx?.username===CFG.username && ['list','lock','unlock'].includes(j.action) &&\n   (j.action==='list' || Number.isSafeInteger(j.ctx?.user_id) && j.ctx.user_id>0 && /^T-\\d{8}-\\d{4}$/.test(j.ticket_id));\n  const read_url=CFG.portal_url+'/api/v1/response/s4/accounts/'+encodeURIComponent(CFG.username);\n  const data=j.action==='list'?{}:{user_id:j.ctx.user_id,ticket_id:j.ticket_id,...(j.action==='unlock'?{reason_code:'false_positive'}:{})};\n  return out({...j,valid,read_url,url:read_url+(j.action==='list'?'':'/'+j.action),data,\n   idempotency_key:`s4-${j.ticket_id}-${j.ctx?.user_id}-${j.action}`,requested_at:new Date().toISOString()});\n }\n if(stage==='invalid') return out({ctx:j.ctx,ok:false,result:'rejected',applied_verified:false,requested_at:null,finished_at:null});\n if(stage==='done') return out(j);\n if(stage==='classify') {\n  const p=$('Prepare').first().json,d=j.body?.data;\n  const responseValid=j.statusCode===200 && j.body?.success===true && validState(d);\n  if(p.action==='list') return out({ctx:p.ctx,ok:responseValid,result:responseValid?'listed':'failed',account:responseValid?d:null,needs_readback:false});\n  return out({...p,mutation_ok:responseValid && typeof d.changed==='boolean' && d.user_id===p.ctx.user_id,\n    needs_readback:true});\n }\n if(stage==='verify') {\n  const p=$('Classify').first().json,d=j.body?.data;\n  const readable=j.statusCode===200 && j.body?.success===true && validState(d) && d.user_id===p.ctx.user_id;\n  const verified=readable && (p.action==='lock' ? d.locked && d.active_sessions===0 && d.owner_ticket_id===p.ticket_id : !d.locked && d.owner_ticket_id===null);\n  // A lost response can be recovered from an atomic, ticket-bound portal claim.\n  // Preserve an acknowledged mutation even if readback fails, so its ticket keeps ownership.\n  const applied=p.mutation_ok || verified;\n  return out({ctx:p.ctx,ok:verified,result:applied?(p.action==='lock'?'applied':'released'):'failed',\n    applied_verified:readable?verified:null,effect_verified:null,requested_at:p.requested_at,finished_at:new Date().toISOString()});\n }\n return out({ok:false,result:'rejected'});\n}\n\nreturn run(\"verify\", $input.first().json);"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare": {
+      "main": [
+        [
+          {
+            "node": "Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid": {
+      "main": [
+        [
+          {
+            "node": "Is release",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is release": {
+      "main": [
+        [
+          {
+            "node": "Release API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Account API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Account API": {
+      "main": [
+        [
+          {
+            "node": "Classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release API": {
+      "main": [
+        [
+          {
+            "node": "Classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify": {
+      "main": [
+        [
+          {
+            "node": "Readback needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Readback needed": {
+      "main": [
+        [
+          {
+            "node": "Readback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Readback": {
+      "main": [
+        [
+          {
+            "node": "Verified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

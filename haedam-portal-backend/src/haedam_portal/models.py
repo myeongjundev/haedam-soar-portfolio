@@ -87,6 +87,12 @@ class PetitionHistory(db.Model):
                 "actor": self.actor.display_name, "created_at": iso(self.created_at)}
 
 
+class S4AccountClaim(db.Model):
+    __tablename__ = "s4_account_claims"
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    ticket_id = db.Column(db.String(20), nullable=False)
+
+
 class ResponseReceipt(db.Model):
     __tablename__ = "response_receipts"
     request_key = db.Column(db.String(64), primary_key=True)

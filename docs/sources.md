@@ -31,6 +31,8 @@
 
 ## 개인 기여와 검증 근거
 
+개인 S4의 `infra/s4-*.json`, `infra/n8n/s4-src/`, `infra/n8n/portfolio-s4/`, `infra/graylog/portfolio-s4.json`, `tools/*s4*`, 포털 `integration/s4_accounts.py`·소유권 모델/마이그레이션은 김명준·Codex의 후속 구현입니다. 반소람의 팀 S4 집계 기준과 김대훈의 티켓 하위 워크플로 10번, 김상혁의 티켓 저장소 계약을 사용합니다. PR #18 `40e180b`의 오프라인 S1 구조를 별도 파일로 확장하여 계정 ID·티켓 소유권·키 분리·세션 회수·오탐 해제를 추가했습니다. 팀 원본과 S1 구현은 수정하지 않았으며 개인 실제 배포·실측은 아직 아닙니다. [변경 범위와 검증 경계](s4-auto-workflows.md).
+
 개인 S1 자동 대응의 `infra/n8n/s1-src/`, `infra/n8n/portfolio-s1/`, `infra/graylog/portfolio-s1.json`, `infra/s1-integration-settings.json`, `tools/build_s1_workflows.py`는 김명준·Codex의 후속 구현입니다. 반소람의 팀 S1 집계 기준과 김대훈의 n8n 티켓/포털 하위 워크플로를 유지·분리하고, 개인 대상 제한·계정+IP 묶음·티켓 선기록·소유권/현재 상태 대조·운영자 원복을 추가했습니다. 원본 10/12는 수정하지 않고 생성기로 파생합니다. 오프라인 검증이며 개인 실측 완료가 아닙니다. [구성과 검증 경계](s1-auto-workflows.md).
 
 개인 S1의 `infra/s1-settings.json`, `tools/s1_settings.py`, `tools/s1_lab.py`, `tools/s1_client.py`, `tests/test_s1_personal.py`는 김명준·Codex의 후속 구현입니다. 반소람의 팀 S1 탐지 기준과 김명준의 기존 Kali 입력 도구를 참고해, 개인 Docker 클라이언트의 실제 소켓 출발지·요청 상한·중지·비밀정보 없는 입력 증적을 구현했습니다. 팀 S1 JSON과 기존 도구는 보존했습니다. Graylog/n8n 실제 연결이나 개인 차단·원복 완료를 의미하지 않습니다. [구현 범위](s1-personal-prep.md).
