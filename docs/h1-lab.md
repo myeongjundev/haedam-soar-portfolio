@@ -1,0 +1,88 @@
+# H1 민원 도배 · 작성만 제한하는 개인 랩
+
+제안: 반소람(whiteclover0542)의 2026-11-09 공유 설계. 포털 원본: 김명준, 티켓 저장소 원본: 김상혁. 개인 H1 구현·검증: 김명준 / Codex. [작업 범위](h1-task.md), [API 계약](h1-contract.md).
+
+## 실행
+
+Docker와 Python 3.12 이상이 필요합니다. 다음 명령은 저장소 루트에서 실행합니다. Python 도구는 표준 라이브러리만 사용하며 이미지 안에서 앱 의존성을 설치합니다.
+
+```powershell
+py -3.12 tools/h1_lab.py init
+py -3.12 tools/h1_lab.py up
+py -3.12 tools/h1_lab.py configure
+py -3.12 tools/h1_verify.py
+py -3.12 tools/h1_control.py status
+py -3.12 tools/h1_lab.py stop
+```
+
+`init`은 `.env.h1`에 별도 난수를 만들고 기존 값은 유지합니다. `.env`, `.env.soc`, `.env.s8`과 S8 볼륨을 사용하지 않습니다. 프로젝트는 `haedam-h1-live`, 망은 `172.30.90.0/24`(클라이언트)와 `172.30.91.0/29`(대응 전용)입니다. 모든 공개 포트는 루프백에만 바인딩합니다. 포털 대응 API는 n8n의 전용 주소 `.91.2/32`와 키를 함께 확인합니다.
+
+| 구성 | 로컬 주소 | 비고 |
+| --- | --- | --- |
+| 포털 | http://127.0.0.1:15010 | Flask·React, MySQL은 내부 연결 |
+| Graylog | http://127.0.0.1:19110 | admin, 비밀번호는 로컬 `.env.h1` |
+| n8n | http://127.0.0.1:15710 | 워크플로 반입은 CLI로 자동 수행 |
+| 티켓 대시보드 | http://127.0.0.1:18110 | H1 필터·별도 가용성 카드 |
+| GELF TCP | 127.0.0.1:22310 | 컨테이너 내부 입력 12201 |
+
+6GB Docker 환경에서는 학원 관제 스택 또는 S8과 함께 실행하지 않습니다. `up`은 8GiB 미만에서 다른 컨테이너가 실행 중이면 중단하며, 다른 프로젝트를 임의로 정지하지 않습니다. 시험 전 실행 목록을 보존하고 시험 종료 후 원래 컨테이너를 복구합니다. `.wslconfig`를 자동 변경하지 않습니다.
+
+## 설정 반입과 검증 경로
+
+`configure`는 `tools/build_h1_workflows.py`에서 생성한 H1 전용 워크플로 두 개와 네 종류의 자격 증명을 가져와 게시합니다. 임시 credential JSON은 stdin으로 전송하고 컨테이너 안 0600 파일로 잠시 보관한 뒤 삭제합니다. 탐지 키와 승인 해제 키는 다릅니다. 기존 S8 워크플로는 설치하거나 변경하지 않습니다.
+
+Graylog에는 GELF TCP 입력, 포털 스트림, `infra/graylog/h1-petition-flood.json`, 인증된 n8n 알림과 정확한 URL 허용 목록을 적용합니다. 실제 스트림·알림 ID를 연결하고 규칙은 일시 정지합니다. `configure` 재실행은 활성 대응이 있으면 거부합니다.
+
+실행기는 합성 시민을 HTTP로 가입·로그인시킵니다. 정상 두 계정은 각각 2건, 시험 계정은 4건을 작성하고 40초 동안 무탐지를 확인합니다. 다섯 번째 성공한 민원 등록으로 실제 GELF→Graylog→n8n 경로를 실행합니다. 조건은 **계정별 10분 내 고유 event_id 5개 이상**입니다. 중복 전달된 같은 로그를 새로운 등록으로 세지 않도록 cardinality 집계를 씁니다.
+
+임계값 5는 짧은 랩 재현을 위한 값이며, 정상 시민 이용 통계나 운영 권장값이 아닙니다. 실제 운영 기준선을 확보하기 전에는 그대로 배포하지 않습니다. 성공 등록만 대상으로 하므로 거부된 429는 새 민원으로 세지 않습니다. 비동기 탐지여서 임계 충족 즉시 모든 후속 등록을 막는 동기식 속도 제한은 아닙니다.
+
+시험 대상은 `h1_abuse`만 허용합니다. 다음을 같은 실행 ID에 기록합니다.
+
+- 작성 429, 기존 로그인 세션·목록·상세 조회 200, 다른 IP의 새 로그인 200 및 작성 429.
+- 같은 IP의 다른 시민과 별도 정상 시민의 작성 201.
+- 인증 오류, 범위 밖 입력, 티켓 저장소 장애 때 조치 없음.
+- 동시 중복 알림의 추가 조치 없음, 오래된 티켓 해제 거부.
+- 운영자 키로 해제 → 작성 201 → 티켓 restored·활성 제한/티켓 소유권 없음.
+- 중복 해제 및 과거 이벤트 재전송 후 재제한 없음.
+- 완료한 n8n 실행 payload 행 수와 키 포함 행 수 감사.
+
+실측은 `.local/h1/H1-*.json`에 저장합니다. 공개 증적은 검토 후 `docs/evidence/`에 선별 반입합니다. 회원 비밀번호·세션·CSRF·원문 민원은 증적에 넣지 않습니다. 실행기의 계정 정보와 컨테이너 내부 쿠키는 로컬 합성 시험용이며 Git에서 제외됩니다.
+
+## 해제와 반복 시험
+
+```powershell
+# 실제 대시보드에서 확인한 현재 H1 티켓 ID를 사용합니다.
+$ticketId = Read-Host '원복할 실제 H1 티켓 ID'
+py -3.12 tools/h1_control.py release $ticketId
+```
+
+해제 도구는 탐지를 먼저 정지하고 정확한 티켓 회차의 제한만 해제합니다. 계정 역할·잠금·비밀번호·세션을 바꾸지 않습니다. 종료 뒤에도 탐지는 정지 상태입니다. 승인 웹훅을 직접 호출할 경우에도 이전 10분 창이 재발동하지 않도록 먼저 탐지를 정지해야 합니다.
+
+전체 실행기는 고정 계정의 첫 실행만 허용합니다. 두 번째 시험은 이전 증적을 보존하고 **이 프로젝트의 시험 데이터만** 초기화한 새 볼륨에서 수행합니다. 기존 S8·학원 볼륨을 삭제하지 않습니다. `stop`은 데이터를 보존하며 원복을 대신하지 않습니다.
+
+포털 제한은 적용됐지만 `applied` 기록이 없으면(티켓 저장소 장애, 제한 응답 시간 초과, n8n 중단) 포털은 제한 중이고 티켓은 `open`·자원 소유권 없음으로 남습니다. 이때 `release`는 409 `held_ticket_status`로 보류됩니다. `status`의 `restriction.ticket_id`를 확인한 뒤 다음 명령으로 그 티켓의 첫 탐지를 저장된 event_id·detected_at 그대로 재전송해 기록을 맞추고 해제합니다. 포털 영수증이 재생되므로 추가 제한은 없습니다.
+
+```powershell
+py -3.12 tools/h1_control.py reconcile T-YYYYMMDD-NNNN
+py -3.12 tools/h1_control.py release T-YYYYMMDD-NNNN
+```
+
+같은 event_id라도 detected_at이 다르면 티켓 저장소의 멱등 충돌이며 n8n은 409 `held_ticket_conflict`로 보류합니다. 재시도해도 같은 결과이므로 `reconcile`을 사용합니다. 저장소 장애는 503 `held_ticket_record`입니다. 포털 해제 직후 `released` 기록이 실패하면 같은 `release`를 다시 실행합니다. 그 사이 새 탐지가 들어오면 티켓에 조치 기록이 남아 있어도 포털 현재 제한을 확인하므로, 제한이 없거나 다른 티켓 소유이면 409 `held_portal_mismatch`로 보류합니다. 기록 실패를 대응 성공으로 표시하지 않으며, 이 구간의 자동 복구는 별도 고도화 대상입니다.
+
+## 개발 검사
+
+먼저 [개발 검사 환경](installation-guide.md#개발-검사-환경)의 bootstrap으로 백엔드 잠금 의존성을 설치합니다. 저장소 루트에서 생성된 가상환경의 절대 경로를 선택합니다.
+
+```powershell
+$testPython = Join-Path (Get-Location) 'haedam-portal-backend/.venv/Scripts/python.exe'
+& $testPython -m pytest tests -q
+& $testPython tools/build_h1_workflows.py --check
+Push-Location haedam-portal-backend
+& $testPython -m pytest -q
+# 아래 명령은 Docker 실측 순서를 맞춘 뒤 별도로 실행합니다.
+& $testPython tools/check_mysql.py
+Pop-Location
+```
+
+`check_mysql.py`는 고유 이름의 일회용 MySQL에서 새 마이그레이션, 스키마 일치, downgrade/upgrade와 전체 백엔드 테스트를 수행한 뒤 자기 컨테이너만 제거합니다. 학원 DB를 사용하지 않습니다.

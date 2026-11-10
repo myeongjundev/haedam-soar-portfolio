@@ -1,0 +1,87 @@
+{
+  "kind": "panel-observed-run",
+  "run": {
+    "id": "f1150dea-8170-4ec9-a086-bff89e319da0",
+    "target": "index.html",
+    "project": "haedam-s7-panel-live",
+    "scope": "1b35fae5eec0b3ade2c80590dcf580c9a422853cbe6cc19f34c52fc9a82d4e23",
+    "source": {
+      "head": "af19e506204423aa7bd4234b495615e5f71840c7",
+      "dirty": false,
+      "sha256": {
+        "tools/panel_s7_worker.py": "b4bba2dac591db1e42520e157558ec0d4e603e852c57ae4962de4ad1785a7977",
+        "tools/s7_auto_verify.py": "22b60078bded4f6d22402bf68acea08961efac368479e66e2d7e6623ed3460b7",
+        "tools/s7_auto_lab.py": "535ffad5c26ee240bccf0a5f20a1759791e50465f2d21845fdb1317d8df5fc82",
+        "services/lab-panel/lab_panel/config.py": "8ec567c2e8dfe5f2fb1621f425d8c03089ca7918bd17df7e84fbd9173d65fe05",
+        "services/lab-panel/lab_panel/core.py": "7cbed2ae4694df2875b892117735f62b04655af50c7959da5cd2b16601af2849",
+        "services/lab-panel/lab_panel/server.py": "fa1749acd279d15cc8d6233d923928715dd112ecf4673c32dd01206a8605d9b3",
+        "services/lab-panel/lab_panel/__init__.py": "81e4bea1e190af42152b1abd1bde510022be1b3d78c9c1dc828d7807c92597c2"
+      }
+    },
+    "created_at": "2026-11-10T00:21:09.212+00:00",
+    "stage": "restored",
+    "steps": {
+      "input": {
+        "at": "2026-11-10T00:21:13.475+00:00",
+        "detail": "허용된 파일에 무해한 시험 입력을 기록했습니다."
+      },
+      "wazuh": {
+        "at": "2026-11-10T00:21:16.402+00:00",
+        "detail": "실제 파일 해시와 일치하는 Wazuh 경보를 확인했습니다."
+      },
+      "graylog": {
+        "at": "2026-11-10T00:21:21.016+00:00",
+        "detail": "Graylog 이벤트의 인증된 n8n 전달을 확인했습니다."
+      },
+      "response": {
+        "at": "2026-11-10T00:21:23.777+00:00",
+        "detail": "티켓과 현재 파일 해시·HTTP 효과를 대조했습니다."
+      },
+      "restore": {
+        "at": "2026-11-10T00:21:28.086+00:00",
+        "detail": "해당 티켓의 원복 완료·정상 파일·격리물 정리를 확인했습니다."
+      }
+    },
+    "error": null,
+    "input_sha256": "1ad6b8d2b2855606fd7896790a07aabf7d56d840adb075c8a38b51543b537deb",
+    "input_at": "2026-11-10T00:21:13.240+00:00",
+    "baseline_hash": "158af68363e91f20720ae2a2227c5691150b01631f6556a6388e8f60ba452451",
+    "observed_at": "2026-11-10T00:21:28.086+00:00",
+    "event_key": "a7cafb078edf4a4bf0258ffa8d0c31f7a2c3f687031d538de47da06525591bda",
+    "wazuh_event_id": "1794270073.1200",
+    "graylog_event_id": "01M71D9B28BB77DTGY1ER0X6Z6",
+    "ticket_id": "T-20261110-0001",
+    "ticket_status": "restored",
+    "effect": {
+      "home_status": 200,
+      "target_status": 200,
+      "baseline_files": 4,
+      "home_sha256": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9"
+    },
+    "detection_paused": true
+  },
+  "jobs": [
+    {
+      "action": "attack",
+      "status": "succeeded",
+      "created_at": "2026-11-10T00:21:09.214+00:00",
+      "finished_at": "2026-11-10T00:21:13.496+00:00",
+      "error": null
+    },
+    {
+      "action": "observe",
+      "status": "succeeded",
+      "created_at": "2026-11-10T00:21:15.051+00:00",
+      "finished_at": "2026-11-10T00:21:23.800+00:00",
+      "error": null
+    },
+    {
+      "action": "restore",
+      "status": "succeeded",
+      "created_at": "2026-11-10T00:21:25.287+00:00",
+      "finished_at": "2026-11-10T00:21:28.104+00:00",
+      "error": null
+    }
+  ],
+  "exported_at": "2026-11-10T00:21:29.226+00:00"
+}

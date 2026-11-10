@@ -1,0 +1,33 @@
+{
+  "project": "haedam-s7-paths",
+  "agent_id": "001",
+  "started_at": "2026-11-09T05:26:17.071841+00:00",
+  "checks": {
+    "backend_readonly_in_portal_and_agent": true
+  },
+  "backend_fim": {
+    "alert_id": "1794201978.4801",
+    "rule": "550",
+    "path": "/var/lib/haedam/backend/haedam_portal/__init__.py",
+    "sha256_before": "3a2627467a0a23f8c773ebd01c94d10a0a2819532a1552acf9638193ef0da334",
+    "sha256_after": "e7fbc5bf6255c0617d8b7d2d309ae448a2d1449badf1347338d9d51dc087cb1e"
+  },
+  "portal_log": {
+    "event_id": "2d33a4e4-c5c3-4b30-9067-6955d768517b",
+    "alert_id": "1794201989.7339",
+    "rule": "100711",
+    "file_key": "index.html",
+    "http_status": 200
+  },
+  "result": "pass",
+  "restored_backend_sha256": "3a2627467a0a23f8c773ebd01c94d10a0a2819532a1552acf9638193ef0da334",
+  "finished_at": "2026-11-09T05:26:38.692740+00:00",
+  "source_head": "8583809d151b1cbe0372d6ec42a92b44b2b04e89",
+  "source_sha256": {
+    "compose.s7.yaml": "f84340ea6ebc0885a9a6f43c30be8d8112ef7f9190c2d0c5cce1c3e2bf332f62",
+    "infra/wazuh/portal-rules.xml": "bc23e34a232a2b4fc8f5232e62882c2bab77c3368bce6e5cfcd96992bb1a9e21",
+    "infra/wazuh/agent/ossec.conf": "35dfc24d814d9a4911565f5c1246f0c97e3ef3bd23663cc643e366cd6d45dd77",
+    "tools/s7_paths_verify.py": "943894fb6dc601bcdbcbcb54bae453c089451c31d2f6c16476230b4839962c7f"
+  },
+  "source_dirty_at_run": true
+}

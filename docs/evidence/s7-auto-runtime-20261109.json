@@ -1,0 +1,136 @@
+{
+  "project": "haedam-s7-autocheck",
+  "observed_at": "2026-11-09T07:27:42.917699+00:00",
+  "containers": [
+    {
+      "name": "haedam-s7-autocheck-s7-agent-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": null,
+      "image_id": "sha256:e191fd1ba28f15dcdb298b7c4013e6e3ef29b5e93572416035ff288577cabc24"
+    },
+    {
+      "name": "haedam-s7-autocheck-wazuh.dashboard-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": null,
+      "image_id": "sha256:9cc37f86a1efac76c0f0ddbc955dda0bdf72517b5067f384d66bcc7d95338a6c"
+    },
+    {
+      "name": "haedam-s7-autocheck-graylog-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": "healthy",
+      "image_id": "sha256:c43d68d0af1d4decc7fa63effe0a065d04f1eca4b7b13d160ac8c501452cf3fe"
+    },
+    {
+      "name": "haedam-s7-autocheck-portal-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": "healthy",
+      "image_id": "sha256:7e71116b6c975ca39ae08508cd234d29d7d52dc399fe734efc9989c38d21a64a"
+    },
+    {
+      "name": "haedam-s7-autocheck-wazuh.manager-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": null,
+      "image_id": "sha256:e0a78683d35556465d599a923ddc2eaec38110f911fc2c82e578f7c4ab038004"
+    },
+    {
+      "name": "haedam-s7-autocheck-graylog-mongo-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": "healthy",
+      "image_id": "sha256:8b6d8f5bbedb25cb73517b65cf99f13aeb75ad5b157a56c479287a840bbad3ac"
+    },
+    {
+      "name": "haedam-s7-autocheck-graylog-search-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": "healthy",
+      "image_id": "sha256:1c95ae7ddfe51d272873cfe9a82178e9778f45b47cc5d7a407b59a2b50f759ab"
+    },
+    {
+      "name": "haedam-s7-autocheck-s7-response-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": "healthy",
+      "image_id": "sha256:5e718985df057fca682abbdaed0eb064bccdc98abe6821a5df328a98e9ab573d"
+    },
+    {
+      "name": "haedam-s7-autocheck-n8n-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": "healthy",
+      "image_id": "sha256:cfa04788a34ae6f5d59d9086c5761315be2457a9608969553bd0add9a94959d1"
+    },
+    {
+      "name": "haedam-s7-autocheck-wazuh.indexer-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": null,
+      "image_id": "sha256:a7adcac99648b73e075c4fa8daa5bd552da46ec4a7700d7faccd579a2c5e7cc2"
+    },
+    {
+      "name": "haedam-s7-autocheck-db-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": "healthy",
+      "image_id": "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+    },
+    {
+      "name": "haedam-s7-autocheck-ticket-store-1",
+      "status": "running",
+      "oom_killed": false,
+      "health": "healthy",
+      "image_id": "sha256:7635d0be0ea46586ac139e61df2d6df83124f1ff339cf2733c1a787470b21f96"
+    }
+  ],
+  "indexer": {
+    "cluster_name": "opensearch",
+    "status": "green",
+    "timed_out": false,
+    "number_of_nodes": 1,
+    "number_of_data_nodes": 1,
+    "discovered_master": true,
+    "discovered_cluster_manager": true,
+    "active_primary_shards": 9,
+    "active_shards": 9,
+    "relocating_shards": 0,
+    "initializing_shards": 0,
+    "unassigned_shards": 0,
+    "delayed_unassigned_shards": 0,
+    "number_of_pending_tasks": 0,
+    "number_of_in_flight_fetch": 0,
+    "task_max_waiting_in_queue_millis": 0,
+    "active_shards_percent_as_number": 100.0
+  },
+  "agent_id": "001",
+  "final_tickets": [
+    {
+      "id": "T-20261109-0003",
+      "status": "restored"
+    },
+    {
+      "id": "T-20261109-0002",
+      "status": "restored"
+    },
+    {
+      "id": "T-20261109-0001",
+      "status": "restored"
+    }
+  ],
+  "final_observed_at": "2026-11-09T07:29:10.167019+00:00",
+  "replay_effect_current": true,
+  "original_environment_restored": {
+    "graylog": 200,
+    "n8n": 200,
+    "wazuh": 200,
+    "portal": 200,
+    "tickets": 200,
+    "mysql_tcp": true,
+    "original_containers_running": 11,
+    "observed_at": "2026-11-09T07:32:04.586595+00:00"
+  }
+}

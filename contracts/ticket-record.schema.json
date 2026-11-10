@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nobugs:aleph:ticket-record:1.0",
+  "title": "Draft 114 ticket store record request v1.0 (candidate implementation)",
+  "description": "Body of POST /api/v1/tickets/record sent by the D n8n result-log with X-Response-Key and Idempotency-Key headers. The key is only for replay dedup; stage decides whether a line is added or updated. n8n never sends status, ticket_id or dedup_key.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["seat", "case_id", "group_key", "stage", "title", "asset_id", "event_ids", "action"],
+  "properties": {
+    "seat": {"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/seat"},
+    "case_id": {"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/case_id"},
+    "group_key": {"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/group_key"},
+    "stage": {"enum": ["detected", "applied", "effect", "released"]},
+    "title": {"type": "string", "minLength": 1, "maxLength": 200},
+    "asset_id": {"type": "string", "minLength": 1},
+    "src_ip": {"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/ip_or_null"},
+    "username": {"type": ["string", "null"], "minLength": 1},
+    "event_ids": {"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/event_ids"},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 500},
+    "first_attack_at": {"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/time_or_null"},
+    "condition_met_at": {"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/time_or_null"},
+    "detected_at": {"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/time_or_null"},
+    "received_at": {"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/time_or_null"},
+    "action": {"anyOf": [{"$ref": "urn:nobugs:aleph:ticket:1.0#/$defs/input_action"}, {"type": "null"}]}
+  },
+  "allOf": [
+    {"if": {"properties": {"stage": {"const": "detected"}}}, "then": {"properties": {"action": {"type": "null"}}}},
+    {"if": {"properties": {"stage": {"enum": ["applied", "effect", "released"]}}}, "then": {"properties": {"action": {"type": "object"}}}},
+    {"if": {"properties": {"stage": {"const": "effect"}}},
+     "then": {"properties": {"action": {"properties": {"effect_verified": {"type": "boolean"}, "effect_verified_at": {"type": "string"}}}}}},
+    {"if": {"properties": {"stage": {"const": "released"}}},
+     "then": {"properties": {"action": {"properties": {"result": {"const": "released"}}}}}}
+  ]
+}

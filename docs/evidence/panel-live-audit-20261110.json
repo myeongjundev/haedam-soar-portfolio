@@ -1,0 +1,283 @@
+{
+  "kind": "independent-live-readback",
+  "observed_at": "2026-11-10T00:22:51.730+00:00",
+  "project": "haedam-s7-panel-live",
+  "source_head": "af19e506204423aa7bd4234b495615e5f71840c7",
+  "cases": [
+    {
+      "run_id": "f1150dea-8170-4ec9-a086-bff89e319da0",
+      "target": "index.html",
+      "ticket_id": "T-20261110-0001",
+      "ticket_status": "restored",
+      "wazuh_alert": {
+        "id": "1794270073.1200",
+        "rule": "550",
+        "timestamp": "2026-11-10T00:21:13.460+0000",
+        "agent_id": "001",
+        "sha256_after": "1ad6b8d2b2855606fd7896790a07aabf7d56d840adb075c8a38b51543b537deb"
+      },
+      "input_to_effect_seconds": 8.211,
+      "input_to_panel_observation_seconds": 10.537,
+      "response": {
+        "agent_id": "001",
+        "file_key": "index.html",
+        "wazuh_event_id": "1794270073.1200",
+        "alert_at": "2026-11-10T00:21:13.460000+00:00",
+        "expected_hash": "1ad6b8d2b2855606fd7896790a07aabf7d56d840adb075c8a38b51543b537deb",
+        "action": "restore",
+        "rule_id": "550",
+        "event_key": "a7cafb078edf4a4bf0258ffa8d0c31f7a2c3f687031d538de47da06525591bda",
+        "graylog_event_id": "01M71D9B28BB77DTGY1ER0X6Z6",
+        "detected_at": "2026-11-10T00:21:20.072Z",
+        "execution_id": "1",
+        "baseline_hash": "158af68363e91f20720ae2a2227c5691150b01631f6556a6388e8f60ba452451",
+        "group_key": "S7:haedam-portal:a7cafb078edf4a4bf0258ffa8d0c31f7a2c3f687031d538de47da06525591bda",
+        "ticket_id": "T-20261110-0001",
+        "requested_at": "2026-11-10T00:21:21.251+00:00",
+        "finished_at": "2026-11-10T00:21:21.261+00:00",
+        "effect_verified_at": "2026-11-10T00:21:21.451+00:00",
+        "effect": {
+          "home_status": 200,
+          "target_status": 200,
+          "baseline_files": 4,
+          "home_sha256": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9"
+        },
+        "result": "applied",
+        "receipt": {
+          "action": "restore",
+          "action_record": {
+            "action": "restore",
+            "duration_ms": 0,
+            "path": "index.html",
+            "result": "ok",
+            "run_id": "a7cafb078edf4a4bf0258ffa8d0c31f7a2c3f687031d538de47da06525591bda",
+            "sha256_after": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9",
+            "sha256_before": "1ad6b8d2b2855606fd7896790a07aabf7d56d840adb075c8a38b51543b537deb",
+            "sha256_expected": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9",
+            "ts": "2026-11-10T00:21:21.260+00:00"
+          },
+          "file_key": "index.html",
+          "fingerprint": "ae163a4c6a7d1e1aacdffc3265176ec264e9f368f3383bf9c55b39b8d477cc51",
+          "finished_at": "2026-11-10T00:21:21.261+00:00",
+          "job": "a7cafb078edf4a4bf0258ffa8d0c31f7a2c3f687031d538de47da06525591bda",
+          "operation": "respond",
+          "requested_at": "2026-11-10T00:21:21.251+00:00",
+          "result": "ok",
+          "ticket_id": "T-20261110-0001"
+        }
+      },
+      "completion": {
+        "agent_id": "001",
+        "file_key": "index.html",
+        "wazuh_event_id": "1794270073.1200",
+        "alert_at": "2026-11-10T00:21:13.460000+00:00",
+        "expected_hash": "1ad6b8d2b2855606fd7896790a07aabf7d56d840adb075c8a38b51543b537deb",
+        "action": "restore",
+        "rule_id": "550",
+        "event_key": "a7cafb078edf4a4bf0258ffa8d0c31f7a2c3f687031d538de47da06525591bda",
+        "graylog_event_id": "01M71D9B28BB77DTGY1ER0X6Z6",
+        "detected_at": "2026-11-10T00:21:20.072Z",
+        "execution_id": "2",
+        "baseline_hash": "158af68363e91f20720ae2a2227c5691150b01631f6556a6388e8f60ba452451",
+        "group_key": "S7:haedam-portal:a7cafb078edf4a4bf0258ffa8d0c31f7a2c3f687031d538de47da06525591bda",
+        "ticket_id": "T-20261110-0001",
+        "requested_at": "2026-11-10T00:21:27.645+00:00",
+        "finished_at": "2026-11-10T00:21:27.647+00:00",
+        "effect_verified_at": "2026-11-10T00:21:27.831+00:00",
+        "effect": {
+          "home_status": 200,
+          "target_status": 200,
+          "baseline_files": 4,
+          "home_sha256": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9"
+        },
+        "result": "released",
+        "receipt": {
+          "action": "complete",
+          "file_key": "index.html",
+          "fingerprint": "77c52d1e4e4963b755faa728cb42ddb24ac65a49ce7e286c607ed50211a8de31",
+          "finished_at": "2026-11-10T00:21:27.647+00:00",
+          "job": "a7cafb078edf4a4bf0258ffa8d0c31f7a2c3f687031d538de47da06525591bda",
+          "operation": "complete",
+          "requested_at": "2026-11-10T00:21:27.645+00:00",
+          "result": "ok",
+          "ticket_id": "T-20261110-0001"
+        }
+      }
+    },
+    {
+      "run_id": "05acdc82-be28-4919-9f49-de2b5973e051",
+      "target": "assets/s7-probe.txt",
+      "ticket_id": "T-20261110-0002",
+      "ticket_status": "restored",
+      "wazuh_alert": {
+        "id": "1794270094.8076",
+        "rule": "554",
+        "timestamp": "2026-11-10T00:21:34.519+0000",
+        "agent_id": "001",
+        "sha256_after": "67aba34e0c282fba54e284219ba72594b983ce13d0daf807b3572a6fc72c0bfd"
+      },
+      "input_to_effect_seconds": 6.699,
+      "input_to_panel_observation_seconds": 7.37,
+      "response": {
+        "agent_id": "001",
+        "file_key": "assets/s7-probe.txt",
+        "wazuh_event_id": "1794270094.8076",
+        "alert_at": "2026-11-10T00:21:34.519000+00:00",
+        "expected_hash": "67aba34e0c282fba54e284219ba72594b983ce13d0daf807b3572a6fc72c0bfd",
+        "action": "quarantine",
+        "rule_id": "554",
+        "event_key": "25c1b1ece68b7117b0d3b06f2ec90102dda12f76d875b036890ee15c71af5681",
+        "graylog_event_id": "01M71D9YNVCZFR4GQAZY093ND3",
+        "detected_at": "2026-11-10T00:21:40.155Z",
+        "execution_id": "3",
+        "baseline_hash": "158af68363e91f20720ae2a2227c5691150b01631f6556a6388e8f60ba452451",
+        "group_key": "S7:haedam-portal:25c1b1ece68b7117b0d3b06f2ec90102dda12f76d875b036890ee15c71af5681",
+        "ticket_id": "T-20261110-0002",
+        "requested_at": "2026-11-10T00:21:40.799+00:00",
+        "finished_at": "2026-11-10T00:21:40.803+00:00",
+        "effect_verified_at": "2026-11-10T00:21:41.008+00:00",
+        "effect": {
+          "home_status": 200,
+          "target_status": 404,
+          "baseline_files": 4,
+          "home_sha256": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9"
+        },
+        "result": "applied",
+        "receipt": {
+          "action": "quarantine",
+          "action_record": {
+            "action": "quarantine",
+            "duration_ms": 1,
+            "path": "assets/s7-probe.txt",
+            "quarantine_entry": "20261110T002140Z_25c1b1ece68b7117b0d3b06f2ec90102dda12f76d875b036890ee15c71af5681",
+            "result": "ok",
+            "run_id": "25c1b1ece68b7117b0d3b06f2ec90102dda12f76d875b036890ee15c71af5681",
+            "sha256_before": "67aba34e0c282fba54e284219ba72594b983ce13d0daf807b3572a6fc72c0bfd",
+            "size": 69,
+            "symlink": false,
+            "ts": "2026-11-10T00:21:40.802+00:00"
+          },
+          "file_key": "assets/s7-probe.txt",
+          "fingerprint": "4707b72c87de95d2755bc4b6ef68c4b18a015f133a863add1ab12b8ddef59504",
+          "finished_at": "2026-11-10T00:21:40.803+00:00",
+          "job": "25c1b1ece68b7117b0d3b06f2ec90102dda12f76d875b036890ee15c71af5681",
+          "operation": "respond",
+          "requested_at": "2026-11-10T00:21:40.799+00:00",
+          "result": "ok",
+          "ticket_id": "T-20261110-0002"
+        }
+      },
+      "completion": {
+        "agent_id": "001",
+        "file_key": "assets/s7-probe.txt",
+        "wazuh_event_id": "1794270094.8076",
+        "alert_at": "2026-11-10T00:21:34.519000+00:00",
+        "expected_hash": "67aba34e0c282fba54e284219ba72594b983ce13d0daf807b3572a6fc72c0bfd",
+        "action": "quarantine",
+        "rule_id": "554",
+        "event_key": "25c1b1ece68b7117b0d3b06f2ec90102dda12f76d875b036890ee15c71af5681",
+        "graylog_event_id": "01M71D9YNVCZFR4GQAZY093ND3",
+        "detected_at": "2026-11-10T00:21:40.155Z",
+        "execution_id": "4",
+        "baseline_hash": "158af68363e91f20720ae2a2227c5691150b01631f6556a6388e8f60ba452451",
+        "group_key": "S7:haedam-portal:25c1b1ece68b7117b0d3b06f2ec90102dda12f76d875b036890ee15c71af5681",
+        "ticket_id": "T-20261110-0002",
+        "requested_at": "2026-11-10T00:21:45.941+00:00",
+        "finished_at": "2026-11-10T00:21:45.943+00:00",
+        "effect_verified_at": "2026-11-10T00:21:46.127+00:00",
+        "effect": {
+          "home_status": 200,
+          "target_status": 404,
+          "baseline_files": 4,
+          "home_sha256": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9"
+        },
+        "result": "released",
+        "receipt": {
+          "action": "complete",
+          "file_key": "assets/s7-probe.txt",
+          "fingerprint": "f5a1b85dcb2077cd31b8d581e72d2aa73278e69b96ade52b1e5523dea00b48ed",
+          "finished_at": "2026-11-10T00:21:45.943+00:00",
+          "job": "25c1b1ece68b7117b0d3b06f2ec90102dda12f76d875b036890ee15c71af5681",
+          "operation": "complete",
+          "requested_at": "2026-11-10T00:21:45.941+00:00",
+          "result": "ok",
+          "ticket_id": "T-20261110-0002"
+        }
+      }
+    }
+  ],
+  "final_files": {
+    "baseline_matches": true,
+    "baseline_files": 4,
+    "quarantine_entries": 0,
+    "baseline_sha256": "158af68363e91f20720ae2a2227c5691150b01631f6556a6388e8f60ba452451"
+  },
+  "n8n_privacy": {
+    "payload_rows": 0
+  },
+  "containers": [
+    {
+      "service": "s7-agent",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "wazuh.dashboard",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "wazuh.manager",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "graylog",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "portal",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "graylog-mongo",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "wazuh.indexer",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "graylog-search",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "n8n",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "ticket-store",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "db",
+      "state": "running",
+      "oom_killed": false
+    },
+    {
+      "service": "s7-response",
+      "state": "running",
+      "oom_killed": false
+    }
+  ],
+  "agent_id": "001",
+  "index_health": "green",
+  "result": "PASS"
+}

@@ -1,0 +1,403 @@
+[
+ {
+  "id": "haedamAccountLock01",
+  "name": "haedam-13 포털 계정 잠금 (111)",
+  "active": false,
+  "nodes": [
+   {
+    "id": "0544d87b-5ef2-5901-baa0-b5655bcfc5ea",
+    "name": "Execute Workflow Trigger",
+    "type": "n8n-nodes-base.executeWorkflowTrigger",
+    "typeVersion": 1.1,
+    "position": [
+     0,
+     0
+    ],
+    "parameters": {
+     "inputSource": "passthrough"
+    }
+   },
+   {
+    "id": "3f31b0a0-4ef1-5ebd-a907-0be2914144db",
+    "name": "요청 준비",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     240,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// 입력 검증·Idempotency-Key. 키 형식: {ticket_id}-111-{username}-lock (API-CONTRACT n8n 규칙 #46)\nconst b = $input.first().json;\nconst ctx = b.ctx;\nif (b.action !== 'lock') return [{ json: { result: 'failed', detail: 'only lock is automated (해제·재설정은 사람이)', stop: true, ctx } }];\nif (!b.username || !/^[A-Za-z0-9_.\\-]{1,64}$/.test(b.username)) return [{ json: { result: 'failed', detail: 'bad_username', stop: true, ctx } }];\nif (!b.ticket_id) return [{ json: { result: 'failed', detail: 'ticket_id required for Idempotency-Key', stop: true, ctx } }];\nconst idem = `${b.ticket_id}-111-${b.username}-lock`;\nreturn [{ json: { action: 'lock', username: b.username, idem, url: 'http://portal:5000/api/v1/response/accounts/lock', method: 'POST',\n  dry_run: b.dry_run !== false, stop: false, ctx, requested_at: new Date().toISOString() } }];\n"
+    }
+   },
+   {
+    "id": "889db26e-8bb6-5f0f-abaf-d65fb847f3e4",
+    "name": "검증 실패?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     480,
+     0
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "20e7e025-6ad7-5be9-bb59-fd0b7612ae81",
+        "leftValue": "={{ $json.stop }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "441c46d0-d899-5692-9410-25d92fcfb674",
+    "name": "검증 실패 결과",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     720,
+     -120
+    ],
+    "parameters": {
+     "jsCode": "const p = $input.first().json;\nconst t = new Date().toISOString();\nreturn [{ json: { ok: false, result: p.result, detail: p.detail, applied_verified: false, requested_at: t, finished_at: t, ctx: p.ctx } }];\n"
+    }
+   },
+   {
+    "id": "370709c7-c367-5f3a-81db-07cf82a1b00b",
+    "name": "dry_run?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     720,
+     80
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "0c7f68af-4e02-5bb8-92eb-361fe4cdd102",
+        "leftValue": "={{ $json.dry_run }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "0761dea9-caaa-5c8f-86d3-83877f6bdffa",
+    "name": "dry_run 결과",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     960,
+     -20
+    ],
+    "parameters": {
+     "jsCode": "// dry_run: 포털을 부르지 않고 보낼 요청만 돌려준다. S4 username 잠금은 backend #3 병합·배포 뒤에야 실제 호출 가능.\nconst p = $input.first().json;\nreturn [{ json: { ok: true, result: 'dry_run', detail: `would ${p.method} ${p.url}`, username: p.username, action: p.action, idempotency_key: p.idem,\n  applied_verified: null, requested_at: p.requested_at, finished_at: new Date().toISOString(), ctx: p.ctx } }];\n"
+    }
+   },
+   {
+    "id": "77831e63-6684-5673-b8d3-04ad9db7f831",
+    "name": "포털 호출 1",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2,
+    "position": [
+     960,
+     180
+    ],
+    "parameters": {
+     "method": "POST",
+     "url": "={{ $('요청 준비').first().json.url }}",
+     "authentication": "genericCredentialType",
+     "genericAuthType": "httpHeaderAuth",
+     "sendHeaders": true,
+     "headerParameters": {
+      "parameters": [
+       {
+        "name": "Idempotency-Key",
+        "value": "={{ $('요청 준비').first().json.idem }}"
+       }
+      ]
+     },
+     "sendBody": true,
+     "specifyBody": "json",
+     "jsonBody": "={{ JSON.stringify({ username: $('요청 준비').first().json.username }) }}",
+     "options": {
+      "timeout": 5000,
+      "response": {
+       "response": {
+        "fullResponse": true,
+        "neverError": true
+       }
+      }
+     }
+    },
+    "onError": "continueRegularOutput"
+   },
+   {
+    "id": "35e9202e-119f-5eb7-9016-ebc02fc588e2",
+    "name": "응답 분류 1",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     1200,
+     180
+    ],
+    "parameters": {
+     "jsCode": "// 포털 응답을 결과 값으로 바꾼다(API-CONTRACT n8n 규칙 표). 시간 초과·연결 실패는 응답이 없다.\nconst j = $input.first().json;\nconst prev = $('요청 준비').first().json;\nconst status = j.statusCode ?? null;\nconst body = j.body ?? null;\nlet result = 'failed', retry = false, detail = '';\nif (status === null) { retry = true; detail = 'timeout_or_network:' + String((j.error && j.error.message) || j.message || '').slice(0, 120); }\nelse if (status === 200) {\n  const d = (body && body.data) || {};\n  if (false) result = 'listed';\n  else result = d.changed ? 'applied' : 'already_applied';\n  detail = `${status} changed:${d.changed}`;\n} else if (status === 403) { result = 'rejected'; detail = '403 FORBIDDEN'; }\nelse if (status === 409 || status >= 500) { retry = true; detail = `${status}`; }\nelse { detail = `${status} ${(body && body.error && body.error.code) || ''}`; }\nreturn [{ json: { result, retry, detail, status, body_data: (body && body.data) || null, ctx: prev.ctx, idem: prev.idem, username: prev.username, action: prev.action,\n  requested_at: prev.requested_at, finished_at: new Date().toISOString() } }];\n"
+    }
+   },
+   {
+    "id": "831cb166-8cdb-5d8b-b260-0fcf49e2f945",
+    "name": "재시도?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     1440,
+     180
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "9264f2eb-f9c2-5b17-b9b6-60748238cd67",
+        "leftValue": "={{ $json.retry }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "f74e1a88-2759-5999-9b39-1738c6dab783",
+    "name": "포털 호출 2 (같은 키, 1회)",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2,
+    "position": [
+     1680,
+     100
+    ],
+    "parameters": {
+     "method": "POST",
+     "url": "={{ $('요청 준비').first().json.url }}",
+     "authentication": "genericCredentialType",
+     "genericAuthType": "httpHeaderAuth",
+     "sendHeaders": true,
+     "headerParameters": {
+      "parameters": [
+       {
+        "name": "Idempotency-Key",
+        "value": "={{ $('요청 준비').first().json.idem }}"
+       }
+      ]
+     },
+     "sendBody": true,
+     "specifyBody": "json",
+     "jsonBody": "={{ JSON.stringify({ username: $('요청 준비').first().json.username }) }}",
+     "options": {
+      "timeout": 5000,
+      "response": {
+       "response": {
+        "fullResponse": true,
+        "neverError": true
+       }
+      }
+     }
+    },
+    "onError": "continueRegularOutput"
+   },
+   {
+    "id": "f0cd6944-7aec-5ed9-8a5a-f5f9a205a4fd",
+    "name": "응답 분류 2",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     1920,
+     100
+    ],
+    "parameters": {
+     "jsCode": "// 포털 응답을 결과 값으로 바꾼다(API-CONTRACT n8n 규칙 표). 시간 초과·연결 실패는 응답이 없다.\nconst j = $input.first().json;\nconst prev = $('요청 준비').first().json;\nconst status = j.statusCode ?? null;\nconst body = j.body ?? null;\nlet result = 'failed', retry = false, detail = '';\nif (status === null) { retry = true; detail = 'timeout_or_network:' + String((j.error && j.error.message) || j.message || '').slice(0, 120); }\nelse if (status === 200) {\n  const d = (body && body.data) || {};\n  if (false) result = 'listed';\n  else result = d.changed ? 'applied' : 'already_applied';\n  detail = `${status} changed:${d.changed}`;\n} else if (status === 403) { result = 'rejected'; detail = '403 FORBIDDEN'; }\nelse if (status === 409 || status >= 500) { retry = true; detail = `${status}`; }\nelse { detail = `${status} ${(body && body.error && body.error.code) || ''}`; }\nreturn [{ json: { result, retry, detail, status, body_data: (body && body.data) || null, ctx: prev.ctx, idem: prev.idem, username: prev.username, action: prev.action,\n  requested_at: prev.requested_at, finished_at: new Date().toISOString() } }];\n"
+    }
+   },
+   {
+    "id": "736ac1ae-b9f1-516b-9f4b-1e762ace1c42",
+    "name": "최종 결과",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     2160,
+     180
+    ],
+    "parameters": {
+     "jsCode": "const j = $input.first().json;\nreturn [{ json: { ok: !['failed', 'rejected'].includes(j.result), result: j.result, detail: j.detail, username: j.username, action: j.action,\n  idempotency_key: j.idem, applied_verified: null, requested_at: j.requested_at, finished_at: j.finished_at, ctx: j.ctx } }];\n"
+    }
+   }
+  ],
+  "connections": {
+   "Execute Workflow Trigger": {
+    "main": [
+     [
+      {
+       "node": "요청 준비",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "요청 준비": {
+    "main": [
+     [
+      {
+       "node": "검증 실패?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "검증 실패?": {
+    "main": [
+     [
+      {
+       "node": "검증 실패 결과",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "dry_run?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "dry_run?": {
+    "main": [
+     [
+      {
+       "node": "dry_run 결과",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "포털 호출 1",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "포털 호출 1": {
+    "main": [
+     [
+      {
+       "node": "응답 분류 1",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "응답 분류 1": {
+    "main": [
+     [
+      {
+       "node": "재시도?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "재시도?": {
+    "main": [
+     [
+      {
+       "node": "포털 호출 2 (같은 키, 1회)",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "최종 결과",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "포털 호출 2 (같은 키, 1회)": {
+    "main": [
+     [
+      {
+       "node": "응답 분류 2",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "응답 분류 2": {
+    "main": [
+     [
+      {
+       "node": "최종 결과",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  }
+ }
+]

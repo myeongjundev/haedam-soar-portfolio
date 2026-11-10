@@ -1,0 +1,51 @@
+[
+  {
+    "name": "haedam-16 티켓 응답 판단 (오프라인 후보, 대상 호출 없음)",
+    "active": false,
+    "nodes": [
+      {
+        "id": "ticket-input",
+        "name": "Execute Workflow Trigger",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "inputSource": "passthrough"
+        }
+      },
+      {
+        "id": "ticket-decision",
+        "name": "Validate ticket response and decide",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          260,
+          0
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "jsCode": "// Pure offline decision node. No HTTP, credentials, static data or target calls.\nfunction decide(input) {\n  const out = (decision, reason, extra = {}) => ({\n    version: 1, decision, reason, allow_target_call: false,\n    automatic_retry: false, ...extra,\n  });\n  const obj = x => x !== null && typeof x === 'object' && !Array.isArray(x);\n  const str = x => typeof x === 'string' && x.length > 0 && x.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(x);\n  const tid = x => typeof x === 'string' && /^T-[0-9]{8}-[0-9]{4}$/.test(x);\n  const statuses = ['open', 'responding', 'verified', 'restored', 'closed'];\n  const vias = ['portal', 'wazuh-ar', 'pfsense', 'manual'];\n  const actionName = x => typeof x === 'string' && /^[a-z][a-z_]{1,31}$/.test(x);\n  const bot = x => typeof x === 'string' && /^([0-9]{3}|manual)$/.test(x);\n  const fields = ['asset_id', 'via', 'action', 'target'];\n  const resource = x => obj(x) && Object.keys(x).length === 4 &&\n    str(x.asset_id) && str(x.target) && vias.includes(x.via) && actionName(x.action);\n  const same = (a, b) => fields.every(k => a[k] === b[k]);\n  const ref = x => obj(x) && bot(x.bot) && vias.includes(x.via) && actionName(x.action) && str(x.target);\n  if (!obj(input) || !['apply', 'release', 'record_response'].includes(input.mode))\n    return out('hold', 'invalid_input');\n  const expected = input.expected, observation = input.observation;\n  if (!obj(expected) || !obj(observation)) return out('hold', 'invalid_input');\n  // observation is supplied by a future HTTP adapter, not proof of a live call.\n  if (input.mode !== 'record_response' &&\n      (!resource(expected.resource) || !['A', 'B', 'C', 'D'].includes(expected.seat)))\n    return out('hold', 'invalid_scope');\n  if (observation.transport_error === true || observation.status == null)\n    return out('hold', input.mode === 'record_response' ? 'reconcile_record_same_request' : 'store_unavailable');\n  const body = observation.body;\n  if (input.mode === 'record_response') {\n    if (!tid(expected.ticket_id) && expected.ticket_id !== null) return out('hold', 'invalid_scope');\n    if (observation.status === 409 && obj(body) && body.ok === false && obj(body.error)) {\n      if (body.error.code === 'IDEMPOTENCY_CONFLICT') return out('hold', 'resolve_key_body_conflict');\n      if (body.error.code === 'INVALID_TRANSITION') return out('hold', 'resolve_cycle_or_asset_scope');\n    }\n    if (Number.isInteger(observation.status) && observation.status >= 500)\n      return out('hold', 'reconcile_record_same_request');\n    if (![200, 201].includes(observation.status) || !obj(body) || body.ok !== true ||\n        !tid(body.ticket_id) || !statuses.includes(body.status) ||\n        typeof body.created !== 'boolean' || typeof body.duplicate !== 'boolean' ||\n        (expected.ticket_id !== null && body.ticket_id !== expected.ticket_id))\n      return out('hold', 'invalid_record_response');\n    return out('record_acknowledged', 'effect_not_inferred', {ticket_id: body.ticket_id});\n  }\n  if (observation.status !== 200 || !obj(body) || body.ok !== true)\n    return out('hold', 'store_query_failed');\n  if (input.mode === 'apply') {\n    const query = observation.query;\n    if (!str(expected.group_key) || !bot(expected.bot) || !obj(query) ||\n        query.seat !== expected.seat || query.group_key !== expected.group_key || Object.keys(query).length !== 2)\n      return out('hold', 'query_scope_mismatch');\n    if (typeof body.exists !== 'boolean' || !Array.isArray(body.applied_actions) ||\n        !body.applied_actions.every(a => ref(a) && ['applied', 'already_applied'].includes(a.result)))\n      return out('hold', 'invalid_open_response');\n    if (!body.exists) {\n      if (body.ticket_id !== null || body.status !== null || body.applied_actions.length !== 0)\n        return out('hold', 'invalid_open_response');\n      return out('apply_candidate', 'no_open_ticket_snapshot');\n    }\n    if (!tid(body.ticket_id) || !statuses.slice(0, 4).includes(body.status))\n      return out('hold', 'invalid_open_response');\n    if (body.status === 'restored') return out('hold', 'close_restored_before_new_cycle');\n    const r = expected.resource;\n    if (body.applied_actions.some(a => a.bot === expected.bot && a.via === r.via &&\n        a.action === r.action && a.target === r.target))\n      return out('skip_active', 'matching_active_action', {ticket_id: body.ticket_id});\n    return out('apply_candidate', 'no_matching_active_action_snapshot', {ticket_id: body.ticket_id});\n  }\n  if (!tid(expected.owner_ticket_id) || !resource(observation.query) || !same(observation.query, expected.resource) ||\n      !resource(body.resource) || !same(body.resource, expected.resource))\n    return out('hold', 'query_scope_mismatch');\n  if (!Array.isArray(body.tickets)) return out('hold', 'invalid_active_response');\n  const seen = new Set();\n  for (const t of body.tickets) {\n    if (!obj(t) || !tid(t.ticket_id) || seen.has(t.ticket_id) || !['A', 'B', 'C', 'D'].includes(t.seat) ||\n        !statuses.includes(t.status) || !Array.isArray(t.active_actions) || t.active_actions.length === 0 ||\n        !t.active_actions.every(a => ref(a) && ['via', 'action', 'target'].every(k => a[k] === expected.resource[k])))\n      return out('hold', 'invalid_active_response');\n    seen.add(t.ticket_id);\n  }\n  const own = body.tickets.find(t => t.ticket_id === expected.owner_ticket_id);\n  if (own && own.seat !== expected.seat) return out('hold', 'owner_seat_mismatch');\n  const others = body.tickets.filter(t => t.ticket_id !== expected.owner_ticket_id);\n  if (others.length) return out('hold', 'other_active_claims', {blocking_ticket_ids: others.map(t => t.ticket_id)});\n  if (!own) return out('hold', body.tickets.length ? 'owner_claim_missing' : 'no_recorded_claims');\n  if (own.status === 'closed') return out('hold', 'closed_claim_needs_reconciliation');\n  return out('release_candidate', 'owner_only_snapshot_requires_serialization');\n}\n\nreturn $input.all().map(item => ({json: decide(item.json)}));\n"
+        }
+      }
+    ],
+    "connections": {
+      "Execute Workflow Trigger": {
+        "main": [
+          [
+            {
+              "node": "Validate ticket response and decide",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    }
+  }
+]

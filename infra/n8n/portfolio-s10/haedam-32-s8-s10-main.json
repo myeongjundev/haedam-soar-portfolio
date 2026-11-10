@@ -1,0 +1,885 @@
+{
+  "id": "haedamS8S10Main01",
+  "name": "[Portfolio S10] haedam-32 S8·S10 스캔 → 침입 연쇄 → 앱 차단 + pfSense 차단 (B)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "b9a6049b-774d-5868-a405-c813c633ea84",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "haedam-s8-s10",
+        "responseMode": "responseNode",
+        "options": {},
+        "authentication": "headerAuth"
+      },
+      "webhookId": "haedam-s8-s10",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s10DetectionAuth",
+          "name": "s10DetectionAuth"
+        }
+      }
+    },
+    {
+      "id": "6fc96ca7-15e0-5113-b13c-194b6d3cdd5d",
+      "name": "입력 검증·설정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nfunction protectedIp(ip) { return ip === '203.0.113.22' ? null : 'outside_s10_lab_target'; }\nconst CFG = { dry_run: true, store_real: false };   // 기본은 관찰 모드. 실제 티켓 기록은 케이스별로 본문 store_real:true일 때만(11/03 D), 실제 조치는 dry_run:false + 별도 승인\n// S8 web-scan + login-bruteforce(card(rule)>1) / S10 pfsense-block 추가(card(rule)>2) · 15분 · src_ip (B). 같은 출발지는 한 티켓(자리 B)을 같이 쓴다.\nconst t = { ...($input.first().json.body || {}) };\nif (t.case_id !== 'S10' || t.asset_id !== 'haedam-portal') return [{json:{ok:false,verdict:'invalid_input',no_action:true}}];\nconst iso = (v) => (typeof v === 'string' && /T.*(Z|[+-]\\d\\d:?\\d\\d)$/.test(v)) && Number.isFinite(Date.parse(v)) ? v : null;\nconst T = { first_attack_at: iso(t.first_attack_at), condition_met_at: iso(t.condition_met_at), detected_at: iso(t.detected_at), received_at: new Date().toISOString() };\nconst missing = ['event_id', 'asset_id', 'src_ip', 'case_id'].filter(k => !t[k]);\nif (missing.length) return [{ json: { ok: false, verdict: 'invalid_input', missing } }];\nif (!['S8', 'S10'].includes(t.case_id)) return [{ json: { ok: false, verdict: 'invalid_input', detail: 'case_id must be S8 or S10' } }];\nconst p = protectedIp(t.src_ip);\nif (p) return [{ json: { ok: true, verdict: 'protected_source', reason: p, case_id: t.case_id, event_id: t.event_id, src_ip: t.src_ip } }];\nif (t.dry_run === false) CFG.dry_run = false;   // 실제 포털·pfSense 차단은 본문의 dry_run:false(불리언)로만 켠다(기본 true). 회차마다 D 명시 승인 후에만 사용\nif (t.store_real === true) CFG.store_real = true;   // 실제 티켓 기록(C 저장소)은 본문의 store_real:true(불리언)로만 켠다(기본 false). 케이스별 회차에서만 사용\nconst expected = [{ bot: '112', via: 'portal', action: 'block', target: t.src_ip }];\nif (t.case_id === 'S10') expected.push({ bot: '112', via: 'pfsense', action: 'block', target: t.src_ip });\nconst X = { seat: 'B', case_id: t.case_id, title: t.case_id === 'S10' ? 'S10 스캔 → 침입 연쇄(경계 차단 포함)' : 'S8 포털 스캔·로그인 반복',\n  event_id: t.event_id, asset_id: t.asset_id, src_ip: t.src_ip, count: t.count ?? null, group_key: t.src_ip, cfg: CFG, times: T, expected };\nreturn [{ json: { proceed: true, mode: 'check', seat: 'B', group_key: t.src_ip, ctx: X } }];\n"
+      }
+    },
+    {
+      "id": "5930b1c2-a417-5f11-a12b-6ea9d1470add",
+      "name": "대응 대상?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ad1206d7-8cd4-5104-8708-bbda68c637fd",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1938f606-4f9f-56c6-acdd-f0c187df2474",
+      "name": "중복 확인 (haedam-10 check)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "haedamResultLog01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "9a96dd32-e113-5391-80a3-34a3a57b2e2f",
+      "name": "중복 판정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j = $input.first().json, x = j.ctx;\nif (!snapshotOK(j)) return held(x,'held_ticket_check');\nif (j.exists && (j.status==='closed' || j.status==='restored' && j.actions.length)) return held(x,'held_ticket_cycle');\nconst expected = x.expected || [{bot:'112',via:'portal',action:'block',target:x.src_ip}];\n// dry_run 기록은 30분 안의 것만 처리됨으로 센다(시각이 없거나 오래된 시험 기록이 그 출발지를 영구히 막지 않게).\nconst DRY_DEDUP_MS = 30 * 60 * 1000;\nconst fresh = a => { const t = Date.parse(a.finished_at || a.requested_at || ''); const age = Date.now() - t; return Number.isFinite(t) && age >= 0 && age < DRY_DEDUP_MS; };\nconst done = s => j.actions.some(a => same(a,s) && (['applied','already_applied'].includes(a.result) || (x.cfg.dry_run && a.result === 'dry_run' && fresh(a))));\nif (j.exists && expected.length && expected.every(done)) return [{json:{ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,event_id:x.event_id,case_id:x.case_id}}];\nreturn [{json:{ok:true,proceed:true,ctx:{...x,existing_ticket:j.ticket_id,new_round_required:j.exists && j.status==='restored'}}}];\n"
+      }
+    },
+    {
+      "id": "69f7be5c-acd3-50c9-b4c2-2eeb42116cfd",
+      "name": "중복 아님?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c6bfbac8-1cb5-525c-a9b8-79316705215f",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b8d18ab5-964f-5079-9019-e8d3d9c68b94",
+      "name": "티켓 detected 입력",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// 조치 전에 티켓을 먼저 만든다(stage detected). 이미 열린 티켓이 있으면 그 티켓을 쓴다.\nconst x = $input.first().json.ctx;\nreturn [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id],\n  first_attack_at: x.times ? x.times.first_attack_at : null, condition_met_at: x.times ? x.times.condition_met_at : null, detected_at: x.times ? x.times.detected_at : null, received_at: x.times ? x.times.received_at : null,\n  idempotency_key: `${$execution.id}-detected` } }];\n"
+      }
+    },
+    {
+      "id": "768aa91f-bfa1-54ae-8671-876df6766cf8",
+      "name": "티켓 detected (haedam-10)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1960,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "haedamResultLog01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ba11fd95-1e6a-5d91-ae5f-964a60a05d1e",
+      "name": "티켓 저장됨?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2240,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "461eda69-3277-55f5-8378-72065e8ae187",
+              "leftValue": "={{ $json.ok === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "904d7005-d0ef-5443-9af3-0ad39c03d017",
+      "name": "저장 실패 응답",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        680
+      ],
+      "parameters": {
+        "jsCode": "// 티켓 저장(detected)이 실패하면 조치를 하지 않는다. 기록 없는 차단을 막기 위해 조치 노드 앞에서 중단한다.\nconst r = $input.first().json;\nconst x = r.ctx || {};\nreturn [{ json: { ok: false, verdict: 'ticket_store_failed_no_action', case_id: x.case_id, event_id: x.event_id, src_ip: x.src_ip || null, username: x.username || null,\n  error: { code: (r.error && r.error.code) || 'STORE_FAILED' }, no_action: true, n8n_execution_id: $execution.id } }];\n"
+      }
+    },
+    {
+      "id": "2cfea329-f75a-57d7-9012-018b5914d695",
+      "name": "응답: 저장 실패(조치 없음)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        280,
+        680
+      ],
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": "={{ $json.ok === false || $json.bad === true || $json.verdict === 'invalid_input' ? ($json.verdict === 'invalid_input' || $json.bad === true ? 400 : 503) : ($json.verdict?.startsWith('held_') ? 409 : 200) }}"
+        }
+      }
+    },
+    {
+      "id": "0ff5d351-9dc0-542a-b430-f8641ba61e87",
+      "name": "조치1 입력 (포털 IP 차단)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        500
+      ],
+      "parameters": {
+        "jsCode": "if (($input.first().json.ctx?.results || []).some(s=>['failed','rejected'].includes(s.result))) throw new Error('PREVIOUS_ACTION_FAILED');\nconst record=$input.first().json;\nif (record.ok !== true || !record.ticket_id || !['open','responding','verified'].includes(record.status) || record.ctx?.new_round_required && record.ticket_id===record.ctx.existing_ticket) throw new Error('TICKET_RECORD_REQUIRED');\nif (record.ticket_current !== true) throw new Error('TICKET_CURRENT_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst ticket_id = r.ticket_id || x.ticket_id;\nreturn [{ json: { ctx: { ...x, ticket_id }, ticket_id, dry_run: x.cfg.dry_run, action: 'block', ip: x.src_ip } }];\n"
+      }
+    },
+    {
+      "id": "45e46f73-e0ae-5aab-a40e-14ca9162c510",
+      "name": "조치1 (포털 IP 차단)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        500
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "haedamPortalIp01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "16432d41-3ccf-5e39-89cf-12072dd42a9e",
+      "name": "조치1 기록 입력",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        500
+      ],
+      "parameters": {
+        "jsCode": "// 조치 결과를 티켓에 기록(stage applied). 중복 방지 키: {실행 ID}-applied-1\nconst r = $input.first().json;\nconst x = r.ctx;\nif (r.result === 'skipped') return [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id], idempotency_key: `${$execution.id}-skip-1` } }];\nconst res = { step: 1, result: r.result, applied_verified: r.applied_verified ?? null, detail: r.detail };\nreturn [{ json: { ctx: { ...x, results: [...(x.results || []), res] }, mode: 'record', stage: 'applied', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id], idempotency_key: `${$execution.id}-applied-1`,\n  action: { bot: '112', target: x.src_ip, via: 'portal', action: 'block', result: r.result,\n    applied_verified: r.result === 'dry_run' ? null : (r.applied_verified ?? null), effect_verified: null, effect_verified_at: null,\n    requested_at: r.requested_at, finished_at: r.finished_at, n8n_execution_id: String($execution.id), detail: r.detail } } }];\n"
+      }
+    },
+    {
+      "id": "8b051e23-dd39-576f-b396-d11f7ddff329",
+      "name": "조치1 기록 (haedam-10)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1680,
+        500
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "haedamResultLog01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "352a6965-430b-5526-a4b4-9dc31b716a00",
+      "name": "조치2 입력 (pfSense 차단)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "if (($input.first().json.ctx?.results || []).some(s=>['failed','rejected'].includes(s.result))) throw new Error('PREVIOUS_ACTION_FAILED');\nconst record=$input.first().json;\nif (record.ok !== true || !record.ticket_id || !['open','responding','verified'].includes(record.status) || record.ctx?.new_round_required && record.ticket_id===record.ctx.existing_ticket) throw new Error('TICKET_RECORD_REQUIRED');\nif (record.ticket_current !== true) throw new Error('TICKET_CURRENT_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst ticket_id = r.ticket_id || x.ticket_id;\nreturn [{ json: { ctx: { ...x, ticket_id }, ticket_id, dry_run: x.cfg.dry_run, action: x.case_id === 'S10' ? 'block' : 'skip', ip: x.src_ip } }];\n"
+      }
+    },
+    {
+      "id": "f2fd977e-ee38-5e8e-b52e-f7ca31b5d8c6",
+      "name": "조치2 (pfSense 차단)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        1000
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "haedamPfsense01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a23158f2-551d-5b52-b8a1-9404bdbc9293",
+      "name": "조치2 기록 입력",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "// 조치 결과를 티켓에 기록(stage applied). 중복 방지 키: {실행 ID}-applied-2\nconst r = $input.first().json;\nconst x = r.ctx;\nif (r.result === 'skipped') return [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.seat, case_id: x.case_id, group_key: x.group_key,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id], idempotency_key: `${$execution.id}-skip-2` } }];\nconst res = { step: 2, result: r.result, applied_verified: r.applied_verified ?? null, detail: r.detail };\nreturn [{ json: { ctx: { ...x, results: [...(x.results || []), res] }, mode: 'record', stage: 'applied', seat: x.seat, case_id: x.case_id, group_key: x.group_key, title: x.title,\n  asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null, event_ids: [x.event_id], idempotency_key: `${$execution.id}-applied-2`,\n  action: { bot: '112', target: x.src_ip, via: 'pfsense', action: 'block', result: r.result,\n    applied_verified: r.result === 'dry_run' ? null : (r.applied_verified ?? null), effect_verified: null, effect_verified_at: null,\n    requested_at: r.requested_at, finished_at: r.finished_at, n8n_execution_id: String($execution.id), detail: r.detail } } }];\n"
+      }
+    },
+    {
+      "id": "31107a59-8bd3-5b5a-9fab-bd74aaa8a9ed",
+      "name": "조치2 기록 (haedam-10)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        1000
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "haedamResultLog01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "9512b6c3-f9d1-5cb7-ad78-d86a40874738",
+      "name": "알림 입력",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "const record=$input.first().json;\nif (record.ok !== true || !record.ticket_id || !['open','responding','verified'].includes(record.status) || record.ctx?.new_round_required && record.ticket_id===record.ctx.existing_ticket) throw new Error('TICKET_RECORD_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nconst bad = (x.results || []).some(s => ['failed', 'rejected'].includes(s.result));\nreturn [{ json: { ctx: { ...x, ticket: { ok: r.ok, ticket_id: r.ticket_id, status: r.status } }, level: bad ? 'error' : 'warn', case_id: x.case_id, title: x.title,\n  src_ip: x.src_ip || undefined, ticket_id: r.ticket_id, result: (x.results || []).map(s => s.result).join(', '),\n  detail: (x.username ? `계정 ${x.username} ` : '') + (x.file_key ? `파일 ${x.file_key} ` : '') + (x.results || []).map(s => s.detail).join(' / ') } }];\n"
+      }
+    },
+    {
+      "id": "02d635d6-907f-51ed-b313-9e169a77368c",
+      "name": "Discord 알림 (haedam-11)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1680,
+        1000
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "haedamDiscord01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b85d79af-91ee-50d0-926c-8588c10e76a9",
+      "name": "최종 응답",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst x = r.ctx;\nreturn [{ json: { ok: !(x.results || [x.block]).filter(Boolean).some(s=>['failed','rejected'].includes(s.result) || (s.result !== 'skipped' && s.applied_verified !== true)) && (x.ticket || x.record)?.ok === true, verdict: x.cfg.dry_run ? 'dry_run' : 'responded', case_id: x.case_id, event_id: x.event_id, asset_id: x.asset_id, src_ip: x.src_ip || null, username: x.username || null,\n  steps: x.results, ticket: x.ticket, discord_sent: r.sent, discord_error: r.error, n8n_execution_id: $execution.id } }];\n"
+      }
+    },
+    {
+      "id": "672b07cc-e179-5f99-896e-64c0c1ca2c8a",
+      "name": "응답: 대응",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2240,
+        1000
+      ],
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": "={{ $json.ok === false || $json.bad === true || $json.verdict === 'invalid_input' ? ($json.verdict === 'invalid_input' || $json.bad === true ? 400 : 503) : ($json.verdict?.startsWith('held_') ? 409 : 200) }}"
+        }
+      }
+    },
+    {
+      "id": "34e74399-3529-52a5-9f57-298163264bf1",
+      "name": "대응 없음 응답",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        180
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nreturn [{ json: { ...j, no_action: true, n8n_execution_id: $execution.id } }];\n"
+      }
+    },
+    {
+      "id": "f5abccde-3a01-504d-b363-67d543a298c8",
+      "name": "응답: 대응 없음",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1960,
+        180
+      ],
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": "={{ $json.ok === false || $json.bad === true || $json.verdict === 'invalid_input' ? ($json.verdict === 'invalid_input' || $json.bad === true ? 400 : 503) : ($json.verdict?.startsWith('held_') ? 409 : 200) }}"
+        }
+      }
+    },
+    {
+      "id": "15dc4af2-fde0-53dd-8afc-5902ad7fa573",
+      "name": "조치 전 티켓 조회 입력 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        500
+      ],
+      "parameters": {
+        "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst r=$input.first().json,x=r.ctx;\nif(r.ok!==true || !ticketId(r.ticket_id) || !['open','responding','verified'].includes(r.status)) throw new Error('TICKET_RECORD_REQUIRED');\nconst seat=x?.seat||x?.cfg?.seat,group=x?.group_key||x?.src_ip;\nif(!['A','B','C','D'].includes(seat) || !validText(group)) throw new Error('TICKET_CURRENT_REQUIRED');\nreturn [{json:{mode:'check',seat,group_key:group,ctx:{...x,record_ack:{ticket_id:r.ticket_id,created:r.created,duplicate:r.duplicate,status:r.status}}}}];\n"
+      }
+    },
+    {
+      "id": "06059292-670d-5d6e-ad27-a9269ef7d95e",
+      "name": "조치 전 티켓 조회 1",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        280,
+        500
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "haedamResultLog01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "5697fd27-3f09-51a2-8f03-fe01f9a14719",
+      "name": "조치 전 티켓 대조 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        500
+      ],
+      "parameters": {
+        "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json,x=j.ctx,a=x?.record_ack;\nif(!snapshotOK(j) || !j.exists || !a || j.ticket_id!==a.ticket_id || !['open','responding','verified'].includes(j.status)) throw new Error('TICKET_CURRENT_REQUIRED');\nconst {record_ack,...ctx}=x;\nreturn [{json:{...a,ok:true,status:j.status,ticket_current:true,ctx}}];\n"
+      }
+    },
+    {
+      "id": "93aaae69-aaf4-501d-99c8-24ac0f62e5f9",
+      "name": "조치 전 티켓 조회 입력 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        500
+      ],
+      "parameters": {
+        "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst r=$input.first().json,x=r.ctx;\nif(r.ok!==true || !ticketId(r.ticket_id) || !['open','responding','verified'].includes(r.status)) throw new Error('TICKET_RECORD_REQUIRED');\nconst seat=x?.seat||x?.cfg?.seat,group=x?.group_key||x?.src_ip;\nif(!['A','B','C','D'].includes(seat) || !validText(group)) throw new Error('TICKET_CURRENT_REQUIRED');\nreturn [{json:{mode:'check',seat,group_key:group,ctx:{...x,record_ack:{ticket_id:r.ticket_id,created:r.created,duplicate:r.duplicate,status:r.status}}}}];\n"
+      }
+    },
+    {
+      "id": "cb0c1e8e-63fd-56bf-b052-d15ebcdb866e",
+      "name": "조치 전 티켓 조회 2",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2240,
+        500
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "haedamResultLog01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "92844c0f-885a-5b72-bbc6-9448c72e5522",
+      "name": "조치 전 티켓 대조 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json,x=j.ctx,a=x?.record_ack;\nif(!snapshotOK(j) || !j.exists || !a || j.ticket_id!==a.ticket_id || !['open','responding','verified'].includes(j.status)) throw new Error('TICKET_CURRENT_REQUIRED');\nconst {record_ack,...ctx}=x;\nreturn [{json:{...a,ok:true,status:j.status,ticket_current:true,ctx}}];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "입력 검증·설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "입력 검증·설정": {
+      "main": [
+        [
+          {
+            "node": "대응 대상?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "대응 대상?": {
+      "main": [
+        [
+          {
+            "node": "중복 확인 (haedam-10 check)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "대응 없음 응답",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "중복 확인 (haedam-10 check)": {
+      "main": [
+        [
+          {
+            "node": "중복 판정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "중복 판정": {
+      "main": [
+        [
+          {
+            "node": "중복 아님?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "중복 아님?": {
+      "main": [
+        [
+          {
+            "node": "티켓 detected 입력",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "대응 없음 응답",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "티켓 detected 입력": {
+      "main": [
+        [
+          {
+            "node": "티켓 detected (haedam-10)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "티켓 detected (haedam-10)": {
+      "main": [
+        [
+          {
+            "node": "티켓 저장됨?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "저장 실패 응답": {
+      "main": [
+        [
+          {
+            "node": "응답: 저장 실패(조치 없음)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "티켓 저장됨?": {
+      "main": [
+        [
+          {
+            "node": "조치 전 티켓 조회 입력 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "저장 실패 응답",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치1 입력 (포털 IP 차단)": {
+      "main": [
+        [
+          {
+            "node": "조치1 (포털 IP 차단)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치1 (포털 IP 차단)": {
+      "main": [
+        [
+          {
+            "node": "조치1 기록 입력",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치1 기록 입력": {
+      "main": [
+        [
+          {
+            "node": "조치1 기록 (haedam-10)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치1 기록 (haedam-10)": {
+      "main": [
+        [
+          {
+            "node": "조치 전 티켓 조회 입력 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치2 입력 (pfSense 차단)": {
+      "main": [
+        [
+          {
+            "node": "조치2 (pfSense 차단)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치2 (pfSense 차단)": {
+      "main": [
+        [
+          {
+            "node": "조치2 기록 입력",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치2 기록 입력": {
+      "main": [
+        [
+          {
+            "node": "조치2 기록 (haedam-10)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치2 기록 (haedam-10)": {
+      "main": [
+        [
+          {
+            "node": "알림 입력",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "알림 입력": {
+      "main": [
+        [
+          {
+            "node": "Discord 알림 (haedam-11)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord 알림 (haedam-11)": {
+      "main": [
+        [
+          {
+            "node": "최종 응답",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "최종 응답": {
+      "main": [
+        [
+          {
+            "node": "응답: 대응",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "대응 없음 응답": {
+      "main": [
+        [
+          {
+            "node": "응답: 대응 없음",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치 전 티켓 조회 입력 1": {
+      "main": [
+        [
+          {
+            "node": "조치 전 티켓 조회 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치 전 티켓 조회 1": {
+      "main": [
+        [
+          {
+            "node": "조치 전 티켓 대조 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치 전 티켓 대조 1": {
+      "main": [
+        [
+          {
+            "node": "조치1 입력 (포털 IP 차단)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치 전 티켓 조회 입력 2": {
+      "main": [
+        [
+          {
+            "node": "조치 전 티켓 조회 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치 전 티켓 조회 2": {
+      "main": [
+        [
+          {
+            "node": "조치 전 티켓 대조 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "조치 전 티켓 대조 2": {
+      "main": [
+        [
+          {
+            "node": "조치2 입력 (pfSense 차단)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

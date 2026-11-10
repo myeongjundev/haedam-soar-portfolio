@@ -1,0 +1,56 @@
+# S10 on top of compose.yaml, compose.soc.yaml and compose.pf.yaml. tools/s10_lab.py passes the PF_* values from
+# infra/pfsense/lab-settings.json and the secrets/ports from .env.pf.
+#
+#   attacker -- pfSense (WAN em0 | LAN em1) -- portal                    real traffic, as in P04
+#   portal GELF (default net) + pfSense syslog UDP (pf-lan) -> Graylog S10 definition (same src_ip, 3 rules)
+#   -> n8n (detection key; ticket first) -> portal-response IP block (s10-response net)
+#                                        -> controller relay -> SSH (pinned host key, forced command) -> adapter
+#   operator release (separate key) -> pfSense unblock + portal unblock for that ticket only
+services:
+  portal:
+    environment:
+      RESPONSE_API_KEY: ${PORTAL_RESPONSE_KEY:?Run tools/s10_lab.py init}
+      RESPONSE_ALLOWED_CIDRS: "${PF_S10_N8N_RESPONSE_IP:?Run through tools/s10_lab.py}/32"
+    networks:
+      s10-response:
+        ipv4_address: "${PF_S10_PORTAL_RESPONSE_IP:?Run through tools/s10_lab.py}"
+        aliases: [portal-response]
+
+  graylog:
+    networks:
+      default: {}
+      graylog-backend: {}
+      pf-lan: {ipv4_address: "${PF_S10_GRAYLOG_IP:?Run through tools/s10_lab.py}"}
+
+  n8n:
+    environment:
+      N8N_CONCURRENCY_PRODUCTION_LIMIT: "1"
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: none
+      EXECUTIONS_DATA_SAVE_ON_ERROR: none
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+      EXECUTIONS_DATA_SAVE_ON_PROGRESS: "false"
+      EXECUTIONS_DATA_PRUNE: "false"
+    networks:
+      default: {}
+      s10-response: {ipv4_address: "${PF_S10_N8N_RESPONSE_IP}"}
+      pf-lan: {ipv4_address: "${PF_S10_N8N_IP:?Run through tools/s10_lab.py}"}
+
+  controller:
+    command: [python, /relay/pf_relay.py]
+    environment:
+      PF_RELAY_KEY: ${PF_RELAY_KEY:?Run tools/s10_lab.py init}
+      PF_RELAY_ALLOWED: "${PF_S10_N8N_IP}"
+      PF_RELAY_PORT: "${PF_S10_RELAY_PORT:?Run through tools/s10_lab.py}"
+      PF_TARGET: "${PF_ATTACKER_IP}"
+      PF_HOST: "${PF_LAN_PFSENSE_IP}"
+      PF_USER: "${PF_CONTROLLER_SSH_USER:?Run through tools/s10_lab.py}"
+
+networks:
+  # Explicit subnet: Docker's default address pool can be exhausted by other projects' stopped networks.
+  graylog-backend:
+    ipam:
+      config: [{subnet: "${PF_S10_BACKEND_SUBNET:?Run through tools/s10_lab.py}"}]
+  s10-response:
+    internal: true  # n8n and portal-response only talk inside this subnet
+    ipam:
+      config: [{subnet: "${PF_S10_RESPONSE_SUBNET:?Run through tools/s10_lab.py}", gateway: "${PF_S10_RESPONSE_GATEWAY:?Run through tools/s10_lab.py}"}]

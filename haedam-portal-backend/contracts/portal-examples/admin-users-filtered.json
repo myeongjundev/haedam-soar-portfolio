@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "data": {
+    "items": [{ "id": 14, "username": "sample_staff", "display_name": "가상담당자", "role": "staff", "department": "민원행정과", "locked": true, "created_at": "2026-10-27T00:00:00Z" }],
+    "total": 1, "page": 1, "page_size": 10, "pages": 1,
+    "summary": { "scope": "search", "total": 7, "roles": { "citizen": 3, "staff": 3, "admin": 1 }, "locked": 2, "unlocked": 5 }
+  }
+}

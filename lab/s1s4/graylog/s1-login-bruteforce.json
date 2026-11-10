@@ -1,0 +1,37 @@
+{
+  "title": "S1 로그인 무차별 대입 (username+src_ip)",
+  "description": "A S1. 30분 안 같은 username+src_ip의 로그인 실패(401) 9회 이상. 429(포털 레이트리밋)는 제외. 기준: docs/capstone/A-S1-S4-정상패턴.md §1",
+  "priority": 2,
+  "alert": true,
+  "config": {
+    "type": "aggregation-v1",
+    "query": "source:haedam-portal AND rule:\"login-bruteforce\" AND status:401",
+    "query_parameters": [],
+    "filters": [],
+    "streams": ["REPLACE_haedam-portal_stream_id"],
+    "group_by": ["username", "src_ip"],
+    "series": [
+      {"id": "count()", "type": "count"}
+    ],
+    "conditions": {
+      "expression": {
+        "expr": ">",
+        "left": {"expr": "number-ref", "ref": "count()"},
+        "right": {"expr": "number", "value": 8}
+      }
+    },
+    "search_within_ms": 1800000,
+    "execute_every_ms": 60000,
+    "use_cron_scheduling": false,
+    "event_limit": 100
+  },
+  "field_spec": {
+    "username": {"data_type": "string", "providers": [{"type": "template-v1", "template": "${source.username}", "require_values": true}]},
+    "src_ip": {"data_type": "string", "providers": [{"type": "template-v1", "template": "${source.src_ip}", "require_values": true}]},
+    "case_id": {"data_type": "string", "providers": [{"type": "template-v1", "template": "S1", "require_values": true}]}
+  },
+  "key_spec": ["username", "src_ip"],
+  "notification_settings": {"grace_period_ms": 1800000, "backlog_size": 20},
+  "notifications": [],
+  "storage": [{"type": "persist-to-streams-v1", "streams": ["000000000000000000000002"]}]
+}

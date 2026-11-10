@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:haedam:portfolio:h1-petition-result:1.0",
+  "description": "Successful mutation response; historical idempotency replay must be followed by current-state readback.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "success",
+    "data"
+  ],
+  "properties": {
+    "success": {
+      "const": true
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "username",
+        "ticket_id",
+        "restricted",
+        "changed",
+        "changed_at"
+      ],
+      "properties": {
+        "username": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{3,40}$"
+        },
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^T-[0-9]{8}-[0-9]{4}$"
+        },
+        "restricted": {
+          "type": "boolean"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "changed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

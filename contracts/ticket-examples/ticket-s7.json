@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "T-20261024-0001",
+  "seat": "C",
+  "case_id": "S7",
+  "group_key": "haedam-portal:assets/zz_s7_sample.txt",
+  "title": "S7 홈페이지 변조: assets/zz_s7_sample.txt",
+  "status": "verified",
+  "asset_id": "haedam-portal",
+  "src_ip": "203.0.113.10",
+  "username": null,
+  "event_ids": ["sample-graylog-s7-event-01"],
+  "reason": "Synthetic contract example only: FIM add (554) and web access 200 on the same asset and file_key within 10 minutes.",
+  "first_attack_at": null,
+  "condition_met_at": "2026-10-24T14:05:20+09:00",
+  "detected_at": "2026-10-24T14:05:28+09:00",
+  "received_at": "2026-10-24T14:05:29+09:00",
+  "responded_at": "2026-10-24T14:05:34+09:00",
+  "verified_at": "2026-10-24T14:06:10+09:00",
+  "restored_at": null,
+  "actions": [
+    {
+      "bot": "117", "target": "assets/zz_s7_sample.txt", "via": "wazuh-ar", "action": "quarantine",
+      "result": "applied", "applied_verified": true, "effect_verified": true,
+      "requested_at": "2026-10-24T14:05:31+09:00", "finished_at": "2026-10-24T14:05:34+09:00",
+      "effect_verified_at": "2026-10-24T14:06:10+09:00",
+      "n8n_execution_id": "sample-1234", "detail": "moved outside web root; original URL 404, home 200",
+      "action_id": "sample-1234-applied", "duplicate": false, "recorded_at": "2026-10-24T14:05:35+09:00"
+    }
+  ],
+  "data_origin": "sample",
+  "created_at": "2026-10-24T14:05:35+09:00",
+  "updated_at": "2026-10-24T14:06:11+09:00"
+}

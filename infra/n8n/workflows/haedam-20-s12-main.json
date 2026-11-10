@@ -1,0 +1,895 @@
+[
+  {
+    "id": "haedamS12Main01",
+    "name": "haedam-20 S12 요청 폭주 대응 (메인)",
+    "active": false,
+    "nodes": [
+      {
+        "id": "b9a6049b-774d-5868-a405-c813c633ea84",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "haedam-s12",
+          "responseMode": "responseNode",
+          "authentication": "headerAuth",
+          "options": {}
+        },
+        "webhookId": "haedam-s12",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "BIND_LAB_WEBHOOK_AUTH",
+            "name": "BIND_LAB_WEBHOOK_AUTH"
+          }
+        }
+      },
+      {
+        "id": "6fc96ca7-15e0-5113-b13c-194b6d3cdd5d",
+        "name": "입력 검증·설정",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          240,
+          0
+        ],
+        "parameters": {
+          "jsCode": "\nfunction protectedIp(ip) {\n  if (!/^\\d+\\.\\d+\\.\\d+\\.\\d+$/.test(ip)) return 'bad_ip';\n  if (ip.startsWith('192.0.2.')) return 'team_vpn';\n  if (ip === '203.0.113.10') return 'kali_host';\n  if (ip === '203.0.113.12') return 'normal_control';   // B 요청(10/26): 정상 대조용 출발지\n  const m = ip.match(/^203\\.0\\.113\\.(\\d+)$/);\n  if (m && +m[1] >= 100 && +m[1] <= 109) return 'normal_source';\n  return null;\n}\n// 독립 D→health 기준(11/03 실측)을 고정한다. /login에서 얻은 과거3414ms는 재사용하지 않는다.\nconst CFG = {\n  seat: 'D', case_id: 'S12',\n  health_url: 'http://portal:5000/api/v1/health', health_interval_ms: 2000, health_timeout_ms: 5000, health_k: 3,\n  // S12-20261103-D-HEALTH-BASELINE01(192.0.2.100→/api/v1/health, 2초·300초·n150 전부 200): median 38.8·p95 293.8·max 1759.1ms.\n  // 계산식 881.4ms(p95×3)는 정상 구간에서 3회 연속 초과(19:35:46~50)라 K=3 오탐 → 정상 최댓값 위 2000ms로 D 결정(11/03)\n  baseline_ms: 2000, baseline_source: 'S12-20261103-D-HEALTH-BASELINE01',\n  recover_timeout_ms: 60000, dry_run: true,                                                                                         // A가 키·허용 대역을 반영하고 시험하기 전까지 true (포털 실제 호출)\n  store_real: false                                                                                     // 기본 관찰 모드. 본문 store_real:true(불리언)일 때만 티켓을 C 저장소에 기록한다(조치는 dry_run을 따른다)\n};\nconst t = { ...($input.first().json.body || {}) };\nconst iso = (v) => (typeof v === 'string' && /T.*(Z|[+-]\\d\\d:?\\d\\d)$/.test(v)) && Number.isFinite(Date.parse(v)) ? v : null;\nconst T = { first_attack_at: iso(t.first_attack_at), condition_met_at: iso(t.condition_met_at), detected_at: iso(t.detected_at), received_at: new Date().toISOString() };\nif (t.store_real === true) CFG.store_real = true;\nif (t.dry_run === false) CFG.dry_run = false;   // 실제 포털 차단은 본문의 dry_run:false(불리언)로만 켠다(기본 true). 회차마다 D 명시 승인 후에만 사용. 기준 미확정이면 no_baseline으로 대응하지 않는다\n// 시험 전용: dry_run일 때만 기준선을 임시로 줄 수 있다\nif (CFG.dry_run && typeof t.test_baseline_ms === 'number') CFG.baseline_ms = t.test_baseline_ms;\nif (CFG.dry_run && t.test_effect === true) CFG.test_effect = true;   // 시험 전용: dry_run에서도 효과 확인 단계를 돌려 본다\nif (CFG.dry_run && typeof t.test_baseline_ms === 'number') CFG.baseline_source = 'synthetic_override';\nconst missing = ['event_id', 'asset_id', 'src_ip'].filter(k => !t[k]);\nif (missing.length) return [{ json: { ok: false, verdict: 'invalid_input', missing, no_action: true } }];\nconst p = protectedIp(t.src_ip);\nconst X = { event_id: t.event_id, asset_id: t.asset_id, src_ip: t.src_ip, count: t.count ?? null, cfg: CFG, times: T };\nif (p) return [{ json: { ok: true, verdict: 'protected_source', reason: p, event_id: t.event_id, asset_id: t.asset_id, src_ip: t.src_ip, no_action: true } }];\nreturn [{ json: { proceed: true, mode: 'check', seat: CFG.seat, case_id: CFG.case_id, group_key: t.src_ip, ctx: X } }];\n"
+        }
+      },
+      {
+        "id": "5930b1c2-a417-5f11-a12b-6ea9d1470add",
+        "name": "대응 대상?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          480,
+          0
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "ad1206d7-8cd4-5104-8708-bbda68c637fd",
+                "leftValue": "={{ $json.proceed === true }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "1938f606-4f9f-56c6-acdd-f0c187df2474",
+        "name": "중복 확인 (haedam-10 check)",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          720,
+          -60
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "haedamResultLog01",
+            "mode": "id"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "9a96dd32-e113-5391-80a3-34a3a57b2e2f",
+        "name": "중복 판정",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          960,
+          -60
+        ],
+        "parameters": {
+          "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j = $input.first().json, x = j.ctx;\nif (!snapshotOK(j)) return held(x,'held_ticket_check');\nif (j.exists && (j.status==='closed' || j.status==='restored' && j.actions.length)) return held(x,'held_ticket_cycle');\nconst expected = x.expected || [{bot:'112',via:'portal',action:'block',target:x.src_ip}];\n// dry_run 기록은 30분 안의 것만 처리됨으로 센다(시각이 없거나 오래된 시험 기록이 그 출발지를 영구히 막지 않게).\nconst DRY_DEDUP_MS = 30 * 60 * 1000;\nconst fresh = a => { const t = Date.parse(a.finished_at || a.requested_at || ''); const age = Date.now() - t; return Number.isFinite(t) && age >= 0 && age < DRY_DEDUP_MS; };\nconst done = s => j.actions.some(a => same(a,s) && (['applied','already_applied'].includes(a.result) || (x.cfg.dry_run && a.result === 'dry_run' && fresh(a))));\nif (j.exists && expected.length && expected.every(done)) return [{json:{ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,event_id:x.event_id,case_id:x.case_id}}];\nreturn [{json:{ok:true,proceed:true,ctx:{...x,existing_ticket:j.ticket_id,new_round_required:j.exists && j.status==='restored'}}}];\n"
+        }
+      },
+      {
+        "id": "69f7be5c-acd3-50c9-b4c2-2eeb42116cfd",
+        "name": "중복 아님?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1200,
+          -60
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "c6bfbac8-1cb5-525c-a9b8-79316705215f",
+                "leftValue": "={{ $json.proceed === true }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "a8323533-77c2-52b4-8ce9-978cf96145ab",
+        "name": "헬스체크 K회",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1440,
+          -120
+        ],
+        "parameters": {
+          "jsCode": "\nfunction healthConfig(c) {\n if (c.baseline_ms === null || c.baseline_ms === undefined) return 'no_baseline';\n if (typeof c.baseline_source!=='string' || !/^[A-Za-z0-9._:-]{1,120}$/.test(c.baseline_source) ||\n     !Number.isFinite(c.baseline_ms) || c.baseline_ms <= 0 ||\n     !Number.isFinite(c.health_timeout_ms) || c.health_timeout_ms <= c.baseline_ms || c.health_timeout_ms > 30000 ||\n     !Number.isInteger(c.health_k) || c.health_k < 1 || c.health_k > 10 ||\n     !Number.isFinite(c.health_interval_ms) || c.health_interval_ms <= 0 || c.health_interval_ms > 30000)\n  return 'invalid_health_config';\n return null;\n}\nasync function healthSample(c) {\n const started=Date.now();let status=null,body=null,error=null;\n try {\n  const r=await this.helpers.httpRequest({method:'GET',url:c.health_url,timeout:c.health_timeout_ms,\n   returnFullResponse:true,ignoreHttpStatusCodes:true,json:true});\n  status=Number.isInteger(r.statusCode)?r.statusCode:null;body=r.body;\n } catch(e) {\n  // Fixed codes only: a library error message may contain request/authentication data.\n  error=['ETIMEDOUT','ESOCKETTIMEDOUT','ECONNABORTED'].includes(e?.code)||e?.name==='TimeoutError'?'timeout':\n   e?.name==='SyntaxError'?'invalid_body':'network_error';\n }\n const ms=Math.max(0,Date.now()-started);\n let classification=error;\n if (!classification) {\n  if (status>=500) classification='server_error';\n  else if (status!==200) classification='unexpected_status';\n  else if (body?.success!==true || body?.data?.status!=='ok') classification='invalid_body';\n  else classification=ms>c.baseline_ms?'slow_success':'healthy';\n }\n return {started_at:new Date(started).toISOString(),finished_at:new Date().toISOString(),ms,status,error,\n  classification,ok:classification==='healthy',\n  degraded:['slow_success','timeout','network_error','server_error'].includes(classification)};\n}\n\nconst x=$input.first().json.ctx,c=x.cfg,samples=[];\nlet verdict=healthConfig(c);\nif (!verdict) {\n for(let i=0;i<c.health_k;i++) {\n  samples.push(await healthSample.call(this,c));\n  if(i<c.health_k-1)await new Promise(r=>setTimeout(r,c.health_interval_ms));\n }\n verdict=samples.every(s=>s.degraded)?'exceeded':samples.every(s=>s.ok)?'within_baseline':'inconclusive';\n}\nconst health={scope:'vpn_health_only',samples,baseline_ms:c.baseline_ms,baseline_source:c.baseline_source||null,\n interval_ms:c.health_interval_ms,timeout_ms:c.health_timeout_ms,k:c.health_k,verdict,\n normal_user_path_verified:null,effect_verified:null};\nreturn [{json:{verdict,event_id:x.event_id,asset_id:x.asset_id,src_ip:x.src_ip,health,ctx:{...x,health}}}];\n"
+        }
+      },
+      {
+        "id": "2c1d2c3b-8c0c-555c-b279-faf6d48b2892",
+        "name": "기준선 초과?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          1680,
+          -120
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "e6141002-bf33-51b1-a837-073f788972d9",
+                "leftValue": "={{ $json.verdict === 'exceeded' }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "b8d18ab5-964f-5079-9019-e8d3d9c68b94",
+        "name": "티켓 detected 입력",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1920,
+          -200
+        ],
+        "parameters": {
+          "jsCode": "// 조치 전에 티켓을 먼저 만든다(stage detected, 응답이 늦거나 실패해도 사건이 남게).\nconst x = $input.first().json.ctx;\nreturn [{ json: { ctx: x, mode: 'record', stage: 'detected', seat: x.cfg.seat, case_id: x.cfg.case_id, group_key: x.src_ip,\n  title: '포털 요청 폭주로 응답 지연', asset_id: x.asset_id, src_ip: x.src_ip, event_ids: [x.event_id],\n  first_attack_at: x.times ? x.times.first_attack_at : null, condition_met_at: x.times ? x.times.condition_met_at : null, detected_at: x.times ? x.times.detected_at : null, received_at: x.times ? x.times.received_at : null,\n  idempotency_key: `${$execution.id}-detected` } }];\n"
+        }
+      },
+      {
+        "id": "768aa91f-bfa1-54ae-8671-876df6766cf8",
+        "name": "티켓 detected (haedam-10)",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2160,
+          -200
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "haedamResultLog01",
+            "mode": "id"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "15b7372a-9394-509c-adb2-5f6b25dd8d7a",
+        "name": "차단 입력",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2400,
+          -200
+        ],
+        "parameters": {
+          "jsCode": "const record=$input.first().json;\nif (record.ok !== true || !record.ticket_id || !['open','responding','verified'].includes(record.status) || record.ctx?.new_round_required && record.ticket_id===record.ctx.existing_ticket) throw new Error('TICKET_RECORD_REQUIRED');\nif (record.ticket_current !== true) throw new Error('TICKET_CURRENT_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nreturn [{ json: { ctx: { ...x, ticket_id: r.ticket_id }, action: 'block', ip: x.src_ip, ticket_id: r.ticket_id, dry_run: x.cfg.dry_run } }];\n"
+        }
+      },
+      {
+        "id": "8fec7dec-050b-54e2-933b-f28d9149a7b3",
+        "name": "차단 (haedam-12)",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2640,
+          -200
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "haedamPortalIp01",
+            "mode": "id"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "d0107f70-aa5c-5aa6-b512-a213159f2578",
+        "name": "차단 기록 입력",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2880,
+          -200
+        ],
+        "parameters": {
+          "jsCode": "// 차단 결과를 티켓에 기록(stage applied). Idempotency-Key = {실행 ID}-applied\nconst r = $input.first().json;\nconst x = r.ctx;\nconst block = { result: r.result, detail: r.detail, idempotency_key: r.idempotency_key };\nreturn [{ json: { ctx: { ...x, block }, mode: 'record', stage: 'applied', seat: x.cfg.seat, case_id: x.cfg.case_id, group_key: x.src_ip, title: '포털 요청 폭주로 응답 지연',\n  asset_id: x.asset_id, src_ip: x.src_ip, event_ids: [x.event_id], idempotency_key: `${$execution.id}-applied`,\n  action: { bot: '112', target: x.src_ip, via: 'portal', action: 'block', result: r.result,\n    applied_verified: r.result === 'dry_run' ? null : (r.applied_verified ?? null), effect_verified: null, effect_verified_at: null,\n    requested_at: r.requested_at, finished_at: r.finished_at, n8n_execution_id: String($execution.id), detail: r.detail } } }];\n"
+        }
+      },
+      {
+        "id": "293a73d0-9a15-5dcf-a480-a85aace1d533",
+        "name": "차단 기록 (haedam-10 applied)",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          3120,
+          -200
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "haedamResultLog01",
+            "mode": "id"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "9512b6c3-f9d1-5cb7-ad78-d86a40874738",
+        "name": "알림 입력",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3360,
+          -200
+        ],
+        "parameters": {
+          "jsCode": "const record=$input.first().json;\nif (record.ok !== true || !record.ticket_id || !['open','responding','verified'].includes(record.status) || record.ctx?.new_round_required && record.ticket_id===record.ctx.existing_ticket) throw new Error('TICKET_RECORD_REQUIRED');\nconst r = $input.first().json;\nconst x = r.ctx;\nreturn [{ json: { ctx: { ...x, record: { ok: r.ok, ticket_id: r.ticket_id, created: r.created, duplicate: r.duplicate, status: r.status } },\n  level: r.ok ? 'warn' : 'error', case_id: 'S12', title: '요청 폭주 대응', src_ip: x.src_ip,\n  ticket_id: r.ticket_id, result: x.block ? x.block.result : null, detail: `헬스체크 ${x.health.verdict}, 기준선 ${x.health.baseline_ms}ms` } }];\n"
+        }
+      },
+      {
+        "id": "02d635d6-907f-51ed-b313-9e169a77368c",
+        "name": "Discord 알림 (haedam-11)",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          3600,
+          -200
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "haedamDiscord01",
+            "mode": "id"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "b85d79af-91ee-50d0-926c-8588c10e76a9",
+        "name": "최종 응답",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3840,
+          -200
+        ],
+        "parameters": {
+          "jsCode": "// 최종 응답. 비밀값은 포함하지 않는다.\nconst r = $input.first().json;\nconst x = r.ctx;\nreturn [{ json: { ok: !(x.results || [x.block]).filter(Boolean).some(s=>['failed','rejected'].includes(s.result)) && (x.ticket || x.record)?.ok === true, verdict: x.cfg.dry_run ? 'dry_run' : 'responded', event_id: x.event_id, asset_id: x.asset_id, src_ip: x.src_ip,\n  block: x.block || null, ticket: x.record || null, discord_sent: r.sent, discord_error: r.error, health: x.health, n8n_execution_id: $execution.id } }];\n"
+        }
+      },
+      {
+        "id": "34e74399-3529-52a5-9f57-298163264bf1",
+        "name": "대응 없음 응답",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1680,
+          120
+        ],
+        "parameters": {
+          "jsCode": "// 대응하지 않는 경우(기준선 안, 기준선 없음, 중복, 보호 대상, 입력 오류)의 응답. 티켓을 만들지 않는다.\nconst j = $input.first().json;\nconst out = j.no_action ? j : { ok: true, verdict: j.verdict, event_id: j.event_id, asset_id: j.asset_id, src_ip: j.src_ip, health: j.health, no_action: true };\nreturn [{ json: { ...out, n8n_execution_id: $execution.id } }];\n"
+        }
+      },
+      {
+        "id": "672b07cc-e179-5f99-896e-64c0c1ca2c8a",
+        "name": "응답: 대응",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          4080,
+          -200
+        ],
+        "parameters": {
+          "respondWith": "allIncomingItems",
+          "options": {}
+        }
+      },
+      {
+        "id": "f5abccde-3a01-504d-b363-67d543a298c8",
+        "name": "응답: 대응 없음",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          1920,
+          120
+        ],
+        "parameters": {
+          "respondWith": "allIncomingItems",
+          "options": {}
+        }
+      },
+      {
+        "id": "5d49cb5c-4d86-54ca-90f4-a544278c4bad",
+        "name": "효과 확인 대상?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          3840,
+          80
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "0b30d990-53e9-58d1-9cf3-e10c6af6aff1",
+                "leftValue": "={{ $json.ctx.block && ($json.ctx.block.result === 'applied' || $json.ctx.block.result === 'already_applied' || ($json.ctx.cfg.test_effect === true && $json.ctx.block.result === 'dry_run')) }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "a8d876d1-9269-5c54-8a73-cf475681ed28",
+        "name": "회복 확인",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4080,
+          80
+        ],
+        "parameters": {
+          "jsCode": "\nfunction healthConfig(c) {\n if (c.baseline_ms === null || c.baseline_ms === undefined) return 'no_baseline';\n if (typeof c.baseline_source!=='string' || !/^[A-Za-z0-9._:-]{1,120}$/.test(c.baseline_source) ||\n     !Number.isFinite(c.baseline_ms) || c.baseline_ms <= 0 ||\n     !Number.isFinite(c.health_timeout_ms) || c.health_timeout_ms <= c.baseline_ms || c.health_timeout_ms > 30000 ||\n     !Number.isInteger(c.health_k) || c.health_k < 1 || c.health_k > 10 ||\n     !Number.isFinite(c.health_interval_ms) || c.health_interval_ms <= 0 || c.health_interval_ms > 30000)\n  return 'invalid_health_config';\n return null;\n}\nasync function healthSample(c) {\n const started=Date.now();let status=null,body=null,error=null;\n try {\n  const r=await this.helpers.httpRequest({method:'GET',url:c.health_url,timeout:c.health_timeout_ms,\n   returnFullResponse:true,ignoreHttpStatusCodes:true,json:true});\n  status=Number.isInteger(r.statusCode)?r.statusCode:null;body=r.body;\n } catch(e) {\n  // Fixed codes only: a library error message may contain request/authentication data.\n  error=['ETIMEDOUT','ESOCKETTIMEDOUT','ECONNABORTED'].includes(e?.code)||e?.name==='TimeoutError'?'timeout':\n   e?.name==='SyntaxError'?'invalid_body':'network_error';\n }\n const ms=Math.max(0,Date.now()-started);\n let classification=error;\n if (!classification) {\n  if (status>=500) classification='server_error';\n  else if (status!==200) classification='unexpected_status';\n  else if (body?.success!==true || body?.data?.status!=='ok') classification='invalid_body';\n  else classification=ms>c.baseline_ms?'slow_success':'healthy';\n }\n return {started_at:new Date(started).toISOString(),finished_at:new Date().toISOString(),ms,status,error,\n  classification,ok:classification==='healthy',\n  degraded:['slow_success','timeout','network_error','server_error'].includes(classification)};\n}\n\nconst x=$input.first().json.ctx,c=x.cfg;\nconst invalid=healthConfig(c);\nif(invalid)return [{json:{noop:true,reason:invalid,recovered:null,effect_verified:null,ctx:x}}];\nconst budget=c.recover_timeout_ms??60000;\nif(!Number.isFinite(budget)||budget<=0||budget>300000)\n return [{json:{noop:true,reason:'invalid_recovery_config',recovered:null,effect_verified:null,ctx:x}}];\nconst deadline=Date.now()+budget,samples=[];let streak=0;\n// Do not start a request which cannot finish within the observation deadline.\nwhile(deadline-Date.now()>=c.health_timeout_ms && streak<c.health_k) {\n const sample=await healthSample.call(this,c);samples.push(sample);streak=sample.ok?streak+1:0;\n if(streak<c.health_k && deadline-Date.now()>c.health_interval_ms)\n  await new Promise(r=>setTimeout(r,c.health_interval_ms));\n}\nconst recovered=streak>=c.health_k;\n// VPN recovery does not prove recovery from a normal user's separate access path.\nreturn [{json:{noop:!c.dry_run,reason:c.dry_run?'synthetic_recovery':'external_effect_evidence_required',\n recovered,effect_verified:null,ctx:{...x,recovery:{recovered,scope:'vpn_health_only',\n normal_user_path_verified:null,effect_verified:null,sample_count:samples.length,\n truncated:samples.length>100,samples:samples.slice(-100)}}}}];\n"
+        }
+      },
+      {
+        "id": "c496b8b1-3610-577e-bbd7-1335a1e81c9b",
+        "name": "기록할 효과?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          4320,
+          80
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "b4366fbb-74a1-503e-af1a-20e906181e2b",
+                "leftValue": "={{ $json.noop !== true }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "b9436a99-843e-586b-aeba-106bc7ff83f9",
+        "name": "효과 기록 입력",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4560,
+          0
+        ],
+        "parameters": {
+          "jsCode": "const r = $input.first().json;\nconst x = r.ctx;\nconst now = new Date().toISOString();\nreturn [{ json: { ctx: x, mode: 'record', stage: 'effect', seat: x.cfg.seat, case_id: x.cfg.case_id, group_key: x.src_ip, title: '포털 요청 폭주로 응답 지연',\n  asset_id: x.asset_id, src_ip: x.src_ip, event_ids: [x.event_id], idempotency_key: `${$execution.id}-effect`,\n  action: { bot: '112', target: x.src_ip, via: 'portal', action: 'block', result: 'applied', applied_verified: (x.block && x.block.applied_verified) ?? null,\n    effect_verified: r.recovered, effect_verified_at: now, requested_at: now, finished_at: now, n8n_execution_id: String($execution.id),\n    detail: `회복 ${r.recovered ? '확인' : '실패'}(연속 ${x.cfg.health_k}회, 기준선 ${x.cfg.baseline_ms}ms)` } } }];\n"
+        }
+      },
+      {
+        "id": "5fed3e53-7674-5bc1-9a6d-15aeb14c7897",
+        "name": "효과 기록 (haedam-10 effect)",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          4800,
+          0
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "haedamResultLog01",
+            "mode": "id"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "bd96a2fa-cc7d-5b6a-b9bf-c9a83db98fb5",
+        "name": "효과 알림 입력",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          5040,
+          0
+        ],
+        "parameters": {
+          "jsCode": "const r = $input.first().json;\nconst x = r.ctx;\nconst rec = x.recovery || {};\nreturn [{ json: { ctx: x, level: rec.recovered ? 'info' : 'error', case_id: 'S12', title: rec.recovered ? '서비스 회복 확인' : '회복 확인 실패(효과 검증 실패)', src_ip: x.src_ip,\n  ticket_id: r.ticket_id, result: rec.recovered ? 'effect_verified' : 'effect_failed', detail: `기준선 ${x.cfg.baseline_ms}ms, 연속 ${x.cfg.health_k}회` } }];\n"
+        }
+      },
+      {
+        "id": "ff00c35c-f593-52e4-8940-f6f18929897b",
+        "name": "효과 알림 (haedam-11)",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          5280,
+          0
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "haedamDiscord01",
+            "mode": "id"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "15dc4af2-fde0-53dd-8afc-5902ad7fa573",
+        "name": "조치 전 티켓 조회 입력 1",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2220,
+          -620
+        ],
+        "parameters": {
+          "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst r=$input.first().json,x=r.ctx;\nif(r.ok!==true || !ticketId(r.ticket_id) || !['open','responding','verified'].includes(r.status)) throw new Error('TICKET_RECORD_REQUIRED');\nconst seat=x?.seat||x?.cfg?.seat,group=x?.group_key||x?.src_ip;\nif(!['A','B','C','D'].includes(seat) || !validText(group)) throw new Error('TICKET_CURRENT_REQUIRED');\nreturn [{json:{mode:'check',seat,group_key:group,ctx:{...x,record_ack:{ticket_id:r.ticket_id,created:r.created,duplicate:r.duplicate,status:r.status}}}}];\n"
+        }
+      },
+      {
+        "id": "06059292-670d-5d6e-ad27-a9269ef7d95e",
+        "name": "조치 전 티켓 조회 1",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.2,
+        "position": [
+          2460,
+          -620
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "value": "haedamResultLog01",
+            "mode": "id"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "5697fd27-3f09-51a2-8f03-fe01f9a14719",
+        "name": "조치 전 티켓 대조 1",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2700,
+          -620
+        ],
+        "parameters": {
+          "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json,x=j.ctx,a=x?.record_ack;\nif(!snapshotOK(j) || !j.exists || !a || j.ticket_id!==a.ticket_id || !['open','responding','verified'].includes(j.status)) throw new Error('TICKET_CURRENT_REQUIRED');\nconst {record_ack,...ctx}=x;\nreturn [{json:{...a,ok:true,status:j.status,ticket_current:true,ctx}}];\n"
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "입력 검증·설정",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "입력 검증·설정": {
+        "main": [
+          [
+            {
+              "node": "대응 대상?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "대응 대상?": {
+        "main": [
+          [
+            {
+              "node": "중복 확인 (haedam-10 check)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "대응 없음 응답",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "중복 확인 (haedam-10 check)": {
+        "main": [
+          [
+            {
+              "node": "중복 판정",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "중복 판정": {
+        "main": [
+          [
+            {
+              "node": "중복 아님?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "중복 아님?": {
+        "main": [
+          [
+            {
+              "node": "헬스체크 K회",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "대응 없음 응답",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "헬스체크 K회": {
+        "main": [
+          [
+            {
+              "node": "기준선 초과?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "기준선 초과?": {
+        "main": [
+          [
+            {
+              "node": "티켓 detected 입력",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "대응 없음 응답",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "티켓 detected 입력": {
+        "main": [
+          [
+            {
+              "node": "티켓 detected (haedam-10)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "티켓 detected (haedam-10)": {
+        "main": [
+          [
+            {
+              "node": "조치 전 티켓 조회 입력 1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "차단 입력": {
+        "main": [
+          [
+            {
+              "node": "차단 (haedam-12)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "차단 (haedam-12)": {
+        "main": [
+          [
+            {
+              "node": "차단 기록 입력",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "차단 기록 입력": {
+        "main": [
+          [
+            {
+              "node": "차단 기록 (haedam-10 applied)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "차단 기록 (haedam-10 applied)": {
+        "main": [
+          [
+            {
+              "node": "알림 입력",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "알림 입력": {
+        "main": [
+          [
+            {
+              "node": "Discord 알림 (haedam-11)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Discord 알림 (haedam-11)": {
+        "main": [
+          [
+            {
+              "node": "최종 응답",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "효과 확인 대상?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "최종 응답": {
+        "main": [
+          [
+            {
+              "node": "응답: 대응",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "대응 없음 응답": {
+        "main": [
+          [
+            {
+              "node": "응답: 대응 없음",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "효과 확인 대상?": {
+        "main": [
+          [
+            {
+              "node": "회복 확인",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "회복 확인": {
+        "main": [
+          [
+            {
+              "node": "기록할 효과?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "기록할 효과?": {
+        "main": [
+          [
+            {
+              "node": "효과 기록 입력",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "효과 기록 입력": {
+        "main": [
+          [
+            {
+              "node": "효과 기록 (haedam-10 effect)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "효과 기록 (haedam-10 effect)": {
+        "main": [
+          [
+            {
+              "node": "효과 알림 입력",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "효과 알림 입력": {
+        "main": [
+          [
+            {
+              "node": "효과 알림 (haedam-11)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "조치 전 티켓 조회 입력 1": {
+        "main": [
+          [
+            {
+              "node": "조치 전 티켓 조회 1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "조치 전 티켓 조회 1": {
+        "main": [
+          [
+            {
+              "node": "조치 전 티켓 대조 1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "조치 전 티켓 대조 1": {
+        "main": [
+          [
+            {
+              "node": "차단 입력",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    }
+  }
+]

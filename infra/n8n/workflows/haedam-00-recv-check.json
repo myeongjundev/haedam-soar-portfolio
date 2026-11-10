@@ -1,0 +1,57 @@
+[
+ {
+  "id": "haedamRecvCheck01",
+  "name": "haedam-00 수신 확인 (빈 워크플로)",
+  "nodes": [
+   {
+    "id": "n1",
+    "name": "Webhook",
+    "type": "n8n-nodes-base.webhook",
+    "typeVersion": 2,
+    "position": [
+     0,
+     0
+    ],
+    "webhookId": "haedam-recv-check",
+    "parameters": {
+     "httpMethod": "POST",
+     "path": "haedam-recv-check",
+     "responseMode": "responseNode",
+     "options": {}
+    }
+   },
+   {
+    "id": "n2",
+    "name": "Respond",
+    "type": "n8n-nodes-base.respondToWebhook",
+    "typeVersion": 1.1,
+    "position": [
+     260,
+     0
+    ],
+    "parameters": {
+     "respondWith": "json",
+     "responseBody": "={{ { received: true, execution_id: $execution.id, event_id: $json.body.event_id, asset_id: $json.body.asset_id, src_ip: $json.body.src_ip } }}",
+     "options": {}
+    }
+   }
+  ],
+  "connections": {
+   "Webhook": {
+    "main": [
+     [
+      {
+       "node": "Respond",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  },
+  "active": false
+ }
+]

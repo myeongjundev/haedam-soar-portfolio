@@ -1,0 +1,80 @@
+{
+  "title": "Portfolio H1 petition flood",
+  "description": "Synthetic lab: >=5 distinct successful petition.created events per username in 10 minutes. Not an operational threshold.",
+  "priority": 2,
+  "alert": true,
+  "config": {
+    "type": "aggregation-v1",
+    "query": "source:haedam-portal AND event_type:petition.created AND status:201 AND username:h1_*",
+    "query_parameters": [],
+    "filters": [],
+    "streams": [
+      "REPLACE_haedam-portal_stream_id"
+    ],
+    "group_by": [
+      "username"
+    ],
+    "series": [
+      {
+        "id": "card(event_id)",
+        "type": "card",
+        "field": "event_id"
+      }
+    ],
+    "conditions": {
+      "expression": {
+        "expr": ">",
+        "left": {
+          "expr": "number-ref",
+          "ref": "card(event_id)"
+        },
+        "right": {
+          "expr": "number",
+          "value": 4
+        }
+      }
+    },
+    "search_within_ms": 600000,
+    "execute_every_ms": 15000,
+    "use_cron_scheduling": false,
+    "event_limit": 100
+  },
+  "field_spec": {
+    "username": {
+      "data_type": "string",
+      "providers": [
+        {
+          "type": "template-v1",
+          "template": "${source.username}",
+          "require_values": true
+        }
+      ]
+    },
+    "case_id": {
+      "data_type": "string",
+      "providers": [
+        {
+          "type": "template-v1",
+          "template": "H1",
+          "require_values": true
+        }
+      ]
+    }
+  },
+  "key_spec": [
+    "username"
+  ],
+  "notification_settings": {
+    "grace_period_ms": 600000,
+    "backlog_size": 0
+  },
+  "notifications": [],
+  "storage": [
+    {
+      "type": "persist-to-streams-v1",
+      "streams": [
+        "000000000000000000000002"
+      ]
+    }
+  ]
+}

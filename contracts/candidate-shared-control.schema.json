@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nobugs:aleph:candidate-shared-control:0.2",
+  "title": "Local synthetic shared-control API candidate 0.2; not deployed",
+  "oneOf": [{"$ref": "#/$defs/intent"}, {"$ref": "#/$defs/recovery"}, {"$ref": "#/$defs/resolve"}, {"$ref": "#/$defs/response"}],
+  "$defs": {
+    "resource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["asset_id", "via", "action", "target"],
+      "properties": {
+        "asset_id": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\u0000-\\u001f\\u007f]+$"},
+        "via": {"enum": ["portal", "pfsense", "wazuh-ar", "manual"]},
+        "action": {"const": "block"},
+        "target": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\u0000-\\u001f\\u007f]+$"}
+      }
+    },
+    "intent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["operation", "resource", "ticket_id", "action_id"],
+      "properties": {
+        "operation": {"enum": ["withdraw", "retain"]},
+        "resource": {"$ref": "#/$defs/resource"},
+        "ticket_id": {"type": "string", "pattern": "^T-[0-9]{8}-[0-9]{4}$"},
+        "action_id": {"type": "string", "minLength": 8, "maxLength": 100, "pattern": "^[!-~]+$"}
+      }
+    },
+    "recovery": {
+      "type": "object", "additionalProperties": false,
+      "required": ["executor_stopped", "evidence_ref"],
+      "properties": {
+        "executor_stopped": {"type": "boolean", "const": true},
+        "evidence_ref": {"type": "string", "pattern": "^synthetic/[A-Za-z0-9_./:-]{1,150}$"}
+      }
+    },
+    "resolve": {
+      "type": "object", "additionalProperties": false,
+      "required": ["executor_stopped", "evidence_ref", "expected_revision", "review_hash"],
+      "properties": {
+        "executor_stopped": {"type": "boolean", "const": true},
+        "evidence_ref": {"type": "string", "pattern": "^synthetic/[A-Za-z0-9_./:-]{1,150}$"},
+        "expected_revision": {"type": "integer", "minimum": 0},
+        "review_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "response": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ok", "synthetic_only", "allow_target_call"],
+      "properties": {
+        "ok": {"type": "boolean"}, "synthetic_only": {"const": true}, "allow_target_call": {"const": false},
+        "result": {
+          "type": "object", "additionalProperties": false, "required": ["state", "plan_id"],
+          "properties": {
+            "state": {"enum": ["withdrawn_waiting", "retained", "released", "pending", "busy", "replayed", "held", "cleanup_unconfirmed", "reconciled", "cancelled", "prepared", "completed", "journal_pending", "journal_done", "journal_resolved", "review_ready", "review_held"]},
+            "plan_id": {"type": ["string", "null"], "pattern": "^shared-[0-9a-f]{32}$"},
+            "resource": {"$ref": "#/$defs/resource"}, "claims_count": {"type": "integer", "minimum": 1},
+            "operation_status": {"type": "integer", "minimum": 100, "maximum": 599},
+            "journal_id": {"type": "string", "pattern": "^journal-[0-9a-f]{32}$"},
+            "revision": {"type": "integer", "minimum": 0},
+            "review_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "related_state": {"enum": ["not_seen", "pending", "done"]},
+            "plan_state": {"enum": ["none", "prepared", "completed", "cancelled"]},
+            "resolution_allowed": {"type": "boolean"}
+          }
+        },
+        "error": {
+          "type": "object", "additionalProperties": false, "required": ["code"],
+          "properties": {"code": {"enum": ["UNAUTHORIZED", "FORBIDDEN", "VALIDATION_ERROR", "NOT_FOUND", "IDEMPOTENCY_CONFLICT", "RECONCILIATION_REQUIRED", "PRECONDITION_FAILED", "SERVER_ERROR", "STALE_REVIEW", "OPERATOR_RESOLVED"]}}
+        }
+      },
+      "if": {"properties": {"ok": {"const": true}}},
+      "then": {"required": ["result"], "not": {"required": ["error"]}},
+      "else": {"required": ["error"], "not": {"required": ["result"]}}
+    }
+  }
+}

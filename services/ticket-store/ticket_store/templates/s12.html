@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}S12 보강 전후 비교{% endblock %}
+{% block body %}
+<header class="head"><div><p class="eyebrow">S12 · SERVICE AVAILABILITY</p><h1>정상 사용자 경로 · 보강 전후 비교</h1><p class="page-description">등록한 probe CSV로 계산합니다. 성공률과 응답시간을 함께 확인하세요.</p></div><a href="{{ request.full_path }}">새로고침 ↻</a></header>
+<form class="filters" method="get"><label for="s12-run">시험 ID</label><select id="s12-run" name="run"><option value="">최근 등록 시험</option>{% for item in options %}<option value="{{ item.metadata.run_id }}"{% if selected == item.metadata.run_id %} selected{% endif %}>{{ item.metadata.run_id }}{% if item.metadata.origin == 'sample' %} (샘플){% endif %}</option>{% endfor %}</select><label class="check"><input type="checkbox" name="sample" value="1"{% if include_sample %} checked{% endif %}>샘플 포함</label><button type="submit">조회</button></form>
+<p class="metric-note">최근 등록 50개 시험 선택 · 선택한 시험은 개별 조회 · 등록 후 새로고침 · 기본은 실제 기록만 표시</p>
+{% include '_s12_comparison.html' %}
+{% endblock %}

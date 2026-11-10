@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}케이스 보드{% endblock %}{% block body %}
+<header class="head"><div><p class="eyebrow">DEMONSTRATION OVERVIEW</p><h1>케이스 보드</h1><p class="page-description">케이스를 선택해 저장된 사건과 대응 근거를 확인합니다.</p></div><div class="refresh-controls"><label class="auto"><input type="checkbox" id="auto-refresh" checked> 10초마다 자동 갱신</label><button type="button" id="refresh-now">지금 새로고침 ↻</button></div></header>
+{% include '_screen_filters.html' %}<p id="refresh-warning" class="warning" {% if view %}hidden{% endif %}>갱신 실패 <span id="failed-at"></span> — 마지막으로 읽은 결과를 유지합니다.</p>
+<div id="list-area" data-fragment="/_cases" data-query="{{ request.query_string.decode() }}">{% if view %}{% include '_cases.html' %}{% else %}<p class="empty">조회 실패</p>{% endif %}</div>{% endblock %}

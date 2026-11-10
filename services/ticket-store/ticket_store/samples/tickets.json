@@ -1,0 +1,111 @@
+[
+  {
+    "schema_version": "1.0", "ticket_id": "T-20261024-9001", "seat": "C", "case_id": "S7",
+    "group_key": "haedam-portal:assets/zz_s7_sample.txt", "title": "S7 홈페이지 변조: assets/zz_s7_sample.txt",
+    "status": "verified", "asset_id": "haedam-portal", "src_ip": "203.0.113.10", "username": null,
+    "event_ids": ["sample-graylog-s7-event-01"],
+    "reason": "샘플: 같은 자산·파일 키에서 FIM 추가(554)와 웹 접근 200이 10분 안에 발생",
+    "first_attack_at": "2026-10-24T14:05:10+09:00", "condition_met_at": "2026-10-24T14:05:20+09:00",
+    "detected_at": "2026-10-24T14:05:28+09:00", "received_at": "2026-10-24T14:05:29+09:00",
+    "responded_at": "2026-10-24T14:05:34+09:00", "verified_at": "2026-10-24T14:06:10+09:00", "restored_at": null,
+    "actions": [
+      {"bot": "117", "target": "assets/zz_s7_sample.txt", "via": "wazuh-ar", "action": "quarantine", "result": "applied",
+       "applied_verified": true, "effect_verified": true, "requested_at": "2026-10-24T14:05:31+09:00",
+       "finished_at": "2026-10-24T14:05:34+09:00", "effect_verified_at": "2026-10-24T14:06:10+09:00",
+       "n8n_execution_id": "sample-1234", "detail": "웹 루트 밖 격리, 원래 URL 404, 홈 200",
+       "action_id": "sample-1234-applied", "duplicate": false, "recorded_at": "2026-10-24T14:05:35+09:00"}
+    ],
+    "data_origin": "sample", "created_at": "2026-10-24T14:05:35+09:00", "updated_at": "2026-10-24T14:06:11+09:00"
+  },
+  {
+    "schema_version": "1.0", "ticket_id": "T-20261024-9002", "seat": "D", "case_id": "S12",
+    "group_key": "203.0.113.11", "title": "포털 요청 폭주로 응답 지연",
+    "status": "responding", "asset_id": "haedam-portal", "src_ip": "203.0.113.11", "username": null,
+    "event_ids": ["sample-graylog-s12-event-01"],
+    "first_attack_at": null, "condition_met_at": "2026-10-24T14:59:50+09:00",
+    "detected_at": "2026-10-24T14:59:57+09:00", "received_at": "2026-10-24T14:59:58+09:00",
+    "responded_at": "2026-10-24T15:00:02+09:00", "verified_at": null, "restored_at": null,
+    "actions": [
+      {"bot": "112", "target": "203.0.113.11", "via": "portal", "action": "block", "result": "applied",
+       "applied_verified": true, "effect_verified": null, "requested_at": "2026-10-24T15:00:00+09:00",
+       "finished_at": "2026-10-24T15:00:02+09:00", "effect_verified_at": null,
+       "n8n_execution_id": "sample-5678", "detail": "portal changed:true",
+       "action_id": "sample-5678-applied", "duplicate": false, "recorded_at": "2026-10-24T15:00:03+09:00"}
+    ],
+    "data_origin": "sample", "created_at": "2026-10-24T15:00:03+09:00", "updated_at": "2026-10-24T15:00:03+09:00"
+  },
+  {
+    "schema_version": "1.0", "ticket_id": "T-20261024-9003", "seat": "A", "case_id": "S1",
+    "group_key": "zz_demo", "title": "S1 로그인 반복 실패: zz_demo",
+    "status": "open", "asset_id": "haedam-portal", "src_ip": "203.0.113.21", "username": "zz_demo",
+    "event_ids": ["sample-graylog-s1-event-01"],
+    "first_attack_at": null, "condition_met_at": "2026-10-24T15:10:00+09:00",
+    "detected_at": "2026-10-24T15:10:06+09:00", "received_at": "2026-10-24T15:10:07+09:00",
+    "responded_at": null, "verified_at": null, "restored_at": null,
+    "actions": [],
+    "data_origin": "sample", "created_at": "2026-10-24T15:10:07+09:00", "updated_at": "2026-10-24T15:10:07+09:00"
+  },
+  {
+    "schema_version": "1.0", "ticket_id": "T-20261024-9004", "seat": "B", "case_id": "S4",
+    "group_key": "203.0.113.31", "title": "S4 계정 대입 후 로그인 성공: 203.0.113.31",
+    "status": "restored", "asset_id": "haedam-portal", "src_ip": "203.0.113.31", "username": null,
+    "event_ids": ["sample-graylog-s4-event-01", "sample-graylog-s4-event-02"],
+    "first_attack_at": null, "condition_met_at": "2026-10-24T13:00:00+09:00",
+    "detected_at": "2026-10-24T13:00:05+09:00", "received_at": "2026-10-24T13:00:06+09:00",
+    "responded_at": "2026-10-24T13:00:09+09:00", "verified_at": "2026-10-24T13:00:40+09:00",
+    "restored_at": "2026-10-24T13:20:00+09:00",
+    "actions": [
+      {"bot": "112", "target": "203.0.113.31", "via": "pfsense", "action": "block", "result": "applied",
+       "applied_verified": true, "effect_verified": true, "requested_at": "2026-10-24T13:00:07+09:00",
+       "finished_at": "2026-10-24T13:00:09+09:00", "effect_verified_at": "2026-10-24T13:00:40+09:00",
+       "n8n_execution_id": "sample-2001", "detail": "pfSense 별칭에 추가",
+       "action_id": "sample-2001-applied", "duplicate": false, "recorded_at": "2026-10-24T13:00:10+09:00"},
+      {"bot": "112", "target": "203.0.113.31", "via": "pfsense", "action": "unblock", "result": "released",
+       "applied_verified": true, "effect_verified": null, "requested_at": "2026-10-24T13:19:58+09:00",
+       "finished_at": "2026-10-24T13:20:00+09:00", "effect_verified_at": null,
+       "n8n_execution_id": "sample-2002", "detail": "시험 종료 원복",
+       "action_id": "sample-2002-released", "duplicate": false, "recorded_at": "2026-10-24T13:20:01+09:00"}
+    ],
+    "data_origin": "sample", "created_at": "2026-10-24T13:00:10+09:00", "updated_at": "2026-10-24T13:20:01+09:00"
+  },
+  {
+    "schema_version": "1.0", "ticket_id": "T-20261024-9005", "seat": "D", "case_id": "S10",
+    "group_key": "203.0.113.41", "title": "S10 웹 스캔: 203.0.113.41",
+    "status": "closed", "asset_id": "haedam-portal", "src_ip": "203.0.113.41", "username": null,
+    "event_ids": ["sample-graylog-s10-event-01"],
+    "first_attack_at": null, "condition_met_at": "2026-10-24T11:00:00+09:00",
+    "detected_at": "2026-10-24T11:00:04+09:00", "received_at": "2026-10-24T11:00:05+09:00",
+    "responded_at": "2026-10-24T11:00:08+09:00", "verified_at": "2026-10-24T11:00:30+09:00", "restored_at": null,
+    "closed_at": "2026-10-24T11:30:00+09:00", "close_note": "샘플: 확인 후 종료",
+    "actions": [
+      {"bot": "112", "target": "203.0.113.41", "via": "portal", "action": "block", "result": "applied",
+       "applied_verified": true, "effect_verified": true, "requested_at": "2026-10-24T11:00:06+09:00",
+       "finished_at": "2026-10-24T11:00:08+09:00", "effect_verified_at": "2026-10-24T11:00:30+09:00",
+       "n8n_execution_id": "sample-3001",
+       "action_id": "sample-3001-applied", "duplicate": false, "recorded_at": "2026-10-24T11:00:09+09:00"}
+    ],
+    "data_origin": "sample", "created_at": "2026-10-24T11:00:09+09:00", "updated_at": "2026-10-24T11:30:00+09:00"
+  },
+  {
+    "schema_version": "1.0", "ticket_id": "T-20261024-9006", "seat": "C", "case_id": "S7",
+    "group_key": "haedam-portal:index.html", "title": "S7 홈페이지 변조: index.html",
+    "status": "responding", "asset_id": "haedam-portal", "src_ip": "203.0.113.10", "username": null,
+    "event_ids": ["sample-graylog-s7-event-02"],
+    "first_attack_at": null, "condition_met_at": "2026-10-24T16:00:00+09:00",
+    "detected_at": "2026-10-24T16:00:07+09:00", "received_at": "2026-10-24T16:00:08+09:00",
+    "responded_at": "2026-10-24T16:00:12+09:00", "verified_at": null, "restored_at": null,
+    "actions": [
+      {"bot": "117", "target": "index.html", "via": "wazuh-ar", "action": "restore", "result": "applied",
+       "applied_verified": true, "effect_verified": false, "requested_at": "2026-10-24T16:00:09+09:00",
+       "finished_at": "2026-10-24T16:00:12+09:00", "effect_verified_at": "2026-10-24T16:00:40+09:00",
+       "n8n_execution_id": "sample-4001", "detail": "복구 후 해시가 기준본과 다름",
+       "action_id": "sample-4001-applied", "duplicate": false, "recorded_at": "2026-10-24T16:00:13+09:00"},
+      {"bot": "117", "target": "index.html", "via": "wazuh-ar", "action": "restore", "result": "failed",
+       "applied_verified": false, "effect_verified": null, "requested_at": "2026-10-24T16:01:00+09:00",
+       "finished_at": "2026-10-24T16:01:10+09:00", "effect_verified_at": null,
+       "n8n_execution_id": "sample-4002", "detail": "active response 시간 초과",
+       "action_id": "sample-4002-applied", "duplicate": false, "recorded_at": "2026-10-24T16:01:11+09:00"}
+    ],
+    "data_origin": "sample", "created_at": "2026-10-24T16:00:13+09:00", "updated_at": "2026-10-24T16:01:11+09:00"
+  }
+]

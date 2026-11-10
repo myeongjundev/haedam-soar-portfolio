@@ -1,0 +1,193 @@
+{
+ "run_id": "P04-20261110T014245Z",
+ "started_at": "2026-11-10T01:42:45.885+00:00",
+ "checks": {
+  "path_crosses_pfsense": true,
+  "target_dropped_normal_kept": true,
+  "other_owner_refused": "another_owner",
+  "block_replay": {
+   "replayed": true,
+   "changed": false,
+   "attacker_after": 200
+  },
+  "final_empty": true
+ },
+ "result": "PASS",
+ "source_head": "5faa5436a15e0d8a7ec6e7f1f1005170109e86bb",
+ "source_dirty": false,
+ "appliance": {
+  "version": "2.7.2-RELEASE",
+  "adapter_sha256": "57ce49bdc1e91d2f15b7f401ae649d6be6f91427326f657b2369b524c6cd974a",
+  "config_sha256": "f3bfed464274e8c347fc053380e7f30cdfb96c1e9fc2debf33bccee43b28a0b8"
+ },
+ "preflight": {
+  "exit": 0,
+  "action": "status",
+  "applied_verified": false,
+  "changed": false,
+  "effect_verified": null,
+  "finished_at": "2026-11-10T01:43:35.679+00:00",
+  "journal_state": {
+   "claim_owner_id": null,
+   "claim_target": null,
+   "pending_action": null,
+   "pending_request_id": null
+  },
+  "ok": true,
+  "owner_id": "P04-20261110T014245Z",
+  "reason": "read_only_snapshot",
+  "replayed": false,
+  "request_id": "P04-20261110T014245Z-status-0",
+  "requested_at": "2026-11-10T01:43:35.189+00:00",
+  "result": "status",
+  "schema_version": "1.0",
+  "state": {
+   "config_rule_present": false,
+   "configured": false,
+   "covered_by_network": false,
+   "ready": true,
+   "rule_present": false,
+   "runtime_rule_present": false,
+   "table_present": false
+  },
+  "target": "203.0.113.22",
+  "via": "pfsense"
+ },
+ "baseline": {
+  "attacker": {
+   "at": "2026-11-10T01:43:51.892+00:00",
+   "result": 200,
+   "seconds": 0.038
+  },
+  "normal": {
+   "at": "2026-11-10T01:43:52.171+00:00",
+   "result": 200,
+   "seconds": 0.021
+  },
+  "pf_states": {
+   "attacker": [
+    "all tcp 172.30.94.10:5000 <- 203.0.113.22:42698       TIME_WAIT:TIME_WAIT",
+    "all tcp 203.0.113.22:42698 -> 172.30.94.10:5000       TIME_WAIT:TIME_WAIT"
+   ],
+   "normal": [
+    "all tcp 172.30.94.10:5000 <- 203.0.113.12:54164       TIME_WAIT:TIME_WAIT",
+    "all tcp 203.0.113.12:54164 -> 172.30.94.10:5000       TIME_WAIT:TIME_WAIT"
+   ]
+  }
+ },
+ "block": {
+  "exit": 0,
+  "action": "block",
+  "applied_verified": true,
+  "changed": true,
+  "effect_verified": null,
+  "finished_at": "2026-11-10T01:44:34.785+00:00",
+  "ok": true,
+  "owner_id": "P04-20261110T014245Z",
+  "reason": "verified_managed_state",
+  "replayed": false,
+  "request_id": "P04-20261110T014245Z-block",
+  "requested_at": "2026-11-10T01:44:25.432+00:00",
+  "result": "applied",
+  "schema_version": "1.0",
+  "state": {
+   "config_rule_present": true,
+   "configured": true,
+   "covered_by_network": false,
+   "ready": true,
+   "rule_present": true,
+   "runtime_rule_present": true,
+   "table_present": true
+  },
+  "target": "203.0.113.22",
+  "via": "pfsense"
+ },
+ "blocked": {
+  "attacker": {
+   "at": "2026-11-10T01:44:40.246+00:00",
+   "result": "URLError",
+   "seconds": 5.018
+  },
+  "normal": {
+   "at": "2026-11-10T01:44:40.546+00:00",
+   "result": 200,
+   "seconds": 0.026
+  },
+  "rules": [
+   "block drop in quick on em0 inet from <EasyRuleBlockHostsWAN> to any label \"USER_RULE: Blocked via EasyRule\" label \"id:1794275067\" ridentifier 1794275067"
+  ]
+ },
+ "unblock": {
+  "exit": 0,
+  "action": "unblock",
+  "applied_verified": false,
+  "changed": true,
+  "effect_verified": null,
+  "finished_at": "2026-11-10T01:45:14.131+00:00",
+  "ok": true,
+  "owner_id": "P04-20261110T014245Z",
+  "reason": "verified_managed_state",
+  "replayed": false,
+  "request_id": "P04-20261110T014245Z-unblock",
+  "requested_at": "2026-11-10T01:45:00.913+00:00",
+  "result": "released",
+  "schema_version": "1.0",
+  "state": {
+   "config_rule_present": false,
+   "configured": false,
+   "covered_by_network": false,
+   "ready": true,
+   "rule_present": false,
+   "runtime_rule_present": false,
+   "table_present": false
+  },
+  "target": "203.0.113.22",
+  "via": "pfsense"
+ },
+ "restored": {
+  "attacker": {
+   "at": "2026-11-10T01:45:15.641+00:00",
+   "result": 200,
+   "seconds": 0.023
+  },
+  "normal": {
+   "at": "2026-11-10T01:45:15.899+00:00",
+   "result": 200,
+   "seconds": 0.018
+  }
+ },
+ "final": {
+  "exit": 0,
+  "action": "status",
+  "applied_verified": false,
+  "changed": false,
+  "effect_verified": null,
+  "finished_at": "2026-11-10T01:45:20.931+00:00",
+  "journal_state": {
+   "claim_owner_id": null,
+   "claim_target": null,
+   "pending_action": null,
+   "pending_request_id": null
+  },
+  "ok": true,
+  "owner_id": "P04-20261110T014245Z",
+  "reason": "read_only_snapshot",
+  "replayed": false,
+  "request_id": "P04-20261110T014245Z-status-1",
+  "requested_at": "2026-11-10T01:45:20.427+00:00",
+  "result": "status",
+  "schema_version": "1.0",
+  "state": {
+   "config_rule_present": false,
+   "configured": false,
+   "covered_by_network": false,
+   "ready": true,
+   "rule_present": false,
+   "runtime_rule_present": false,
+   "table_present": false
+  },
+  "target": "203.0.113.22",
+  "via": "pfsense"
+ },
+ "finished_at": "2026-11-10T01:45:36.788+00:00"
+}

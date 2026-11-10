@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0", "event_id": "sample-data-read-01",
+  "timestamp": "2026-10-15T01:03:00Z", "source": "portal",
+  "event_type": "data.read", "username": "zz_demo",
+  "src_ip": "192.0.2.10", "asset_id": "lab-portal", "outcome": "success",
+  "details": {"resource": "synthetic-production-summary"}
+}

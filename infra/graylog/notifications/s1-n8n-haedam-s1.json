@@ -1,0 +1,18 @@
+{
+  "title": "n8n haedam-s1 (S1 → haedam-30)",
+  "description": "S1 이벤트를 D n8n haedam-30 웹훅으로 보낸다. 본문은 haedam-30이 요구하는 최상위 필드(event_id·asset_id·src_ip·username)로 평평하게 만든다. asset_id는 haedam-portal로 고정. 10/28 반입. detected_at(Graylog 이벤트 생성 시각)을 C 요청으로 추가.",
+  "config": {
+    "type": "http-notification-v2",
+    "url": "http://host.docker.internal:5678/webhook/haedam-s1",
+    "method": "POST",
+    "content_type": "JSON",
+    "time_zone": "UTC",
+    "headers": "",
+    "basic_auth": null,
+    "api_key_as_header": false,
+    "api_key": "",
+    "api_secret": null,
+    "skip_tls_verification": false,
+    "body_template": "{\"event_id\":\"${event.id}\",\"asset_id\":\"haedam-portal\",\"src_ip\":\"${event.fields.src_ip}\",\"username\":\"${event.fields.username}\",\"case_id\":\"${event.fields.case_id}\",\"condition_met_at\":\"${event.timestamp}\",\"detected_at\":\"${event.timestamp_processing}\",\"event_definition_id\":\"${event_definition_id}\"}"
+  }
+}

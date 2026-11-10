@@ -1,0 +1,102 @@
+[
+ {
+  "id": "haedamDiscord01",
+  "name": "haedam-11 Discord 알림 (113)",
+  "active": false,
+  "nodes": [
+   {
+    "id": "0544d87b-5ef2-5901-baa0-b5655bcfc5ea",
+    "name": "Execute Workflow Trigger",
+    "type": "n8n-nodes-base.executeWorkflowTrigger",
+    "typeVersion": 1.1,
+    "position": [
+     0,
+     0
+    ],
+    "parameters": {
+     "inputSource": "passthrough"
+    }
+   },
+   {
+    "id": "5583627e-60fd-585e-b68f-2fbf8b1b9ef7",
+    "name": "Discord 본문",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     260,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// Discord 알림(113) 본문 만들기. 웹훅 주소는 Discord 노드의 자격 증명에만 둔다.\nconst b = $input.first().json;\nconst lv = { info: '[정보]', warn: '[경고]', error: '[오류]' }[b.level || 'info'] || '[정보]';\nconst lines = [`${lv} **[${b.case_id || '-'}] ${b.title || '알림'}**`];\nif (b.src_ip) lines.push(`출발지: ${b.src_ip}`);\nif (b.ticket_id) lines.push(`티켓: ${b.ticket_id}`);\nif (b.result) lines.push(`결과: ${b.result}`);\nif (b.detail) lines.push(String(b.detail).slice(0, 500));\nlines.push(`n8n 실행: ${$execution.id}`);\nreturn [{ json: { content: lines.join('\\n'), ctx: b.ctx } }];\n"
+    }
+   },
+   {
+    "id": "c4898d51-4816-543b-9fab-29a4617a582a",
+    "name": "Discord 웹훅",
+    "type": "n8n-nodes-base.discord",
+    "typeVersion": 2,
+    "position": [
+     520,
+     0
+    ],
+    "parameters": {
+     "authentication": "webhook",
+     "content": "={{ $json.content }}",
+     "options": {}
+    },
+    "onError": "continueRegularOutput"
+   },
+   {
+    "id": "f0e9c453-5c6f-5362-b289-0ee16f41cbda",
+    "name": "전송 결과",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     780,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// Discord 노드 결과(또는 자격 증명 없음·전송 실패)를 sent 여부로 정리\nconst j = $input.first().json;\nconst failed = !!(j.error || (j.message && /credential|webhook|ENOTFOUND|\\b4\\d\\d\\b/i.test(String(j.message))));\nreturn [{ json: { sent: !failed, error: failed ? String((j.error && j.error.message) || j.message || j.error) : null, ctx: $('Discord 본문').first().json.ctx } }];\n"
+    }
+   }
+  ],
+  "connections": {
+   "Execute Workflow Trigger": {
+    "main": [
+     [
+      {
+       "node": "Discord 본문",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Discord 본문": {
+    "main": [
+     [
+      {
+       "node": "Discord 웹훅",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Discord 웹훅": {
+    "main": [
+     [
+      {
+       "node": "전송 결과",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  }
+ }
+]

@@ -1,0 +1,25 @@
+<form class="filters" method="get" action="{{ url_for('dashboard.index') }}" id="filters" aria-label="티켓 필터">
+  <div class="filter-title"><strong>티켓 필터</strong><span>선택 즉시 적용</span></div>
+  <label>자리
+    <select name="seat">
+      <option value="">전체</option>
+      {% for s in seats %}<option value="{{ s }}"{% if filters.seat == s %} selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>케이스
+    <select name="case_id">
+      <option value="">전체</option>
+      {% for c in cases %}<option value="{{ c }}"{% if filters.case_id == c %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>상태
+    <select name="status">
+      <option value="">종료 제외</option>
+      <option value="all"{% if filters.status == "all" %} selected{% endif %}>전체(종료 포함)</option>
+      {% for s in statuses %}<option value="{{ s }}"{% if filters.status == s %} selected{% endif %}>{{ STATUS_LABELS[s] }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="check"><input type="checkbox" name="sample" value="1"{% if filters.sample %} checked{% endif %}> 샘플 포함</label>
+  <button type="submit">적용</button>
+  <a class="reset-link" href="{{ url_for('dashboard.index') }}">초기화</a>
+</form>

@@ -1,0 +1,125 @@
+{
+  "run_id": "S7-20261109T033732Z",
+  "project": "haedam-s7-verify",
+  "started_at": "2026-11-09T03:37:32.990+00:00",
+  "scope": "FIM/indexer/API restore; no n8n/ticket",
+  "agent_id": "001",
+  "checks": {
+    "unauthenticated_api": 401,
+    "portal_webroot_write_denied": true,
+    "baseline_refuses_tamper": true,
+    "outside_web_root_rejected": "path_outside_web_root",
+    "all_web_files_match_image": 4,
+    "normal_assets_unchanged": 3,
+    "restart_preserves_baseline": true,
+    "baseline_manifest_sha256": "158af68363e91f20720ae2a2227c5691150b01631f6556a6388e8f60ba452451",
+    "quarantine_entries_remaining": 0,
+    "restored_http_body_sha256": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9"
+  },
+  "cases": [
+    {
+      "path": "index.html",
+      "changed_at": "2026-11-09T03:37:33.388+00:00",
+      "indexed_alert": {
+        "id": "1794195453.1200",
+        "index_id": "bC9ivqEB_wv8ZJ0mA_qQ",
+        "timestamp": "2026-11-09T03:37:33.553+0000",
+        "rule": "550",
+        "agent_id": "001",
+        "path": "/var/www/haedam/index.html",
+        "event": "modified",
+        "sha256_before": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9",
+        "sha256_after": "0393432cfb88cd0c77613418d11687b394c893aaa51249082f5f692083c4a24c"
+      },
+      "change_to_index_observed_seconds": 7.028,
+      "ar_requested_at": "2026-11-09T03:37:40.416+00:00",
+      "ar_delivery": {
+        "affected_items": [
+          "001"
+        ],
+        "total_affected_items": 1,
+        "total_failed_items": 0,
+        "failed_items": []
+      },
+      "effect_observed_at": "2026-11-09T03:37:41.013+00:00",
+      "restore_record": {
+        "ts": "2026-11-09T03:37:40.687+00:00",
+        "run_id": "S7-20261109T033732Z",
+        "path": "index.html",
+        "action": "restore",
+        "sha256_before": "0393432cfb88cd0c77613418d11687b394c893aaa51249082f5f692083c4a24c",
+        "sha256_expected": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9",
+        "sha256_after": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9",
+        "result": "ok",
+        "duration_ms": 0
+      },
+      "http_after": 200
+    },
+    {
+      "path": "assets/s7-probe.txt",
+      "changed_at": "2026-11-09T03:37:41.017+00:00",
+      "indexed_alert": {
+        "id": "1794195461.3736",
+        "index_id": "bi9ivqEB_wv8ZJ0mHvrq",
+        "timestamp": "2026-11-09T03:37:41.178+0000",
+        "rule": "554",
+        "agent_id": "001",
+        "path": "/var/www/haedam/assets/s7-probe.txt",
+        "event": "added",
+        "sha256_before": null,
+        "sha256_after": "b83d42b3fa7db6d984770a3fa46e8d6814caf30602e513b75da8998facc13050"
+      },
+      "change_to_index_observed_seconds": 6.268,
+      "ar_requested_at": "2026-11-09T03:37:47.285+00:00",
+      "ar_delivery": {
+        "affected_items": [
+          "001"
+        ],
+        "total_affected_items": 1,
+        "total_failed_items": 0,
+        "failed_items": []
+      },
+      "effect_observed_at": "2026-11-09T03:37:47.866+00:00",
+      "restore_record": {
+        "ts": "2026-11-09T03:37:47.542+00:00",
+        "run_id": "S7-20261109T033732Z",
+        "path": "assets/s7-probe.txt",
+        "action": "quarantine",
+        "sha256_before": "b83d42b3fa7db6d984770a3fa46e8d6814caf30602e513b75da8998facc13050",
+        "size": 43,
+        "symlink": false,
+        "quarantine_entry": "20261109T033747Z_S7-20261109T033732Z",
+        "result": "ok",
+        "duration_ms": 1
+      },
+      "http_after": 404
+    }
+  ],
+  "result": "pass",
+  "cleanup": [
+    "{\"ts\": \"2026-11-09T03:37:54.796+00:00\", \"run_id\": \"S7-20261109T033732Z-cleanup\", \"path\": \"index.html\", \"action\": \"restore\", \"sha256_before\": \"2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9\", \"sha256_expected\": \"2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9\", \"result\": \"ok\", \"reason\": \"already_matches_baseline\", \"duration_ms\": 0}\nok",
+    "{\"ts\": \"2026-11-09T03:37:54.988+00:00\", \"run_id\": \"S7-20261109T033732Z-cleanup\", \"path\": \"assets/s7-probe.txt\", \"action\": \"none\", \"result\": \"ok\", \"reason\": \"not_in_baseline_and_absent\", \"duration_ms\": 0}\nok"
+  ],
+  "cleanup_verify": "{\"ts\": \"2026-11-09T03:37:55.177+00:00\", \"action\": \"verify\", \"files\": 4, \"changed\": [], \"missing\": [], \"extra\": [], \"result\": \"ok\"}\nok",
+  "finished_at": "2026-11-09T03:37:55.195+00:00",
+  "source_sha256": {
+    "compose.yaml": "52fc55d9a340cba26ec17a43847ce50abcd41ce6d7634197c99c0694f1f159f9",
+    "compose.s7.yaml": "67db0b9c1725c9f28e5c39e612879c79281e102eb86b19477c81b5ee40edfc3d",
+    "Dockerfile": "2eee49c19a2351f35c9ef6372fe946d40ec2ee6a1f4d7ea4fd635d9e5fce99ef",
+    "tools/s7_lab.py": "146dd2e857f7c52ce9260b15d8acbfcf96fa037249e0f48fcb13cba7a5eaa6fb",
+    "tools/s7_verify.py": "95678011f8c608816cd5e6e4d7191367420d6e96b0683cbfa4e8581ca0a7f1f2",
+    "lab/s7/restore/s7_restore.py": "38f238c43d14464facbc519df4560783a3ffa0a4002ed837c71670efc9b80ddf",
+    "lab/s7/restore/s7-restore-ar": "d5ddac300c19aad32e78410ba2b5e4c3b9a5bfe9552eb7072d13c6dcbc2629b7",
+    "infra/wazuh/certs.yml": "9a82f3af92690928d9b51d2f52b69fe22de552214c72ab56746ffa92a4a0a260",
+    "infra/wazuh/dashboard.yml": "91301f901cc3d91438dcc42538215c4ecc33f1ba7b47eb0141302b5d03f97823",
+    "infra/wazuh/indexer.yml": "03d53e96e15321dbd6161ba30fa769c055fabb6514a0208a81f4bedace3a75de",
+    "infra/wazuh/LICENSE.upstream": "417e440da219efc678dd1c460a0a70df1d1c9baf4c80cf1d294c83a8057a8f0e",
+    "infra/wazuh/manager.conf": "78f61b10e7fea713a114c71806461e295e7ece94726b07845316e6287b2fcdbe",
+    "infra/wazuh/agent/Dockerfile": "57c310764630f273a0dfaa429c3fa0d684f0039d0d89a3552bc96f0d9f2f7920",
+    "infra/wazuh/agent/Dockerfile.dockerignore": "6d224bab3e9ce074726875c241cc322b08ba54e9bcb11a8bc3355496aa5d5348",
+    "infra/wazuh/agent/entrypoint.sh": "bed839b74869f482db8ffb53c737f161a1320ef6823ba92e1227382a181b4c47",
+    "infra/wazuh/agent/ossec.conf": "3dfa1654eb6e3c52ebd938fed2dcee18ca6d602d0b07925a25f15df94dfab633"
+  },
+  "source_head_before_run": "2820c854a5c814b2b8a2647cb9526f9dba1725e2",
+  "source_dirty_at_run": false
+}

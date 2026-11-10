@@ -1,0 +1,351 @@
+/* Role workflows: orient the user and expose the next valid action. */
+.role-workflow-guide {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 23px 25px;
+  margin-bottom: 20px;
+  border: 1px solid #d3e2d9;
+  border-radius: 14px;
+  background: #edf4ef;
+}
+.role-workflow-guide .workflow-guide-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  border: 1px solid #c7dbcf;
+  border-radius: 14px;
+  background: #fff;
+  color: #356650;
+}
+.role-workflow-guide > div {
+  flex: 1;
+  min-width: 0;
+}
+.role-workflow-guide .eyebrow {
+  margin: 0 0 5px;
+}
+.role-workflow-guide h2 {
+  margin: 0 0 7px;
+  font-size: 19px;
+  line-height: 1.5;
+  color: #244b40;
+}
+.role-workflow-guide p:not(.eyebrow) {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #4e6759;
+}
+.role-workflow-guide .button {
+  flex-shrink: 0;
+}
+.role-workflow-guide.staff-guide {
+  background: #edf2f5;
+  border-color: #d3e0e5;
+}
+.staff-guide .workflow-guide-icon {
+  color: #3e647a;
+  border-color: #c6d8e3;
+}
+.summary-scope {
+  font-size: 12px;
+  color: #52695c;
+  margin: 0 0 14px;
+}
+.petition-table td a.staff-next-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 1px solid #c7dace;
+  border-radius: 6px;
+  margin-top: 10px;
+  background: #f0f5ef;
+  color: #335e49;
+  font-size: 12px;
+  font-weight: 600;
+}
+.petition-table td a.staff-next-action svg {
+  margin-left: 0;
+}
+.petition-journey {
+  border: 1px solid #d8e5dc;
+  border-radius: 12px;
+  margin: 25px 0;
+  overflow: hidden;
+}
+.journey-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 21px;
+  margin: 0;
+  background: #f5f8f4;
+}
+.journey-steps li {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5b6b61;
+}
+.journey-marker {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #cbd8ce;
+  border-radius: 50%;
+  font-size: 11px;
+  background: #fff;
+}
+.journey-steps small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 3px;
+  color: #5b6b61;
+}
+.journey-steps .current {
+  color: #234d3c;
+}
+.journey-steps .current .journey-marker {
+  background: #305f4d;
+  border-color: #305f4d;
+  color: #fff;
+  box-shadow: 0 0 0 4px #dceade;
+}
+.journey-steps .done .journey-marker {
+  background: #e3eee5;
+  color: #356048;
+  border-color: #c8ddcc;
+}
+.journey-guidance {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 20px 21px;
+}
+.journey-guidance > svg {
+  color: #47765a;
+  flex-shrink: 0;
+}
+.journey-guidance > div {
+  flex: 1;
+  min-width: 0;
+}
+.journey-guidance h2 {
+  margin: 0 0 7px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.journey-guidance p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #52695c;
+}
+.journey-action {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #315b45;
+}
+#staff-action,
+#official-response,
+#petition-history {
+  scroll-margin-top: 25px;
+}
+.dialog-account-target {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  border: 1px solid #dce5dd;
+  background: #f5f8f4;
+  padding: 16px;
+  border-radius: 10px;
+  margin: 20px 0;
+}
+.account-monogram {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #e2ece2;
+  color: #355f48;
+  font-size: 17px;
+}
+.dialog-account-target > div {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dialog-account-target small,
+.dialog-account-target div > span {
+  font-size: 12px;
+  color: #52695c;
+}
+.account-change-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #dce5dd;
+  border-radius: 8px;
+  margin: 0 0 20px;
+  padding: 16px;
+  gap: 15px;
+}
+.account-change-preview > div + div {
+  border-left: 1px solid #dce5dd;
+  padding-left: 15px;
+}
+.account-change-preview dt {
+  font-size: 12px;
+  color: #52695c;
+  margin-bottom: 7px;
+}
+.account-change-preview dd {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+.admin-operation-steps {
+  list-style: none;
+  counter-reset: operations;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 13px;
+}
+.admin-operation-steps li {
+  counter-increment: operations;
+  position: relative;
+  padding-left: 35px;
+}
+.admin-operation-steps li::before {
+  content: counter(operations, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  background: #eaf1e7;
+  color: #356048;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.admin-operation-steps strong {
+  display: block;
+  color: #2e4d3c;
+  font-size: 13px;
+}
+.admin-operation-steps span {
+  display: block;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #52695c;
+}
+.admin-list .row-actions .account-lock-action {
+  color: #9c3d39;
+  border-color: #e4c4bf;
+}
+@media (max-width: 1100px) {
+  .role-workflow-guide {
+    flex-wrap: wrap;
+  }
+  .role-workflow-guide .button {
+    margin-left: 70px;
+  }
+  .journey-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .journey-guidance {
+    flex-wrap: wrap;
+  }
+  .journey-action {
+    margin-left: 36px;
+  }
+}
+@media (max-width: 560px) {
+  .role-workflow-guide {
+    padding: 20px;
+    gap: 14px;
+  }
+  .role-workflow-guide .workflow-guide-icon {
+    width: 39px;
+    height: 39px;
+  }
+  .role-workflow-guide h2 {
+    font-size: 17px;
+  }
+  .role-workflow-guide > div {
+    flex-basis: calc(100% - 53px);
+  }
+  .role-workflow-guide .button {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+  .summary-scope {
+    line-height: 1.9;
+    font-size: 11px;
+  }
+  .journey-steps {
+    padding: 17px 13px;
+    gap: 18px 10px;
+  }
+  .journey-steps li {
+    gap: 7px;
+    font-size: 11px;
+  }
+  .journey-marker {
+    width: 26px;
+    height: 26px;
+    font-size: 10px;
+  }
+  .journey-guidance {
+    padding: 18px 14px;
+    gap: 10px;
+  }
+  .journey-guidance h2 {
+    font-size: 15px;
+  }
+  .journey-guidance p {
+    font-size: 12px;
+  }
+  .journey-action {
+    margin-left: 33px;
+    white-space: normal;
+  }
+  .petition-table td a.staff-next-action {
+    font-size: 11px;
+    min-height: 36px;
+    padding: 5px 8px;
+  }
+  .dialog-account-target {
+    padding: 13px;
+    flex-wrap: wrap;
+  }
+  .account-change-preview {
+    gap: 10px;
+    padding: 13px;
+  }
+}

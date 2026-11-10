@@ -1,0 +1,36 @@
+{
+  "kind": "panel-controller-and-browser-verification",
+  "observed_at": "2026-11-09T08:12:22.604243+00:00",
+  "host_tests": {
+    "passed": 54,
+    "panel_tests": 17
+  },
+  "browser_test": {
+    "kind": "synthetic-worker",
+    "passed": true,
+    "checks": [
+      "cancel-no-run",
+      "target-selection-survives-poll",
+      "attack-once",
+      "observe",
+      "restore",
+      "reload-history",
+      "evidence-download",
+      "mobile-no-overflow",
+      "no-page-errors"
+    ]
+  },
+  "actual_ui_offline": {
+    "input_disabled": true,
+    "mobile_width": 390,
+    "horizontal_overflow": false
+  },
+  "docker_scenario_run": false,
+  "docker_lifecycle_changes": false,
+  "s10_changes": false,
+  "limitations": [
+    "Button-driven Wazuh/Graylog/n8n live run pending; coordinate with Claude S10.",
+    "S8/H1 panel adapters not implemented.",
+    "S10 intentionally unavailable."
+  ]
+}

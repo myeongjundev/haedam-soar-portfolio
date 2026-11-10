@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:haedam:portfolio:panel-job:1.0",
+  "title": "Local panel job request",
+  "description": "Project, credentials, commands, URLs and arbitrary paths cannot be supplied by a browser. target must also belong to the server's configured S7 allowlist.",
+  "$defs": {"id":{"type":"string","pattern":"^[0-9a-f-]{36}$"}},
+  "oneOf": [
+    {"type":"object","additionalProperties":false,"required":["action","request_id"],"properties":{
+      "action":{"const":"refresh"},"request_id":{"$ref":"#/$defs/id"}}},
+    {"type":"object","additionalProperties":false,"required":["action","request_id","target"],"properties":{
+      "action":{"const":"attack"},"request_id":{"$ref":"#/$defs/id"},"target":{"type":"string","minLength":1}}},
+    {"type":"object","additionalProperties":false,"required":["action","request_id","run_id"],"properties":{
+      "action":{"enum":["observe","restore"]},"request_id":{"$ref":"#/$defs/id"},"run_id":{"$ref":"#/$defs/id"}}}
+  ]
+}

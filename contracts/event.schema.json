@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nobugs:aleph:event:1.0",
+  "title": "Draft shared event v1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "event_id", "timestamp", "source", "event_type", "username", "src_ip", "asset_id", "outcome"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "event_id": {"type": "string", "minLength": 1},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "source": {"type": "string", "minLength": 1},
+    "event_type": {"enum": ["auth.login_failed", "auth.login_succeeded", "iam.role_changed", "data.read"]},
+    "username": {"type": "string", "minLength": 1},
+    "src_ip": {"type": "string", "anyOf": [{"format": "ipv4"}, {"format": "ipv6"}]},
+    "asset_id": {"type": "string", "minLength": 1},
+    "outcome": {"enum": ["success", "failure", "denied"]},
+    "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource": {"type": "string"},
+        "previous_role": {"type": "string"},
+        "new_role": {"type": "string"}
+      }
+    }
+  }
+}

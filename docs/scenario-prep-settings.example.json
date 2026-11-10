@@ -1,0 +1,21 @@
+{
+  "purpose": "planning-only; not consumed by any deployment tool",
+  "deployment_enabled": false,
+  "status": "not_run",
+  "project": null,
+  "asset_id": null,
+  "network": {"client_subnet": null, "response_subnet": null, "portal_ip": null, "attacker_ip": null, "normal_ip": null, "n8n_response_ip": null},
+  "host_ports": {"portal": null, "graylog": null, "n8n": null, "tickets": null},
+  "urls": {"portal": null, "graylog_api": null, "n8n_detection": null, "n8n_release": null, "ticket_api": null},
+  "accounts": {"s1_boundary": null, "s1_trigger": null, "s4_boundary": null, "s4_trigger": null, "normal": null},
+  "credential_environment_names": ["PORTAL_RESPONSE_KEY", "TICKET_STORE_KEY", "DETECTION_KEY", "OPERATOR_KEY"],
+  "s1": {"window_seconds": 1800, "execute_every_seconds": 60, "failure_status": 401, "failure_threshold": 9, "boundary_failures": 8, "input_interval_seconds": 100, "boundary_observation_seconds": 1860},
+  "s4": {"window_seconds": 600, "execute_every_seconds": 60, "policy": "failure_and_success_coexistence_without_order", "boundary_failures": 4, "trigger_failures": 5, "successes": 1, "input_interval_seconds": 60, "release_method": null},
+  "s12": {
+    "window_seconds": 60, "execute_every_seconds": 30,
+    "request_threshold": null, "health_baseline_ms": null, "baseline_run_id": null,
+    "health_k": 3, "health_interval_ms": 2000, "health_timeout_ms": 5000,
+    "proposed_load": {"rates_per_second": [1, 2, 5], "stage_seconds": 30, "total_seconds": 90, "concurrency": 2, "max_rate_per_second": 5},
+    "stop_file": null, "normal_user_error_stop_rule": null
+  }
+}

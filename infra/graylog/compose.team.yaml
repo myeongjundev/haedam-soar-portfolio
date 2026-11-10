@@ -1,0 +1,81 @@
+# 팀용 Graylog (D PC). 입력·스트림만 두고 이벤트 정의·알림·n8n 워크플로는 넣지 않는다(정량평가 "보강 전" 상태 유지).
+# 수업 compose(10_graylog)를 바탕으로 하되 이름·포트·메모리·비밀값 처리를 바꿨다. 자세한 내용은 README.md.
+name: haedam-soc
+
+services:
+  mongodb:
+    image: mongo:6.0.28
+    container_name: soc-mongo
+    mem_limit: 512m
+    environment:
+      TZ: Asia/Seoul
+    volumes:
+      - mongo_data:/data/db
+      - mongo_configdb:/data/configdb
+    networks: [soc-net]
+    restart: unless-stopped
+
+  opensearch:
+    image: opensearchproject/opensearch:2.5.0   # 2.15는 색인 오류가 난다(수업 메모). 버전 고정
+    container_name: soc-opensearch
+    mem_limit: 2g
+    environment:
+      OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
+      bootstrap.memory_lock: "true"
+      discovery.type: single-node
+      action.auto_create_index: "false"
+      plugins.security.disabled: "true"
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD:?.env에 값을 넣으세요}
+      TZ: Asia/Seoul
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - os_data:/usr/share/opensearch/data
+    networks: [soc-net]
+    restart: unless-stopped
+
+  graylog:
+    image: graylog/graylog:6.1.16
+    container_name: soc-graylog
+    mem_limit: 2g
+    depends_on: [mongodb, opensearch]
+    environment:
+      GRAYLOG_PASSWORD_SECRET: ${GRAYLOG_PASSWORD_SECRET:?.env에 값을 넣으세요}
+      GRAYLOG_ROOT_PASSWORD_SHA2: ${GRAYLOG_ROOT_PASSWORD_SHA2:?.env에 값을 넣으세요}
+      GRAYLOG_HTTP_EXTERNAL_URI: http://${WEB_BIND_IP:-127.0.0.1}:9000/
+      GRAYLOG_MONGODB_URI: mongodb://mongodb:27017/graylog
+      GRAYLOG_ELASTICSEARCH_HOSTS: http://opensearch:9200
+      # GRAYLOG_ELASTICSEARCH_VERSION은 넣지 않는다(자동 감지). 넣으면 색인이 거부된다(수업 메모).
+      GRAYLOG_ROOT_TIMEZONE: Asia/Seoul
+      GRAYLOG_SERVER_JAVA_OPTS: "-Xms1g -Xmx1g"
+      TZ: Asia/Seoul
+    ports:
+      # 웹 화면은 이 PC 안에서만 연다.
+      # 웹 화면은 WEB_BIND_IP에만 연다(기본 127.0.0.1). 팀원이 보려면 .env에 D의 팀 VPN 주소를 넣는다. 0.0.0.0으로 두지 않는다.
+      - "${WEB_BIND_IP:-127.0.0.1}:9000:9000"
+      # 로그 입력 포트는 BIND_IP에만 연다. 팀 VPN 주소가 생기기 전에는 127.0.0.1(이 PC 안)이고,
+      # 팀 VPN 접속 뒤 .env의 BIND_IP를 D의 팀 VPN 주소로 바꾼다. 0.0.0.0(학원 유선망 포함)으로 두지 않는다.
+      # A·B는 UDP·TCP 둘 다 받는다(보내는 쪽 설정과 상관없이 도착). Wazuh(C)는 550 경보(약 2KB)가 UDP에서 빠져 TCP만 받는다.
+      - "${BIND_IP:-127.0.0.1}:12201:12201/udp"   # 포털 GELF (A) UDP
+      - "${BIND_IP:-127.0.0.1}:12201:12201/tcp"   # 포털 GELF (A) TCP
+      - "${BIND_IP:-127.0.0.1}:514:1514/udp"      # pfSense Syslog (B) UDP. 컨테이너 안은 1514
+      - "${BIND_IP:-127.0.0.1}:514:1514/tcp"      # pfSense Syslog (B) TCP
+      - "${BIND_IP:-127.0.0.1}:5514:5514/tcp"     # Wazuh 경보 Raw TCP (C, 중계기). 5514 고정(바꾸면 C·B·방화벽도 함께)
+      - "${BIND_IP:-127.0.0.1}:5515:5515/tcp"     # Suricata EVE JSON Raw TCP (B, pfSense). 한 줄에 경보 하나
+    volumes:
+      - graylog_data:/usr/share/graylog/data
+      # S7 기준본 해시 CSV(읽기 전용). CSV 조회 어댑터 경로: /usr/share/graylog/data/lookup/s7_baseline_hashes.csv
+      - ./lookup:/usr/share/graylog/data/lookup:ro
+    networks: [soc-net]
+    restart: unless-stopped
+
+networks:
+  soc-net:
+    name: soc-net
+
+volumes:
+  mongo_data:
+  mongo_configdb:
+  os_data:
+  graylog_data:

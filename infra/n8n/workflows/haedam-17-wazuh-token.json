@@ -1,0 +1,316 @@
+[
+ {
+  "id": "haedamWazuhToken01",
+  "name": "haedam-17 Wazuh 토큰·전송 (haedam-15 하위, 실행 기록 저장 안 함)",
+  "active": false,
+  "nodes": [
+   {
+    "id": "0544d87b-5ef2-5901-baa0-b5655bcfc5ea",
+    "name": "Execute Workflow Trigger",
+    "type": "n8n-nodes-base.executeWorkflowTrigger",
+    "typeVersion": 1.1,
+    "position": [
+     0,
+     0
+    ],
+    "parameters": {
+     "inputSource": "passthrough"
+    }
+   },
+   {
+    "id": "b532ea6a-331b-5aed-8d73-23b1db441951",
+    "name": "입력 정리",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     240,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// 입구 검증: 이 하위 워크플로는 haedam-15가 검증한 실행 의도(execute === true)와 고정된 대상만 받는다.\n// 허용 대상·명령을 상수로 두고 입력과 같은지 확인한다. 어긋나거나 실행 의도가 없으면 로그인(자격 증명 사용)과 AR 전에 멈춘다.\nconst b = $input.first().json;\nconst ALLOWED = { api: 'https://wazuh-manager:55000', agent: '010', script: '!s7-restore-ar' };\nconst reject = (reason) => [{ json: { stop: true, summary: { rejected: reason } } }];\nif (b.execute !== true) return reject('not_authorized');\nif (b.api !== ALLOWED.api || b.agent !== ALLOWED.agent || b.script !== ALLOWED.script) return reject('target_not_allowed');\nconst key = b.file_key;\nif (typeof key !== 'string' || !/^[A-Za-z0-9._\\-\\/]{1,200}$/.test(key) || key.startsWith('/') || key.split('/').includes('..')) return reject('bad_file_key');\nif (typeof b.run_id !== 'string' || !/^(S7-\\d{8}-[A-Z0-9]{2,12}|n8n-[A-Za-z0-9_.-]{1,40})$/.test(b.run_id)) return reject('bad_run_id');\nreturn [{ json: { api: ALLOWED.api, agent: ALLOWED.agent, script: ALLOWED.script, file_key: key, run_id: b.run_id } }];\n"
+    }
+   },
+   {
+    "id": "63dbe4d5-098b-5762-a3aa-bda6aa9fd0e7",
+    "name": "입력 통과?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     360,
+     0
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "79060ff8-7ceb-5b6b-baa0-7c46daee4d60",
+        "leftValue": "={{ $json.stop !== true }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "fbfe4f1f-227a-5cf2-93f0-dc3060c12c7a",
+    "name": "Wazuh 로그인",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2,
+    "position": [
+     480,
+     0
+    ],
+    "parameters": {
+     "method": "POST",
+     "url": "={{ $json.api }}/security/user/authenticate?raw=true",
+     "authentication": "genericCredentialType",
+     "genericAuthType": "httpBasicAuth",
+     "options": {
+      "timeout": 8000,
+      "allowUnauthorizedCerts": true,
+      "response": {
+       "response": {
+        "responseFormat": "text"
+       }
+      }
+     }
+    },
+    "onError": "continueRegularOutput"
+   },
+   {
+    "id": "4bd26748-6766-58d2-9a8d-5cf6ea5a7732",
+    "name": "전송 준비",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     720,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// 토큰은 이 실행 안에서만 쓰고 결과에 담지 않는다. 이 하위 워크플로는 실행 기록을 저장하지 않는다.\nconst tok = String($input.first().json.data || $input.first().json.body || '').trim();\nconst p = $('입력 정리').first().json;\nif (!tok) return [{ json: { stop: true, summary: { auth_failed: true } } }];\nreturn [{ json: { token: tok, url: `${p.api}/active-response?agents_list=${p.agent}`,\n  body: JSON.stringify({ command: p.script, arguments: [p.file_key, p.run_id] }) } }];\n"
+    }
+   },
+   {
+    "id": "7b9066aa-19ed-5eb5-8c7c-c4b773b9e094",
+    "name": "토큰 받음?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     960,
+     0
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "541dab42-8f06-5743-823c-cad250c3195c",
+        "leftValue": "={{ $json.stop !== true }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "e19e156a-dbc9-59a6-a7d3-55ac1756b784",
+    "name": "Wazuh active response 전송",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2,
+    "position": [
+     1200,
+     -60
+    ],
+    "parameters": {
+     "method": "PUT",
+     "url": "={{ $json.url }}",
+     "sendHeaders": true,
+     "headerParameters": {
+      "parameters": [
+       {
+        "name": "Authorization",
+        "value": "=Bearer {{ $json.token }}"
+       }
+      ]
+     },
+     "sendBody": true,
+     "specifyBody": "json",
+     "jsonBody": "={{ $json.body }}",
+     "options": {
+      "timeout": 8000,
+      "allowUnauthorizedCerts": true,
+      "response": {
+       "response": {
+        "fullResponse": true,
+        "neverError": true
+       }
+      }
+     }
+    },
+    "onError": "continueRegularOutput"
+   },
+   {
+    "id": "01079cac-77f7-5c2c-a781-48d92534e9b1",
+    "name": "응답 요약",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     1440,
+     -60
+    ],
+    "parameters": {
+     "jsCode": "// 부모(저장되는 haedam-15)로 넘기는 값은 허용된 형태만 담는다: 숫자·고정 단어·3자리 agent ID.\n// 응답 원문(detail·title·message)이나 오류 문자열은 토큰이 섞일 수 있어 길이만 줄여 넘기지 않고 아예 넘기지 않는다.\nconst j = $input.first().json;\nconst d = (j.body && j.body.data) || {};\nconst status = Number.isInteger(j.statusCode) ? j.statusCode : null;\nconst failed = Array.isArray(d.failed_items) ? d.failed_items : [];\nconst ids = [];\nfor (const f of failed) for (const id of [].concat((f && f.id) || [])) if (/^\\d{3}$/.test(String(id)) && ids.length < 5) ids.push(String(id));\nconst reason = status === null ? 'network' : status === 401 ? 'unauthorized' : status === 403 ? 'forbidden'\n  : status >= 500 ? 'server_error' : status >= 400 ? 'client_error' : '';\nreturn [{ json: { summary: { status, affected: Number.isInteger(d.total_affected_items) ? d.total_affected_items : 0,\n  failed_count: failed.length, failed_ids: ids, reason } } }];\n"
+    }
+   },
+   {
+    "id": "1c0b1c1d-a2ca-5f3d-a2a3-5f7d8f762514",
+    "name": "요약 정리",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     1680,
+     0
+    ],
+    "parameters": {
+     "jsCode": "const j = $input.first().json;\nreturn [{ json: j.summary }];\n"
+    }
+   }
+  ],
+  "connections": {
+   "Execute Workflow Trigger": {
+    "main": [
+     [
+      {
+       "node": "입력 정리",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "입력 정리": {
+    "main": [
+     [
+      {
+       "node": "입력 통과?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "입력 통과?": {
+    "main": [
+     [
+      {
+       "node": "Wazuh 로그인",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "요약 정리",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Wazuh 로그인": {
+    "main": [
+     [
+      {
+       "node": "전송 준비",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "전송 준비": {
+    "main": [
+     [
+      {
+       "node": "토큰 받음?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "토큰 받음?": {
+    "main": [
+     [
+      {
+       "node": "Wazuh active response 전송",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "요약 정리",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Wazuh active response 전송": {
+    "main": [
+     [
+      {
+       "node": "응답 요약",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "응답 요약": {
+    "main": [
+     [
+      {
+       "node": "요약 정리",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1",
+   "saveDataSuccessExecution": "none",
+   "saveDataErrorExecution": "none",
+   "saveExecutionProgress": false,
+   "saveManualExecutions": false
+  }
+ }
+]

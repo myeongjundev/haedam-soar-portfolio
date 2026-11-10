@@ -1,0 +1,14 @@
+{
+  "run_id": "S12-SAMPLE-COMPARE-01",
+  "ticket_id": "T-20261024-9002",
+  "origin": "sample",
+  "target": "http://192.0.2.2:5000/api/v1/health",
+  "route": "portal",
+  "expected_status": 200,
+  "interval_seconds": 2,
+  "timeout_seconds": 3,
+  "duration_seconds": 40,
+  "load_profile": "합성 예시: 동일한 제한 부하 조건을 가정; 실제 부하 실행 없음",
+  "before_version": "sample-before",
+  "after_version": "sample-after"
+}

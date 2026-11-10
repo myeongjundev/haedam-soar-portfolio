@@ -1,0 +1,26 @@
+{
+  "kind": "real-docker-button-run",
+  "project": "haedam-s7-panel-live",
+  "passed": true,
+  "results": [
+    {
+      "target": "index.html",
+      "run_id": "f1150dea-8170-4ec9-a086-bff89e319da0",
+      "ticket_id": "T-20261110-0001",
+      "stage": "restored"
+    },
+    {
+      "target": "assets/s7-probe.txt",
+      "run_id": "05acdc82-be28-4919-9f49-de2b5973e051",
+      "ticket_id": "T-20261110-0002",
+      "stage": "restored"
+    }
+  ],
+  "checks": [
+    "real-browser-buttons",
+    "two-restored-tickets",
+    "reload-history",
+    "mobile-no-overflow",
+    "no-page-errors"
+  ]
+}

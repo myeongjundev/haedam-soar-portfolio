@@ -1,0 +1,8 @@
+{
+  "case_id": "S1",
+  "asset_id": "haedam-portal",
+  "src_ip": "172.30.101.21",
+  "username": "zz_s1_t_sample",
+  "event_id": "synthetic_s1_event_1",
+  "detected_at": "2026-11-10T02:00:00Z"
+}

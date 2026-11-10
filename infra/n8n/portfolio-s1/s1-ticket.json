@@ -1,0 +1,343 @@
+{
+  "id": "portfolioS1Ticket01",
+  "name": "[Portfolio S1] ticket",
+  "active": false,
+  "nodes": [
+    {
+      "id": "0544d87b-5ef2-5901-baa0-b5655bcfc5ea",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "0eec49db-25b2-5ca6-86a8-ce5d6138be02",
+      "name": "저장소 요청 만들기",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// 저장소 선택: ctx.cfg.store_real이 true일 때만 실제 티켓 저장소(C, 192.0.2.3:8088)를 쓴다. 그 밖에는 워크플로 안 자리표시 저장소.\n// store_real(저장소 기록)과 dry_run(포털·pfSense·Wazuh 실제 조치)은 따로다. store_real이 없는 옛 호출만 dry_run === false를 저장소 사용으로 본다.\n// dry_run 결과('dry_run'·'skipped')는 실제 저장소 계약(result 5가지)에 없어 조치 줄(applied)로 쓰지 않고, 티켓만 연다(stage detected).\nconst b = $input.first().json;\nconst cfg = {dry_run:false,store_real:true};\nconst real = cfg.store_real === true || (cfg.store_real === undefined && cfg.dry_run === false);\nconst base = 'http://ticket-store:8088/api/v1/tickets';\nif (!real) return [{ json: { ...b, real: false } }];\nconst ctx = b.ctx;\nif (b.mode === 'active') {\n const r=b.resource;\n if (!r || !['asset_id','via','action','target'].every(k=>typeof r[k]==='string' && r[k].length>0)) return [{json:{ok:false,no_action:true,real:false,ctx,error:{code:'INVALID_RESOURCE'}}}];\n const query=['asset_id','via','action','target'].map(k=>k+'='+encodeURIComponent(r[k])).join('&');\n return [{json:{real:true,mode:'active',method:'GET',url:base+'/active?'+query,idem:'',body:null,resource:r,ctx}}];\n}\nif (b.mode === 'check') {\n  // 원복 보류 확인: target만 주면 target 단독 조회(다른 자리 차단까지 나온다). group_key가 있으면 기존 방식.\n  const parts = [];\n  if (b.group_key) parts.push(`group_key=${encodeURIComponent(b.group_key)}`);\n  if (b.seat && !(b.target && !b.group_key)) parts.push(`seat=${encodeURIComponent(b.seat)}`);   // target 단독이면 seat도 붙이지 않는다\n  if (b.target && !b.group_key) parts.push(`target=${encodeURIComponent(b.target)}`);\n  const query_scope = b.target && !b.group_key ? 'target' : (b.seat ? 'seat' : 'all_seats');\n  return [{ json: { real: true, mode: 'check', method: 'GET', url: `${base}/open?${parts.join('&')}`, idem: '', body: null,\n    query_scope, target: query_scope === 'target' ? b.target : null, ctx } }];\n}\nlet a = b.action || null, stage = b.stage, idem = b.idempotency_key || `${$execution.id}-${b.stage}`;\nif (a && ['dry_run', 'skipped'].includes(a.result)) { a = null; stage = 'detected'; idem = `${idem}-dry`; }   // 실제 조치가 없으면 조치 줄을 남기지 않는다\nconst body = { seat: b.seat, case_id: b.case_id, group_key: b.group_key, stage, title: b.title || ctx.title || b.case_id,\n  asset_id: b.asset_id, src_ip: b.src_ip || null, username: b.username || null, event_ids: b.event_ids || [],\n  first_attack_at: b.first_attack_at ?? null, condition_met_at: b.condition_met_at ?? null, detected_at: b.detected_at ?? null, received_at: b.received_at ?? null,\n  action: stage === 'detected' ? null : (a && {\n    bot: String(a.bot), target: a.target, via: a.via, action: a.action, result: a.result,\n    applied_verified: a.applied_verified ?? null, effect_verified: a.effect_verified ?? null,\n    requested_at: a.requested_at || null, finished_at: a.finished_at || null, effect_verified_at: a.effect_verified_at ?? null,\n    n8n_execution_id: String(a.n8n_execution_id || $execution.id), detail: a.detail ? String(a.detail).slice(0, 300) : undefined }) };\nreturn [{ json: { real: true, mode: 'record', method: 'POST', url: `${base}/record`, idem, body, ctx } }];\n"
+      }
+    },
+    {
+      "id": "4c5a635e-03b0-53a5-b601-c55e4d5b4d7d",
+      "name": "실제 저장소?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9ebd4c1b-a34f-5af2-998a-a05eaa56c27c",
+              "leftValue": "={{ $json.real === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "29ea92fa-c67e-5de2-a700-4dd128f05cf5",
+      "name": "check/record (자리표시 저장소)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        180
+      ],
+      "parameters": {
+        "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst b=$input.first().json,ctx=b.ctx,sd=$getWorkflowStaticData('global');\nconst out=o=>[{json:{...o,ctx}}],fail=(code,message)=>out({ok:false,error:{code,message}});\nconst tickets=Object.values(sd.tickets||{});\nconst released=a=>({...a,action:({unblock:'block',unlock:'lock',restore:'quarantine'})[a.action]||a.action});\nconst activeOf=t=>{\n const active=new Map(),key=a=>JSON.stringify([a.bot,a.via,canon(a),a.target]);\n for(const a of t.actions) {\n  if(a.duplicate) continue;\n  if(['applied','already_applied','dry_run'].includes(a.result)) active.set(key(a),a);\n  else if(a.result==='released') active.delete(key(released(a)));\n }\n return [...active.values()];\n};\nif(b.mode==='active') {\n const r=b.resource;\n if(!r || !['asset_id','via','action','target'].every(k=>validText(r[k]))) return fail('VALIDATION_ERROR','invalid resource');\n return out({ok:true,resource:r,tickets:tickets.filter(t=>t.asset_id===r.asset_id).map(t=>({...t,active_actions:activeOf(t).filter(a=>a.via===r.via && canon(a)===r.action && a.target===r.target)})).filter(t=>t.active_actions.length).map(t=>({seat:t.seat,ticket_id:t.ticket_id,status:t.status,active_actions:t.active_actions}))});\n}\nif(b.mode==='check' && ((b.target && !b.group_key) || !b.seat && validText(b.group_key))) {\n const target=b.target && !b.group_key?b.target:null;\n if(target!==null && !validText(target)) return fail('VALIDATION_ERROR','invalid target');\n const list=tickets.filter(t=>target!==null || t.group_key===b.group_key && t.status!=='closed')\n   .map(t=>({seat:t.seat,ticket_id:t.ticket_id,status:t.status,\n     active_actions:activeOf(t).filter(a=>target===null || a.target===target)}))\n   .filter(t=>target===null || t.active_actions.length);\n return out({ok:true,mode:'check',tickets:list});\n}\nif(!['check','record'].includes(b.mode) || !['A','B','C','D'].includes(b.seat) || !validText(b.group_key)) return fail('VALIDATION_ERROR','invalid mode/seat/group');\n// 실제 조치(applied/already_applied)가 없고 마지막 기록이 30분보다 오래된 티켓은 끝난 시험 기록으로 보고 열린 티켓으로 쓰지 않는다(데이터는 그대로 둔다).\nconst STALE_DRY_MS=30*60*1000;\nconst lastAt=t=>Math.max(Date.parse(t.created_at)||0,...(t.actions||[]).map(a=>Date.parse(a.recorded_at||a.finished_at||a.requested_at)||0));\nconst staleDry=t=>!(t.actions||[]).some(a=>['applied','already_applied'].includes(a.result)) && Date.now()-lastAt(t)>=STALE_DRY_MS;\nconst open=tickets.find(t=>t.seat===b.seat && t.group_key===b.group_key && t.status!=='closed' && !staleDry(t));\nif(b.mode==='check') return out({ok:true,mode:'check',exists:!!open,ticket_id:open?.ticket_id||null,status:open?.status||null,actions:open?activeOf(open):[]});\nif(!['detected','applied','effect','released'].includes(b.stage) || !validText(b.asset_id) || !Array.isArray(b.event_ids) || !b.event_ids.length || !b.event_ids.every(validText)) return fail('VALIDATION_ERROR','invalid record');\nconst stable=v=>Array.isArray(v)?v.map(stable):v && typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,stable(v[k])])):v;\nconst fingerprint=JSON.stringify(stable(Object.fromEntries(Object.entries(b).filter(([k])=>!['ctx','real','idempotency_key'].includes(k)))));\nconst prev=(sd.idem||{})[b.idempotency_key];\nif(prev) return prev.fingerprint===fingerprint?out(prev.response):fail('IDEMPOTENCY_CONFLICT','key reused with different body');\nconst finish=res=>{\n sd.idem=sd.idem||{};\n if(b.idempotency_key) sd.idem[b.idempotency_key]={fingerprint,response:res};\n return out(res);\n};\nif(open && open.asset_id!==b.asset_id) return fail('INVALID_TRANSITION','asset_id differs from existing ticket');\nif(['detected','applied'].includes(b.stage)) {\n const owners=tickets.filter(t=>t.seat===b.seat && t.group_key===b.group_key && t.event_ids.some(e=>b.event_ids.includes(e)));\n const holder=owners.find(t=>t.ticket_id!==open?.ticket_id)||owners[0];\n if(holder && (!open || holder.ticket_id!==open.ticket_id || open.status==='restored')) return finish({ok:true,mode:'record',ticket_id:holder.ticket_id,created:false,duplicate:true,status:holder.status});\n}\nconst a=b.action||{},now=new Date().toISOString();\nconst starts=open?.status==='restored' && (b.stage==='detected' || b.stage==='applied' && ['applied','already_applied','dry_run'].includes(a.result));\nif(starts && activeOf(open).length) return fail('INVALID_TRANSITION','restored ticket still has active actions');\nlet t=open && !starts?JSON.parse(JSON.stringify(open)):null,created=!t,duplicate=false;\nif(!t) {\n if(['effect','released'].includes(b.stage)) return fail('VALIDATION_ERROR','no active action');\n t={ticket_id:`T-${now.slice(0,10).replace(/-/g,'')}-${String((sd.seq||0)+1).padStart(4,'0')}`,seat:b.seat,case_id:b.case_id,group_key:b.group_key,title:b.title,asset_id:b.asset_id,event_ids:[],status:'open',actions:[],created_at:now};\n}\nconst active=activeOf(t),line=active.find(x=>same(x,a));\nif(b.stage!=='detected') {\n if(!refOK(a,true) && a.result!=='released' && !['failed','rejected','skipped'].includes(a.result)) return fail('VALIDATION_ERROR','invalid action');\n if(b.stage==='effect') {\n  if(!line) return fail('VALIDATION_ERROR','no matching active action');\n  const since=Date.parse(line.finished_at||line.requested_at||line.recorded_at);\n  const at=Date.parse(a.effect_verified_at);\n  if(!Number.isFinite(at)) return fail('VALIDATION_ERROR','invalid effect time');\n  if(at<since) return fail('STALE_EFFECT','effect predates active action');\n  line.effect_verified=a.effect_verified;line.effect_verified_at=a.effect_verified_at;\n  if(a.effect_verified===true && t.status==='responding') t.status='verified';\n } else {\n  if(a.result==='released' && !active.some(x=>same(x,released(a)))) return fail('VALIDATION_ERROR','no matching active action');\n  duplicate=b.stage==='applied' && ['applied','already_applied','dry_run'].includes(a.result) && !!line;\n  t.actions.push({...a,recorded_at:now,duplicate});\n  if(['applied','already_applied','dry_run'].includes(a.result) && t.status==='open') t.status='responding';\n  if(a.result==='released' && ['responding','verified'].includes(t.status) && !activeOf(t).length) t.status='restored';\n }\n}\nfor(const e of b.event_ids) if(!t.event_ids.includes(e)) t.event_ids.push(e);\nif(starts) {open.status='closed';open.closed_at=now;open.close_note=`재차단: 새 회차로 분리 (${t.ticket_id})`;}\nsd.tickets=sd.tickets||{};sd.tickets[t.ticket_id]=t;\nif(created) sd.seq=(sd.seq||0)+1;\nreturn finish({ok:true,mode:'record',ticket_id:t.ticket_id,created,duplicate,status:t.status});\n"
+      }
+    },
+    {
+      "id": "9a891ade-7046-5866-8af4-5a1496375380",
+      "name": "티켓 저장소 호출 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "method": "={{ $('저장소 요청 만들기').first().json.method }}",
+        "url": "={{ $('저장소 요청 만들기').first().json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $('저장소 요청 만들기').first().json.idem }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('저장소 요청 만들기').first().json.body ? JSON.stringify($('저장소 요청 만들기').first().json.body) : '{}' }}",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s1TicketAuth",
+          "name": "s1TicketAuth"
+        }
+      }
+    },
+    {
+      "id": "511b87cd-a58b-5a3d-bc98-e6e3042e0926",
+      "name": "응답 변환 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json, prev=$('저장소 요청 만들기').first().json, ctx=prev.ctx;\nconst status=j.statusCode ?? null, b=j.body;\nif (status === null || status >= 500) return [{json:{ok:false,retry:true,ctx,error:{code:status===null?'NETWORK':'SERVER_ERROR',message:'ticket store unavailable'}}}];\nif (![200,201].includes(status)) return [{json:{ok:false,retry:false,ctx,error:{code:b?.error?.code || 'HTTP_ERROR',message:'ticket request rejected'}}}];\nif (!b || b.ok !== true) return held(ctx,'held_invalid_ticket_response');\nif (prev.mode === 'active') {\n  const r=prev.resource;\n  if (!b.resource || Object.keys(b.resource).length!==4 || !['asset_id','via','action','target'].every(k=>b.resource[k]===r[k]) || !Array.isArray(b.tickets) || !b.tickets.every(t=>ticketId(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>refOK(a) && a.via===r.via && canon(a)===r.action && a.target===r.target))) return held(ctx,'held_invalid_resource_response');\n  return [{json:{ok:true,mode:'active',resource:b.resource,tickets:b.tickets,ctx}}];\n}\nif (prev.mode === 'check') {\n  if (['target','all_seats'].includes(prev.query_scope)) {\n    const target = prev.query_scope === 'target' ? prev.target : null;\n    if ((target !== null && !validText(target)) || !Array.isArray(b.tickets) || !b.tickets.every(t =>\n      ticketId(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) &&\n      Array.isArray(t.active_actions) && (target === null || t.active_actions.length > 0) &&\n      t.active_actions.every(a => refOK(a) && (target === null || a.target === target)))) return held(ctx,'held_invalid_ticket_list');\n    return [{json:{ok:true,mode:'check',tickets:b.tickets.map(t => ({...t,\n      active_actions:t.active_actions.map(a => ({...a,action:canon(a)}))})),ctx}}];\n  }\n  const result={ok:true,mode:'check',exists:b.exists,ticket_id:b.ticket_id,status:b.status,actions:b.applied_actions,ctx};\n  if (!snapshotOK(result)) return held(ctx,'held_invalid_ticket_response');\n  result.actions=result.actions.map(a=>({...a,action:canon(a)}));\n  return [{json:result}];\n}\nif (!ticketId(b.ticket_id) || !states.includes(b.status) || typeof b.created!=='boolean' || typeof b.duplicate!=='boolean') return held(ctx,'held_invalid_record_response');\nreturn [{json:{ok:true,mode:'record',ticket_id:b.ticket_id,status:b.status,created:b.created,duplicate:b.duplicate,ctx}}];\n"
+      }
+    },
+    {
+      "id": "831cb166-8cdb-5d8b-b260-0fcf49e2f945",
+      "name": "재시도?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9264f2eb-f9c2-5b17-b9b6-60748238cd67",
+              "leftValue": "={{ $json.retry === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e15fed1b-27b6-50c8-8c2d-75b49c6d6ebf",
+      "name": "티켓 저장소 호출 2 (같은 키, 1회)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "method": "={{ $('저장소 요청 만들기').first().json.method }}",
+        "url": "={{ $('저장소 요청 만들기').first().json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $('저장소 요청 만들기').first().json.idem }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('저장소 요청 만들기').first().json.body ? JSON.stringify($('저장소 요청 만들기').first().json.body) : '{}' }}",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s1TicketAuth",
+          "name": "s1TicketAuth"
+        }
+      }
+    },
+    {
+      "id": "9f99948e-5105-519a-9ef5-157fd7e4327d",
+      "name": "응답 변환 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst validText = v => typeof v === 'string' && v.length > 0 && v.length <= 300 && !/[\\x00-\\x1f\\x7f]/.test(v);\nconst ticketId = v => typeof v === 'string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst canon = a => a.via === 'pfsense' && a.action === 'fw_block' ? 'block' : a.action;\nconst same = (a,b) => a.bot === b.bot && a.via === b.via && canon(a) === canon(b) && a.target === b.target;\nconst refOK = (a, dry=false) => a && typeof a.bot === 'string' && /^(\\d{3}|manual)$/.test(a.bot) && ['portal','pfsense','wazuh-ar','manual'].includes(a.via) && typeof a.action === 'string' && /^[a-z][a-z_]{1,31}$/.test(a.action) && validText(a.target) && (a.result === undefined || ['applied','already_applied'].includes(a.result) || (dry && a.result === 'dry_run'));\nconst held = (ctx,code) => [{json:{ok:false,no_action:true,verdict:code,ctx}}];\nconst snapshotOK = j => j.ok === true && typeof j.exists === 'boolean' && Array.isArray(j.actions) && j.actions.every(a=>refOK(a,!!j.ctx?.cfg?.dry_run) && (['applied','already_applied'].includes(a.result) || (j.ctx?.cfg?.dry_run && a.result==='dry_run'))) && (j.exists ? ticketId(j.ticket_id) && states.includes(j.status) : j.ticket_id === null && j.status === null && j.actions.length === 0);\n\nconst j=$input.first().json, prev=$('저장소 요청 만들기').first().json, ctx=prev.ctx;\nconst status=j.statusCode ?? null, b=j.body;\nif (status === null || status >= 500) return [{json:{ok:false,retry:false,ctx,error:{code:status===null?'NETWORK':'SERVER_ERROR',message:'ticket store unavailable'}}}];\nif (![200,201].includes(status)) return [{json:{ok:false,retry:false,ctx,error:{code:b?.error?.code || 'HTTP_ERROR',message:'ticket request rejected'}}}];\nif (!b || b.ok !== true) return held(ctx,'held_invalid_ticket_response');\nif (prev.mode === 'active') {\n  const r=prev.resource;\n  if (!b.resource || Object.keys(b.resource).length!==4 || !['asset_id','via','action','target'].every(k=>b.resource[k]===r[k]) || !Array.isArray(b.tickets) || !b.tickets.every(t=>ticketId(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>refOK(a) && a.via===r.via && canon(a)===r.action && a.target===r.target))) return held(ctx,'held_invalid_resource_response');\n  return [{json:{ok:true,mode:'active',resource:b.resource,tickets:b.tickets,ctx}}];\n}\nif (prev.mode === 'check') {\n  if (['target','all_seats'].includes(prev.query_scope)) {\n    const target = prev.query_scope === 'target' ? prev.target : null;\n    if ((target !== null && !validText(target)) || !Array.isArray(b.tickets) || !b.tickets.every(t =>\n      ticketId(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) &&\n      Array.isArray(t.active_actions) && (target === null || t.active_actions.length > 0) &&\n      t.active_actions.every(a => refOK(a) && (target === null || a.target === target)))) return held(ctx,'held_invalid_ticket_list');\n    return [{json:{ok:true,mode:'check',tickets:b.tickets.map(t => ({...t,\n      active_actions:t.active_actions.map(a => ({...a,action:canon(a)}))})),ctx}}];\n  }\n  const result={ok:true,mode:'check',exists:b.exists,ticket_id:b.ticket_id,status:b.status,actions:b.applied_actions,ctx};\n  if (!snapshotOK(result)) return held(ctx,'held_invalid_ticket_response');\n  result.actions=result.actions.map(a=>({...a,action:canon(a)}));\n  return [{json:result}];\n}\nif (!ticketId(b.ticket_id) || !states.includes(b.status) || typeof b.created!=='boolean' || typeof b.duplicate!=='boolean') return held(ctx,'held_invalid_record_response');\nreturn [{json:{ok:true,mode:'record',ticket_id:b.ticket_id,status:b.status,created:b.created,duplicate:b.duplicate,ctx}}];\n"
+      }
+    },
+    {
+      "id": "adfc66df-7744-5c42-8aa4-0e4fb6b6887b",
+      "name": "결과 전달",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        180
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();   // 재시도 없이 끝난 경우: IF의 false 가지 결과를 하위 워크플로 출력으로 내보낸다"
+      }
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "저장소 요청 만들기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "저장소 요청 만들기": {
+      "main": [
+        [
+          {
+            "node": "실제 저장소?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "실제 저장소?": {
+      "main": [
+        [
+          {
+            "node": "티켓 저장소 호출 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "check/record (자리표시 저장소)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "티켓 저장소 호출 1": {
+      "main": [
+        [
+          {
+            "node": "응답 변환 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "응답 변환 1": {
+      "main": [
+        [
+          {
+            "node": "재시도?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "재시도?": {
+      "main": [
+        [
+          {
+            "node": "티켓 저장소 호출 2 (같은 키, 1회)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "결과 전달",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "티켓 저장소 호출 2 (같은 키, 1회)": {
+      "main": [
+        [
+          {
+            "node": "응답 변환 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

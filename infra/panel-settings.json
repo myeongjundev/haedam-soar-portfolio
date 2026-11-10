@@ -1,0 +1,11 @@
+{
+  "bind": "127.0.0.1",
+  "port": 15800,
+  "state_dir": ".local/panel",
+  "s7_project": "haedam-s7-autocheck",
+  "s7_settings": "infra/s7-auto-settings.json",
+  "observe_timeout_seconds": 180,
+  "worker_timeout_seconds": 240,
+  "http_max_body_bytes": 2048,
+  "http_drain_timeout_seconds": 1
+}

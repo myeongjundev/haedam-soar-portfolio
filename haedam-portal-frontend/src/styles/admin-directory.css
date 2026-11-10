@@ -1,0 +1,49 @@
+.admin-summary-scope {
+  color: #4b665c;
+  font-size: 13px;
+  line-height: 1.9;
+  margin: 14px 2px 0;
+}
+.admin-list .filter-row {
+  align-items: end;
+  flex-wrap: wrap;
+}
+.admin-list .filter-row .search-input {
+  flex: 1 1 240px;
+}
+.admin-directory-select {
+  flex: 0 1 140px;
+  min-width: 100px;
+}
+.admin-directory-select label {
+  margin: 0 0 7px;
+  font-size: 13px;
+}
+.admin-directory-select select {
+  width: 100%;
+  margin: 0;
+  min-height: 46px;
+}
+.admin-page-size {
+  flex-basis: 100px;
+}
+.admin-list .list-meta {
+  gap: 12px;
+  flex-wrap: wrap;
+  line-height: 1.85;
+}
+@media (max-width: 560px) {
+  .admin-list .filter-row .search-input {
+    flex-basis: 100%;
+  }
+  .admin-directory-select {
+    flex: 1 1 40%;
+  }
+  .admin-list .filter-row > .button {
+    flex: 1 1 40%;
+    justify-content: center;
+  }
+  .admin-summary-scope {
+    font-size: 12px;
+  }
+}

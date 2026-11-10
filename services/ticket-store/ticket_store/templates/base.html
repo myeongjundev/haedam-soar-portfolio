@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="dashboard-token" content="{{ config.DASHBOARD_TOKEN }}">
+  <title>{% block title %}보안 대시보드{% endblock %} · 해담시청 114</title>
+  <link rel="icon" href="{{ url_for('dashboard.static', filename='haedam-mark.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('dashboard.static', filename='dashboard.css') }}">
+  <script src="{{ url_for('dashboard.static', filename='dashboard.js') }}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문 바로가기</a>
+  <aside class="sidebar" aria-label="관제센터 메뉴">
+    <a class="brand" href="{{ url_for('dashboard.index') }}">
+      <span class="brand-mark"><img src="{{ url_for('dashboard.static', filename='haedam-mark.svg') }}" alt=""></span>
+      <span>해담시청<small>SECURITY OPERATIONS</small></span>
+    </a>
+    <p class="nav-label">관제 워크스페이스</p>
+    <nav aria-label="주 메뉴">
+      <a class="nav-link" href="{{ url_for('dashboard.cases', seat=request.args.get('seat', ''), sample=request.args.get('sample', '0')) }}"{% if request.endpoint == 'dashboard.cases' %} aria-current="page"{% endif %}>케이스 보드</a>
+      <a class="nav-link" href="{{ url_for('dashboard.work', seat=request.args.get('seat', ''), sample=request.args.get('sample', '0')) }}"{% if request.endpoint == 'dashboard.work' %} aria-current="page"{% endif %}>대응·원복</a>
+      <a class="nav-link" href="{{ url_for('dashboard.index', seat=request.args.get('seat', ''), sample=request.args.get('sample', '0')) }}"{% if request.endpoint == 'dashboard.index' %} aria-current="page"{% endif %}><span aria-hidden="true">▦</span> 인시던트 현황</a>
+      <a class="nav-link" href="{{ url_for('dashboard.s12_comparison') }}"{% if request.endpoint == 'dashboard.s12_comparison' %} aria-current="page"{% endif %}>S12 전후 비교</a>
+    </nav>
+    <div class="sidebar-note">
+      <span class="nav-label">기록 확인 순서</span>
+      <ol><li>탐지 근거 확인</li><li>조치와 효과 대조</li><li>원복 후 종료</li></ol>
+      <p>티켓 상태와 실제 대상의 상태를 함께 확인하세요.</p>
+    </div>
+    <div class="sidebar-footer"><strong>티켓 저장소 · 114</strong><span>표시 시각 KST (UTC+9)</span></div>
+  </aside>
+  <main id="main-content" tabindex="-1">
+    {% block body %}{% endblock %}
+    <footer class="page-footer"><span>HAEDAM SECURITY CENTER</span><span>저장소 기록 기준 · 대상의 실제 상태는 독립 확인</span></footer>
+  </main>
+</body>
+</html>

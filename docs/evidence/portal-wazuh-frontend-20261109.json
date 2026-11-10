@@ -1,0 +1,110 @@
+{
+  "run_id": "S7-20261109T052709Z",
+  "project": "haedam-s7-paths",
+  "started_at": "2026-11-09T05:27:09.618+00:00",
+  "finished_at": "2026-11-09T05:27:35.198+00:00",
+  "scope": "FIM/indexer/API restore; no n8n/ticket",
+  "agent_id": "001",
+  "checks": {
+    "unauthenticated_api": 401,
+    "portal_webroot_write_denied": true,
+    "baseline_refuses_tamper": true,
+    "outside_web_root_rejected": "path_outside_web_root",
+    "all_web_files_match_image": 4,
+    "normal_assets_unchanged": 3,
+    "restart_preserves_baseline": true,
+    "baseline_manifest_sha256": "158af68363e91f20720ae2a2227c5691150b01631f6556a6388e8f60ba452451",
+    "quarantine_entries_remaining": 0,
+    "restored_http_body_sha256": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9"
+  },
+  "cases": [
+    {
+      "path": "index.html",
+      "changed_at": "2026-11-09T05:27:10.025+00:00",
+      "indexed_alert": {
+        "id": "1794202030.9906",
+        "index_id": "WrPGvqEB8TqAyWRHWLCF",
+        "timestamp": "2026-11-09T05:27:10.194+0000",
+        "rule": "550",
+        "agent_id": "001",
+        "path": "/var/www/haedam/index.html",
+        "event": "modified",
+        "sha256_before": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9",
+        "sha256_after": "54b48dd03414beabe6dc27856be997f0ec0aea421b73ae1a7d852b051e61ac58"
+      },
+      "change_to_index_observed_seconds": 6.953,
+      "ar_requested_at": "2026-11-09T05:27:16.974+00:00",
+      "ar_delivery": {
+        "affected_items": [
+          "001"
+        ],
+        "total_affected_items": 1,
+        "total_failed_items": 0,
+        "failed_items": []
+      },
+      "effect_observed_at": "2026-11-09T05:27:17.719+00:00",
+      "restore_record": {
+        "ts": "2026-11-09T05:27:17.282+00:00",
+        "run_id": "S7-20261109T052709Z",
+        "path": "index.html",
+        "action": "restore",
+        "sha256_before": "54b48dd03414beabe6dc27856be997f0ec0aea421b73ae1a7d852b051e61ac58",
+        "sha256_expected": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9",
+        "sha256_after": "2aca4626785b7cc94275216bd72dd09d668dcdb0e20f8d77982d4adca45a1aa9",
+        "result": "ok",
+        "duration_ms": 1
+      },
+      "http_after": 200
+    },
+    {
+      "path": "assets/s7-probe.txt",
+      "changed_at": "2026-11-09T05:27:17.723+00:00",
+      "indexed_alert": {
+        "id": "1794202037.13318",
+        "index_id": "XbPGvqEB8TqAyWRHf7CY",
+        "timestamp": "2026-11-09T05:27:17.893+0000",
+        "rule": "554",
+        "agent_id": "001",
+        "path": "/var/www/haedam/assets/s7-probe.txt",
+        "event": "added",
+        "sha256_before": null,
+        "sha256_after": "0859bb22c5911af3775b5ad11f9196d0585069558c6f7dba6735a6c7e9bb0d2b"
+      },
+      "change_to_index_observed_seconds": 9.313,
+      "ar_requested_at": "2026-11-09T05:27:27.036+00:00",
+      "ar_delivery": {
+        "affected_items": [
+          "001"
+        ],
+        "total_affected_items": 1,
+        "total_failed_items": 0,
+        "failed_items": []
+      },
+      "effect_observed_at": "2026-11-09T05:27:27.663+00:00",
+      "restore_record": {
+        "ts": "2026-11-09T05:27:27.321+00:00",
+        "run_id": "S7-20261109T052709Z",
+        "path": "assets/s7-probe.txt",
+        "action": "quarantine",
+        "sha256_before": "0859bb22c5911af3775b5ad11f9196d0585069558c6f7dba6735a6c7e9bb0d2b",
+        "size": 43,
+        "symlink": false,
+        "quarantine_entry": "20261109T052727Z_S7-20261109T052709Z",
+        "result": "ok",
+        "duration_ms": 1
+      },
+      "http_after": 404
+    }
+  ],
+  "result": "pass",
+  "source_head_before_run": "8583809d151b1cbe0372d6ec42a92b44b2b04e89",
+  "source_dirty_at_run": true,
+  "evidence_kind": "Selected measured results from the local full run report; not a complete source snapshot.",
+  "source_sha256": {
+    "compose.s7.yaml": "f84340ea6ebc0885a9a6f43c30be8d8112ef7f9190c2d0c5cce1c3e2bf332f62",
+    "tools/s7_lab.py": "146dd2e857f7c52ce9260b15d8acbfcf96fa037249e0f48fcb13cba7a5eaa6fb",
+    "tools/s7_verify.py": "95678011f8c608816cd5e6e4d7191367420d6e96b0683cbfa4e8581ca0a7f1f2",
+    "infra/wazuh/portal-rules.xml": "bc23e34a232a2b4fc8f5232e62882c2bab77c3368bce6e5cfcd96992bb1a9e21",
+    "infra/wazuh/agent/ossec.conf": "35dfc24d814d9a4911565f5c1246f0c97e3ef3bd23663cc643e366cd6d45dd77"
+  }
+}

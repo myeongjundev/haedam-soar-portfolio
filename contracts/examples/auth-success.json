@@ -1,0 +1,6 @@
+{
+  "schema_version": "1.0", "event_id": "sample-auth-success-01",
+  "timestamp": "2026-10-15T01:01:00Z", "source": "portal",
+  "event_type": "auth.login_succeeded", "username": "zz_demo",
+  "src_ip": "192.0.2.10", "asset_id": "lab-portal", "outcome": "success"
+}

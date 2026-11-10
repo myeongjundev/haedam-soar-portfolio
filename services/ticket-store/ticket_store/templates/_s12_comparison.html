@@ -1,0 +1,27 @@
+{% macro value(v, unit='') %}{% if v is none %}미측정{% else %}{{ '%.1f'|format(v) }}{{ unit }}{% endif %}{% endmacro %}
+{% for m in measurements %}
+<section class="s12-comparison" aria-label="S12 전후 측정 결과">
+  <div class="section-heading"><div><p class="eyebrow">MEASURED COMPARISON</p><h2>{{ m.metadata.run_id }}</h2></div><a href="{{ url_for('dashboard.detail', ticket_id=m.metadata.ticket_id) }}">{{ m.metadata.ticket_id }} ↗</a></div>
+  {% if m.metadata.origin == 'sample' %}<p class="sample-notice"><strong>샘플 측정 · 합성 데이터이며 실제 보강 효과의 증거가 아닙니다.</strong></p>{% else %}<p class="metric-note">실측으로 등록된 CSV · 등록자 선언이며 장비 연결·보강 효과를 자동 인증하지 않습니다.</p>{% endif %}
+  <p class="wrap metric-note">정상 출발지 {{ m.before.source_recorded }} → {{ m.metadata.target }} · 대응 경로 {{ m.metadata.route }}</p>
+  <div class="comparison-grid">
+  {% for metric, title, unit in [('success_percent', '정상 요청 성공률', '%'), ('median', '성공 요청 응답시간 · 중앙값', ' ms'), ('p95', '성공 요청 응답시간 · p95', ' ms')] %}
+    {% set b = m.before.success_percent if metric == 'success_percent' else m.before.successful_latency_ms[metric] %}
+    {% set a = m.after.success_percent if metric == 'success_percent' else m.after.successful_latency_ms[metric] %}
+    {% set scale = 100 if metric == 'success_percent' else [b or 0, a or 0, 1]|max %}
+    <div class="comparison-metric"><h3>{{ title }}</h3>
+      {% for phase, n in [('보강 전', b), ('보강 후', a)] %}<div class="comparison-bar"><span>{{ phase }}</span><strong>{{ value(n, unit) }}</strong>{% if n is not none %}<meter min="0" max="{{ scale }}" value="{{ n }}" aria-label="{{ title }} {{ phase }}">{{ n }}</meter>{% else %}<p class="scope-note">성공 요청이 없어 계산할 수 없습니다.</p>{% endif %}</div>{% endfor %}
+      <p class="scope-note">{% if metric == 'success_percent' %}전체 시도 수가 분모 · 후−전 {{ '%+.1f'|format(m.success_delta_pp) }}%p{% else %}실패·타임아웃 제외 · 전후 동일 축 (0–{{ '%.1f'|format(scale) }} ms){% endif %}</p>
+    </div>
+  {% endfor %}
+  </div>
+  <p class="metric-note">성공 = HTTP {{ m.metadata.expected_status }} + 오류 없음. 리다이렉트·다른 상태·타임아웃은 실패입니다. HTTP 성공은 응답 본문의 업무 성공을 보장하지 않습니다. p95는 nearest-rank 방식입니다.</p>
+  <div class="table-scroll"><table><caption>요청 수와 관측 구간</caption><thead><tr><th>구간</th><th>성공 / 전체</th><th>실패</th><th>관측 길이</th><th>첫 요청 (KST)</th><th>마지막 완료 추정 (KST)</th></tr></thead><tbody>
+  {% for label, r in [('보강 전', m.before), ('보강 후', m.after)] %}<tr><td>{{ label }}</td><td>{{ r.success_count }} / {{ r.sample_count }}</td><td>{{ r.failure_count }}</td><td>{{ value(r.observed_span_seconds, '초') }}</td><td>{{ r.started_at|kst('%Y-%m-%d %H:%M:%S') }}</td><td>{{ r.last_completion_estimate|kst('%Y-%m-%d %H:%M:%S') }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  <details><summary>측정 조건·원본 증적 확인</summary><dl class="overview"><dt>선언한 조건</dt><dd>간격 {{ m.metadata.interval_seconds }}초 / 제한시간 {{ m.metadata.timeout_seconds }}초 / 측정 {{ m.metadata.duration_seconds }}초</dd><dt>공통 부하 조건</dt><dd class="wrap">{{ m.metadata.load_profile }}</dd><dt>보강 전 버전</dt><dd class="wrap">{{ m.metadata.before_version }}</dd><dt>보강 후 버전</dt><dd class="wrap">{{ m.metadata.after_version }}</dd>
+  {% for label, r in [('전', m.before), ('후', m.after)] %}<dt>{{ label }} 원본 CSV</dt><dd class="wrap">{{ r.file }} · {{ r.label }}<br>SHA256 {{ r.sha256 }}<br>상태별 건수 {{ r.status_counts }} · 오류별 건수 {{ r.error_counts }}</dd>{% endfor %}</dl></details>
+  <ul class="measurement-warnings">{% for warning in m.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+  <p class="scope-note">보강 전후 차이는 관측 결과이며 자동 차단 성공 판정이 아닙니다. 티켓 상태·효과 확인·원복 기록은 별도로 확인합니다.</p>
+</section>
+{% else %}<section class="empty"><h2>S12 전후 비교 · 미측정</h2><p>이 조회에 해당하는 보강 전·후 CSV 쌍이 등록되지 않았습니다. 정상 요청 성공률과 응답시간을 0으로 표시하지 않습니다.</p></section>{% endfor %}

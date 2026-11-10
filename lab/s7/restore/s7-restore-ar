@@ -1,0 +1,54 @@
+#!/usr/bin/python3 -I
+"""Wazuh active response entry for S7 117 (install as
+/var/ossec/active-response/bin/s7-restore-ar, root:wazuh 0750).
+
+Wazuh only runs executables from active-response/bin, so this wrapper reads
+the AR message on stdin and calls the installed /opt/haedam-s7/bin/s7_restore.py
+in CLI mode. It does not change s7_restore.py or its baseline.
+
+Called from the Wazuh API (n8n):
+  PUT /active-response?agents_list=010
+  {"command": "!s7-restore-ar", "arguments": ["<path>", "<run_id>"]}
+<path> is web-root relative or absolute. As a fallback the path is taken from
+alert.syscheck.path or alert.data.syscheck.path (FIM alert passed through).
+"""
+import json
+import re
+import subprocess
+import sys
+
+RESTORE = "/opt/haedam-s7/bin/s7_restore.py"
+RUN_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+
+
+def main():
+    try:
+        msg = json.loads(sys.stdin.readline())
+    except ValueError:
+        print("error bad_json", flush=True)
+        return 2
+    if msg.get("command") != "add":
+        return 0
+    params = msg.get("parameters") or {}
+    args = params.get("extra_args") or []
+    alert = params.get("alert") or {}
+    path = args[0] if args else (
+        (alert.get("syscheck") or {}).get("path")
+        or ((alert.get("data") or {}).get("syscheck") or {}).get("path"))
+    run_id = args[1] if len(args) > 1 else "ar"
+    if not path:
+        print("error no_path", flush=True)
+        return 2
+    # run_id becomes part of the quarantine folder name: no slashes or dots-only.
+    if not RUN_ID.match(run_id) or set(run_id) <= {"."}:
+        print("error bad_run_id", flush=True)
+        return 2
+    # "--" keeps a path that starts with "-" from being read as an option.
+    done = subprocess.run(["/usr/bin/python3", "-I", RESTORE, "restore",
+                           "--run-id", run_id, "--", path],
+                          stdin=subprocess.DEVNULL)
+    return done.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

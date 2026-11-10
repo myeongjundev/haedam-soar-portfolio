@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:haedam:portfolio:s4-account-response:1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "success",
+    "data"
+  ],
+  "properties": {
+    "success": {
+      "const": true
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "user_id",
+            "username",
+            "locked",
+            "active_sessions",
+            "owner_ticket_id"
+          ],
+          "properties": {
+            "user_id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "username": {
+              "type": "string",
+              "pattern": "^zz_[a-z0-9_]{1,37}$"
+            },
+            "locked": {
+              "type": "boolean"
+            },
+            "active_sessions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "owner_ticket_id": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^T-[0-9]{8}-[0-9]{4}$"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "user_id",
+            "username",
+            "locked",
+            "active_sessions",
+            "owner_ticket_id",
+            "changed",
+            "revoked_sessions"
+          ],
+          "properties": {
+            "user_id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "username": {
+              "type": "string",
+              "pattern": "^zz_[a-z0-9_]{1,37}$"
+            },
+            "locked": {
+              "type": "boolean"
+            },
+            "active_sessions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "owner_ticket_id": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^T-[0-9]{8}-[0-9]{4}$"
+                }
+              ]
+            },
+            "changed": {
+              "type": "boolean"
+            },
+            "revoked_sessions": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    }
+  }
+}

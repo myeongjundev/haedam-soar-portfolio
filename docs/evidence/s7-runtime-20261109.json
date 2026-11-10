@@ -1,0 +1,57 @@
+{
+  "project": "haedam-s7-verify",
+  "run_id": "S7-20261109T033732Z",
+  "containers": [
+    {
+      "name": "haedam-s7-verify-db-1",
+      "image": "mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+      "image_id": "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+      "status": "running",
+      "oom_killed": false,
+      "restarts": 0
+    },
+    {
+      "name": "haedam-s7-verify-portal-1",
+      "image": "haedam-s7-verify-portal",
+      "image_id": "sha256:7303f9a5cecbc7b99c6da7e326cb3a59255b6ec4ec5c46ff61bd3af6690e5582",
+      "status": "running",
+      "oom_killed": false,
+      "restarts": 0
+    },
+    {
+      "name": "haedam-s7-verify-s7-agent-1",
+      "image": "haedam-s7-verify-s7-agent",
+      "image_id": "sha256:bf7b632bfdcfa20129b9aba50758cfaea0f7f4644fc2c0f1feae8432ebd34481",
+      "status": "running",
+      "oom_killed": false,
+      "restarts": 0
+    },
+    {
+      "name": "haedam-s7-verify-wazuh.dashboard-1",
+      "image": "wazuh/wazuh-dashboard:4.9.0",
+      "image_id": "sha256:9cc37f86a1efac76c0f0ddbc955dda0bdf72517b5067f384d66bcc7d95338a6c",
+      "status": "running",
+      "oom_killed": false,
+      "restarts": 0
+    },
+    {
+      "name": "haedam-s7-verify-wazuh.indexer-1",
+      "image": "wazuh/wazuh-indexer:4.9.0",
+      "image_id": "sha256:a7adcac99648b73e075c4fa8daa5bd552da46ec4a7700d7faccd579a2c5e7cc2",
+      "status": "running",
+      "oom_killed": false,
+      "restarts": 0
+    },
+    {
+      "name": "haedam-s7-verify-wazuh.manager-1",
+      "image": "wazuh/wazuh-manager:4.9.0",
+      "image_id": "sha256:e0a78683d35556465d599a923ddc2eaec38110f911fc2c82e578f7c4ab038004",
+      "status": "running",
+      "oom_killed": false,
+      "restarts": 0
+    }
+  ],
+  "dashboard_http": 200,
+  "dashboard_overall": "green",
+  "indexer": "green"
+}

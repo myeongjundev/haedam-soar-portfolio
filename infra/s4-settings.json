@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "project": "haedam-s4-lab",
+  "execution_enabled": false,
+  "asset_id": "haedam-portal",
+  "network_status": "proposed_not_checked_against_running_networks",
+  "networks": {
+    "default": "172.30.104.0/24",
+    "clients": "172.30.105.0/24",
+    "response": "172.30.106.0/29",
+    "graylog_backend": "172.30.107.0/29"
+  },
+  "addresses": {
+    "portal_client": "172.30.105.10",
+    "attacker": "172.30.105.21",
+    "normal": "172.30.105.22",
+    "n8n_response": "172.30.106.2",
+    "portal_response": "172.30.106.3"
+  },
+  "host_ports": {
+    "PORTAL_PORT": 15070,
+    "GRAYLOG_PORT": 19170,
+    "N8N_PORT": 15770,
+    "GELF_PORT": 22370,
+    "TICKET_PORT": 18170
+  },
+  "client_image": "python:3.12-slim",
+  "paths": {
+    "tools_mount": "/opt/s4",
+    "settings_mount": "/run/s4/settings.json",
+    "evidence_mount": "/evidence",
+    "health": "/api/v1/health",
+    "session": "/api/v1/auth/me",
+    "login": "/api/v1/auth/login"
+  },
+  "portal_internal_port": 5000,
+  "username_prefix": "zz_s4_",
+  "policy": {
+    "window_seconds": 600,
+    "execute_every_seconds": 60,
+    "notification_grace_seconds": 600,
+    "input_interval_seconds": 10,
+    "boundary_observation_seconds": 660,
+    "total_threshold": 6
+  },
+  "request_timeout_seconds": 10,
+  "stop_filename": "STOP",
+  "accounts": {
+    "target": "zz_s4_target",
+    "normal": "zz_s4_normal"
+  }
+}

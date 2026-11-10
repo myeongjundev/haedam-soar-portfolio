@@ -1,0 +1,86 @@
+{
+  "run_id": "S7FAULT-20261109T072810Z",
+  "project": "haedam-s7-autocheck",
+  "started_at": "2026-11-09T07:28:10.799+00:00",
+  "checks": {
+    "old_success_does_not_mask_new_tamper": 409,
+    "ticket_outage_no_response": {
+      "status": 503,
+      "file_sha256_unchanged": true
+    },
+    "same_event_retry_verified": true,
+    "restart_replay_same_receipt_no_duplicate": true,
+    "final_restored": true
+  },
+  "result": "pass",
+  "event_key": "bcd3fa336af859ff8b7dd9b8814f1239fd784723e185142d49d5393b799fb655",
+  "ticket_id": "T-20261109-0003",
+  "graylog_event_id": "01M6ZKACED0M7JF62BSA50FK1X",
+  "wazuh_event_id": "1794209291.15630",
+  "final_ticket": {
+    "actions": [
+      {
+        "action": "restore",
+        "action_id": "s7-applied-bcd3fa336af859ff8b7dd9b8814f1239fd784723e185142d49d5393b799fb655",
+        "applied_verified": true,
+        "bot": "117",
+        "detail": "Guarded agent receipt, full baseline hashes and real HTTP readback verified.",
+        "duplicate": false,
+        "effect_verified": true,
+        "effect_verified_at": "2026-11-09T07:28:33.722+00:00",
+        "finished_at": "2026-11-09T07:28:33.554+00:00",
+        "n8n_execution_id": "13",
+        "recorded_at": "2026-11-09T07:28:33+00:00",
+        "requested_at": "2026-11-09T07:28:33.550+00:00",
+        "result": "applied",
+        "target": "index.html",
+        "via": "wazuh-ar"
+      },
+      {
+        "action": "complete_restore",
+        "action_id": "s7-released-bcd3fa336af859ff8b7dd9b8814f1239fd784723e185142d49d5393b799fb655",
+        "applied_verified": true,
+        "bot": "117",
+        "detail": "Guarded agent receipt, full baseline hashes and real HTTP readback verified.",
+        "duplicate": false,
+        "effect_verified": true,
+        "effect_verified_at": "2026-11-09T07:28:39.744+00:00",
+        "finished_at": "2026-11-09T07:28:39.562+00:00",
+        "n8n_execution_id": "17",
+        "recorded_at": "2026-11-09T07:28:39+00:00",
+        "requested_at": "2026-11-09T07:28:39.561+00:00",
+        "result": "released",
+        "target": "index.html",
+        "via": "wazuh-ar"
+      }
+    ],
+    "asset_id": "haedam-portal",
+    "case_id": "S7",
+    "condition_met_at": "2026-11-09T07:28:11.061000+00:00",
+    "created_at": "2026-11-09T07:28:32+00:00",
+    "data_origin": "live",
+    "detected_at": "2026-11-09T07:28:16.845Z",
+    "event_ids": [
+      "01M6ZKACED0M7JF62BSA50FK1X",
+      "1794209291.15630"
+    ],
+    "first_attack_at": null,
+    "group_key": "S7:haedam-portal:bcd3fa336af859ff8b7dd9b8814f1239fd784723e185142d49d5393b799fb655",
+    "received_at": null,
+    "responded_at": "2026-11-09T07:28:33.554+00:00",
+    "restored_at": "2026-11-09T07:28:39.562+00:00",
+    "schema_version": "1.0",
+    "seat": "C",
+    "src_ip": null,
+    "status": "restored",
+    "ticket_id": "T-20261109-0003",
+    "title": "S7 파일 무결성: index.html",
+    "updated_at": "2026-11-09T07:28:39+00:00",
+    "username": null,
+    "verified_at": "2026-11-09T07:28:33.722+00:00"
+  },
+  "finished_at": "2026-11-09T07:28:39.874+00:00",
+  "source_head": "db4c64ff2c1d6d7aee07694cbd992c9aa4cf9ae1",
+  "source_dirty_at_run": false,
+  "verifier_sha256": "e6742cef2812a5033fa6b58e1bff56dbeb8d191c7ca66d61b48c788af7a0d6e3"
+}

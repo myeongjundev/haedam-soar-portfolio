@@ -1,0 +1,194 @@
+{
+  "id": "haedamPfsense01",
+  "name": "[Portfolio S10] haedam-14 pfSense 경계 차단·해제 (112, SSH 강제 명령)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "0544d87b-5ef2-5901-baa0-b5655bcfc5ea",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "3f31b0a0-4ef1-5ebd-a907-0be2914144db",
+      "name": "요청 준비",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nfunction protectedIp(ip) { return ip === '203.0.113.22' ? null : 'outside_s10_lab_target'; }\n// 요청 준비: 입력 검사 → 보호 목록 → dry_run. 불확실한 결과는 자동 재시도하지 않는다(도구 문서).\nconst b = $input.first().json;\nconst t = new Date().toISOString();\nconst ID = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,95}$/;\nconst fail = (result, detail) => [{ json: { stop: true, final: { ok: false, result, detail, ip: b.ip, action: b.action, applied_verified: false, requested_at: t, finished_at: t, ctx: b.ctx } } }];\nif (b.action === 'skip') return [{ json: { stop: true, final: { ok: true, result: 'skipped', detail: 'S8은 pfSense 차단 대상 아님', requested_at: t, finished_at: t, ctx: b.ctx } } }];\nif (!['block', 'unblock', 'status'].includes(b.action)) return fail('rejected', 'action must be block|unblock|status');\nconst p = protectedIp(b.ip);\nif (p) return fail('rejected', 'protected_or_bad_ip:' + p);\nconst owner = String(b.ticket_id || '');\nconst reqId = `${owner}-pf-${b.ip}-${b.action}`;\nif (b.action !== 'status' && (!ID.test(owner) || !ID.test(reqId))) return fail('rejected', 'bad_ticket_id_for_pfsense_request');\nconst reqId2 = b.action === 'status' ? `status-${Date.now()}` : reqId;\nconst owner2 = b.action === 'status' ? 'status' : owner;\n// 원격 명령은 도구 계약 그대로 (`ACTION TARGET REQUEST_ID OWNER_ID`). 전용 키의 forced command가 SSH_ORIGINAL_COMMAND를 엄격히 파싱한다.\nconst command = `haedam-pf-response ${b.action} ${b.ip} ${reqId2} ${owner2}`;\nconst base = { ctx: b.ctx, ip: b.ip, action: b.action, request_id: reqId2, owner_id: owner2, requested_at: t };\nif (b.dry_run !== false) return [{ json: { stop: true, final: { ok: true, result: 'dry_run', detail: `would run via pfSense SSH: haedam-pf-response ${b.action} ${b.ip}`, ip: b.ip, action: b.action,\n  request_id: reqId2, applied_verified: null, requested_at: t, finished_at: t, ctx: b.ctx } } }];\nreturn [{ json: { ...base, command } }];\n"
+      }
+    },
+    {
+      "id": "531dad32-2aca-5c28-90bd-0a57fec607b5",
+      "name": "외부 호출?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "47613644-b1c7-54c6-9f7f-d8b0893cd367",
+              "leftValue": "={{ $json.stop !== true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "afbbdf62-777f-5030-83b3-3c6a9631b35c",
+      "name": "pfSense relay (haedam-pf-response)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s10RelayAuth",
+          "name": "s10RelayAuth"
+        }
+      },
+      "parameters": {
+        "method": "POST",
+        "url": "http://controller:8099/pf",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({action:$json.action,target:$json.ip,request_id:$json.request_id,owner_id:$json.owner_id}) }}",
+        "options": {
+          "timeout": 120000
+        }
+      }
+    },
+    {
+      "id": "a9b4a933-92c7-54d7-a127-f0cf879efb2a",
+      "name": "출력 해석",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// 도구 출력(JSON 1개)을 결과 값으로 바꾼다. 출력 파싱 실패·비정상 종료·불확실한 결과는 성공으로 만들지 않고 재시도도 하지 않는다.\nconst j = $input.first().json;\nconst prev = $('요청 준비').first().json;\nconst fin = (o) => [{ json: { ok: !['failed', 'rejected'].includes(o.result), ip: prev.ip, action: prev.action, request_id: prev.request_id, applied_verified: o.applied_verified ?? false,\n  requested_at: prev.requested_at, finished_at: new Date().toISOString(), ctx: prev.ctx, ...o } }];\nif (j.error) return fin({ result: 'failed', detail: 'ssh_error:' + String((j.error && j.error.message) || j.error).slice(0, 160) });\nlet out = null;\ntry { out = JSON.parse(String(j.stdout || '').trim()); } catch (e) { /* 아래에서 처리 */ }\nif (!out || typeof out !== 'object') return fin({ result: 'failed', detail: `unparseable_output exit=${j.code ?? '?'} stderr=${String(j.stderr || '').slice(0, 100)}` });\nconst map = { applied: 'applied', already_applied: 'already_applied', released: 'released', status: 'listed', rejected: 'rejected', failed: 'failed' };\nconst result = out.ok === true ? (map[out.result] || 'failed') : (out.result === 'rejected' ? 'rejected' : 'failed');\nconst uncertain = out.changed === null;\nreturn fin({ result: uncertain ? 'failed' : result, detail: `${out.result}:${out.reason}${uncertain ? ' (changed:null — 운영자가 pfSense 설정·journal을 대조)' : ''}${out.replayed ? ' replayed' : ''}`,\n  applied_verified: out.ok === true ? (prev.action === 'unblock' ? (out.reason === 'verified_managed_state' && !!out.state && out.state.configured === false && out.state.table_present === false && out.state.rule_present === false) : (out.applied_verified ?? null)) : false, tool_state: out.state || null,\n  // 대조용(11/03 B 요청): 도구가 남긴 journal 상태와 실패 사유를 요약에도 넘긴다. 객체·문자열만, 길이 제한\n  journal_state: out.journal_state && typeof out.journal_state === 'object' && JSON.stringify(out.journal_state).length <= 2000 ? out.journal_state : null,\n  failure_detail: typeof out.failure_detail === 'string' ? out.failure_detail.slice(0, 200) : null });\n"
+      }
+    },
+    {
+      "id": "a81490a1-9362-5d63-8b22-978f3eaa7416",
+      "name": "결과 정리",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        180
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nreturn [{ json: j.stop ? j.final : j }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "요청 준비",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "요청 준비": {
+      "main": [
+        [
+          {
+            "node": "외부 호출?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "외부 호출?": {
+      "main": [
+        [
+          {
+            "node": "pfSense relay (haedam-pf-response)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "결과 정리",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "출력 해석": {
+      "main": [
+        [
+          {
+            "node": "결과 정리",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "pfSense relay (haedam-pf-response)": {
+      "main": [
+        [
+          {
+            "node": "출력 해석",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "seat": "C",
+  "case_id": "S7",
+  "stage": "effect",
+  "group_key": "haedam-portal:assets/zz_s7_sample.txt",
+  "title": "S7 홈페이지 변조: assets/zz_s7_sample.txt",
+  "asset_id": "haedam-portal",
+  "src_ip": "203.0.113.10",
+  "username": null,
+  "event_ids": ["sample-graylog-s7-event-01"],
+  "action": {
+    "bot": "117", "target": "assets/zz_s7_sample.txt", "via": "wazuh-ar", "action": "quarantine",
+    "result": "applied", "applied_verified": true, "effect_verified": true,
+    "requested_at": "2026-10-24T14:05:31+09:00", "finished_at": "2026-10-24T14:05:34+09:00",
+    "effect_verified_at": "2026-10-24T14:06:10+09:00",
+    "n8n_execution_id": "sample-1234", "detail": "original URL 404, home 200"
+  }
+}

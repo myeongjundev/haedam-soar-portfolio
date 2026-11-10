@@ -1,0 +1,6 @@
+{
+  "schema_version": "1.0", "event_id": "sample-auth-failure-01",
+  "timestamp": "2026-10-15T01:00:00Z", "source": "portal",
+  "event_type": "auth.login_failed", "username": "zz_demo",
+  "src_ip": "192.0.2.10", "asset_id": "lab-portal", "outcome": "failure"
+}

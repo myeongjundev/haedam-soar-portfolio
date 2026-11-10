@@ -1,0 +1,100 @@
+<div class="status-line">
+  <span class="conn conn-{{ view.badge.kind }}" id="conn-badge">{{ view.badge.text }}</span>
+  <span class="muted">저장소 수신 기록 기준 · 센서 연결 상태는 별도 확인</span>
+  <span class="refreshed">마지막 갱신 <span id="refreshed-at">{{ view.refreshed_at }}</span> KST</span>
+</div>
+
+{% if view.filters.sample %}<p class="sample-notice"><span class="sample-icon" aria-hidden="true">S</span><span><strong>샘플 포함 조회</strong> · 합성 예시가 현황과 목록에 포함됩니다. 실제 시험 결과와 구분해 확인하세요.</span></p>{% endif %}
+
+<nav class="screen-switcher" aria-label="보안 대시보드 화면 선택">
+  <span>화면 선택</span>
+  <a aria-current="page" href="{{ url_for('dashboard.index', seat=view.filters.seat, sample=1 if view.filters.sample else 0) }}">인시던트 현황</a>
+  <a href="{{ url_for('dashboard.cases', seat=view.filters.seat, sample=1 if view.filters.sample else 0) }}">케이스 보드</a>
+  <a href="{{ url_for('dashboard.work', seat=view.filters.seat, sample=1 if view.filters.sample else 0) }}">대응·원복</a>
+</nav>
+
+<div class="section-heading"><div><p class="eyebrow">INCIDENT SUMMARY</p><h2>저장소 전체 현황</h2></div><p class="scope-note">자리·케이스 필터와 별도 집계{% if view.filters.sample %} · 샘플 포함{% endif %}</p></div>
+<ul class="summary">
+  {% for s in ["open", "responding", "verified", "restored"] %}
+  <li><a class="summary-link{% if view.filters.status == s and not view.filters.seat and not view.filters.case_id %} selected{% endif %}" href="{{ url_for('dashboard.index', status=s, sample=1 if view.filters.sample else 0, _anchor='incident-list-title') }}"{% if view.filters.status == s and not view.filters.seat and not view.filters.case_id %} aria-current="page"{% endif %}><span class="badge st-{{ s }}">{{ STATUS_LABELS[s] }}</span> <strong>{{ view.counts[s] }}</strong><small>{{ {"open": "대응 전 사건", "responding": "대응 진행 기록", "verified": "효과 확인 기록", "restored": "원복 기록"}[s] }} <span aria-hidden="true">↗</span></small></a></li>
+  {% endfor %}
+  <li><a class="summary-link{% if view.filters.status == 'closed' and not view.filters.seat and not view.filters.case_id %} selected{% endif %}" href="{{ url_for('dashboard.index', status='closed', sample=1 if view.filters.sample else 0, _anchor='incident-list-title') }}"{% if view.filters.status == 'closed' and not view.filters.seat and not view.filters.case_id %} aria-current="page"{% endif %}><span class="badge st-closed">종료</span> <strong>{{ view.counts.closed }}</strong><small>오늘 {{ view.closed_today }}건 · KST</small></a></li>
+</ul>
+
+<section class="trend-panel" aria-labelledby="trend-title">
+  <div class="section-heading"><div><p class="eyebrow">OBSERVED INCIDENTS</p><h2 id="trend-title">최근 7일 사건 생성 추이</h2></div><span class="scope-note">KST · 생성일 기준 · 저장소 전체{% if view.filters.sample %} · 샘플 포함{% else %} · 실제 기록만{% endif %}</span></div>
+  <div class="trend-layout">
+    <div class="trend-totals"><span>전체 저장 사건</span><strong>{{ view.scoped_total }}<small>건</small></strong><p>종료 전 <b>{{ view.open_total }}</b>건</p><p class="scope-note">탐지 이벤트 수와 사건 수는 다릅니다.</p></div>
+    <div class="trend-bars" role="list" aria-label="일별 생성 사건 수">
+    {% for day in view.trend %}
+      <div class="trend-day" role="listitem"><strong>{{ day.count }}<small>건</small></strong><svg viewBox="0 0 40 110" aria-hidden="true"><rect class="chart-track" x="8" y="5" width="24" height="100" rx="4"/><rect class="chart-value" x="8" y="{{ 105 - day.height }}" width="24" height="{{ day.height }}" rx="4"/></svg><time datetime="{{ day.day }}">{{ day.label }}</time></div>
+    {% endfor %}
+    </div>
+  </div>
+  <p class="scope-note">0건은 해당 날짜의 저장 기록이 없다는 뜻이며 탐지 정상 동작을 증명하지 않습니다.</p>
+</section>
+
+<div class="distribution-grid">
+{% for chart in view.distributions %}
+<section class="distribution-panel" aria-labelledby="distribution-{{ chart.key }}">
+  <div class="section-heading"><h2 id="distribution-{{ chart.key }}">{{ chart.label }}</h2><span class="scope-note">종료 제외 · 저장소 전체</span></div>
+  <ul class="distribution-list">
+  {% for row in chart.rows %}
+    <li><a href="{% if chart.key == 'seat' %}{{ url_for('dashboard.index', seat=row.label, sample=1 if view.filters.sample else 0, _anchor='incident-list-title') }}{% else %}{{ url_for('dashboard.index', case_id=row.label, sample=1 if view.filters.sample else 0, _anchor='incident-list-title') }}{% endif %}"><span>{{ row.label }}{% if chart.key == 'seat' %} 자리{% endif %}</span><meter min="0" max="{{ chart.maximum }}" value="{{ row.count }}" aria-label="{{ row.label }} 종료 제외 사건">{{ row.count }}</meter><strong>{{ row.count }}<small>건</small></strong></a></li>
+  {% endfor %}
+  </ul>
+  <p class="distribution-hint">항목을 누르면 해당 조건의 목록으로 이동합니다.</p>
+</section>
+
+{% endfor %}
+</div>
+
+<section class="case-board-preview" aria-labelledby="case-board-title"><div class="section-heading"><div><p class="eyebrow">DEMONSTRATION OVERVIEW</p><h2 id="case-board-title">케이스 보드</h2></div><a href="{{ url_for('dashboard.cases', seat=view.filters.seat, sample=1 if view.filters.sample else 0) }}">자세히 보기 ↗</a></div>
+{% with view={'rows': view.case_rows, 'filters': view.filters, 'refreshed_at': view.refreshed_at, 'last_record_at': view.last_record_at} %}{% include '_cases.html' %}{% endwith %}</section>
+
+<section class="incident-panel" aria-labelledby="incident-list-title">
+<div class="section-heading"><div><p class="eyebrow">INCIDENT QUEUE</p><h2 id="incident-list-title" tabindex="-1">인시던트 목록 <span class="list-count">{{ view.tickets | length }}</span></h2></div><p class="scope-note">선택한 조건 · 최대 200건 · 갱신 시각 순</p></div>
+{% with filters=view.filters %}{% include '_filters.html' %}{% endwith %}
+{% if view.tickets %}
+<div class="table-scroll" tabindex="0" role="region" aria-label="인시던트 목록 표">
+<table class="tickets">
+  <caption class="sr-only">선택한 필터의 사건 상태, 대상, 마지막 조치와 기록 시각</caption>
+  <thead>
+    <tr>
+      <th>티켓 번호</th><th>자리</th><th>케이스</th><th>제목</th><th>상태</th><th>대상</th>
+      <th>마지막 조치</th><th title="조건 충족 → 판정">탐지 소요</th><th title="판정 → 효과 확인">효과 확인 소요</th><th>갱신 시각</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for t in view.tickets %}
+    <tr class="row" data-href="{{ url_for('dashboard.detail', ticket_id=t.ticket_id) }}">
+      <td data-label="티켓"><a href="{{ url_for('dashboard.detail', ticket_id=t.ticket_id) }}">{{ t.ticket_id }}</a>
+        {% if t.data_origin == "sample" %}<span class="flag flag-sample">샘플</span>{% endif %}</td>
+      <td data-label="자리" class="extra">{{ t.seat }}</td>
+      <td data-label="케이스"><span class="case-label">{{ t.case_id }}</span></td>
+      <td data-label="제목" class="wrap">{{ t.title }}</td>
+      <td data-label="상태"><span class="badge st-{{ t.status }}">{{ STATUS_LABELS[t.status] }}</span>
+        {% if t.last_result in FAILED_RESULTS %}<span class="flag flag-fail">대응 실패</span>{% endif %}</td>
+      <td data-label="대상" class="extra wrap">{{ t.group_key }}</td>
+      <td data-label="마지막 조치" class="extra">{{ t.last_result or "—" }}</td>
+      <td data-label="MTTD" class="extra">{{ t.mttd_seconds | duration }}</td>
+      <td data-label="MTTR" class="extra">{{ t.mttr_seconds | duration }}</td>
+      <td data-label="갱신"><time title="{{ t.updated_at }}">{{ t.updated_at | kst }}</time></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="empty">
+  {% if view.total == 0 %}
+  <p><strong>아직 티켓이 없습니다.</strong></p>
+  {% else %}
+  <p><strong>조건에 맞는 티켓이 없습니다.</strong>
+    {% if not view.filters.sample %}샘플 티켓은 '샘플 포함'을 켜면 보입니다.{% endif %}</p>
+  {% endif %}
+  <p class="muted">마지막 record 수신:
+    {% if view.last_record_at %}<time title="{{ view.last_record_at }}">{{ view.last_record_at | kst }}</time>{% else %}수신 기록 없음{% endif %}</p>
+</div>
+{% endif %}
+</section>

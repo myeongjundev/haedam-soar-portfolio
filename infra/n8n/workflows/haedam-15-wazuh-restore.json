@@ -1,0 +1,181 @@
+[
+ {
+  "id": "haedamWazuhRestore01",
+  "name": "haedam-15 Wazuh 파일 복구·격리 (117, active response)",
+  "active": false,
+  "nodes": [
+   {
+    "id": "0544d87b-5ef2-5901-baa0-b5655bcfc5ea",
+    "name": "Execute Workflow Trigger",
+    "type": "n8n-nodes-base.executeWorkflowTrigger",
+    "typeVersion": 1.1,
+    "position": [
+     0,
+     0
+    ],
+    "parameters": {
+     "inputSource": "passthrough"
+    }
+   },
+   {
+    "id": "3f31b0a0-4ef1-5ebd-a907-0be2914144db",
+    "name": "요청 준비",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     240,
+     0
+    ],
+    "parameters": {
+     "jsCode": "// 요청 준비: 입력 검사 → dry_run. Wazuh API 응답은 \"에이전트에 보냈다\"까지만 알려 준다(복구 성공은 아님).\nconst b = $input.first().json;\nconst t = new Date().toISOString();\nconst CFG = { api: 'https://wazuh-manager:55000', agent: '010', script: '!s7-restore-ar', web_root: '/home/haedam/haedam-portal-frontend/dist' };  // C 10/28 API 호출 확인 값\nconst fail = (detail) => [{ json: { stop: true, final: { ok: false, result: 'failed', detail, action: b.action, applied_verified: false, requested_at: t, finished_at: t, ctx: b.ctx } } }];\nif (!['restore', 'quarantine'].includes(b.action) || !b.asset_id || !b.file_key) return fail('bad input (action restore|quarantine, asset_id, file_key)');\nconst key = String(b.file_key);\nif (!/^[A-Za-z0-9._\\-\\/]{1,200}$/.test(key) || key.split('/').includes('..')) return fail('bad_file_key');\nconst path = key.startsWith('/') ? key : `${CFG.web_root}/${key.replace(/^\\.?\\//, '')}`;\nif (!path.startsWith(CFG.web_root + '/')) return fail('path_outside_web_root');\n// 승인된 회차 run_id(S7-YYYYMMDD-XXXX)가 입력에 있으면 그대로 AR 인자까지 전달한다. 필드가 아예 없을 때만 기존대로 event_id에서 만든다.\n// 필드를 명시했는데(null 포함) 형식이 다르면 다른 값으로 바꾸지 않고 AR 전에 거절한다.\nconst hasRunId = Object.prototype.hasOwnProperty.call(b, 'run_id');\nif (hasRunId && !(typeof b.run_id === 'string' && /^S7-\\d{8}-[A-Z0-9]{2,12}$/.test(b.run_id))) return fail('bad_run_id');\nconst runId = hasRunId ? b.run_id : `n8n-${String(b.ctx && b.ctx.event_id || t).replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 40)}`;\nif (b.dry_run !== false) return [{ json: { stop: true, final: { ok: true, result: 'dry_run', detail: `would send active response ${CFG.script} to agent ${CFG.agent}: ${b.action} ${path}`, action: b.action,\n  applied_verified: null, requested_at: t, finished_at: t, ctx: b.ctx } } }];\nreturn [{ json: { ctx: b.ctx, action: b.action, path, file_key: path.slice(CFG.web_root.length + 1), run_id: runId, api: CFG.api, agent: CFG.agent, script: CFG.script, execute: true, requested_at: t } }];\n"
+    }
+   },
+   {
+    "id": "531dad32-2aca-5c28-90bd-0a57fec607b5",
+    "name": "외부 호출?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     480,
+     0
+    ],
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": true,
+       "leftValue": "",
+       "typeValidation": "strict",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "47613644-b1c7-54c6-9f7f-d8b0893cd367",
+        "leftValue": "={{ $json.stop !== true }}",
+        "rightValue": "",
+        "operator": {
+         "type": "boolean",
+         "operation": "true",
+         "singleValue": true
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "85878e78-becc-5ce2-81f9-03fe1e8d85ca",
+    "name": "Wazuh 호출 (haedam-17)",
+    "type": "n8n-nodes-base.executeWorkflow",
+    "typeVersion": 1.2,
+    "position": [
+     720,
+     -60
+    ],
+    "parameters": {
+     "source": "database",
+     "workflowId": {
+      "__rl": true,
+      "value": "haedamWazuhToken01",
+      "mode": "id"
+     },
+     "options": {}
+    }
+   },
+   {
+    "id": "b1edc4bb-6302-50f4-a7f4-563088bee42d",
+    "name": "응답 해석",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     960,
+     -60
+    ],
+    "parameters": {
+     "jsCode": "const j = $input.first().json;   // haedam-17의 응답 요약(토큰 없음)\nconst p = $('요청 준비').first().json;\nconst fin = (o) => [{ json: { ok: o.result !== 'failed', action: p.action, applied_verified: null, requested_at: p.requested_at, finished_at: new Date().toISOString(), ctx: p.ctx, ...o } }];\nif (j.rejected) return fin({ result: 'failed', detail: 'rejected:' + String(j.rejected).replace(/[^a-z_]/g, '').slice(0, 30) });\nif (j.auth_failed) return fin({ result: 'failed', detail: 'wazuh_auth_failed' });\nconst status = Number.isInteger(j.status) ? j.status : null;\nconst reason = ['network', 'unauthorized', 'forbidden', 'server_error', 'client_error'].includes(j.reason) ? j.reason : '';\nif (status === null) return fin({ result: 'failed', detail: 'timeout_or_network' });\nif (status === 200 && j.affected >= 1)\n  return fin({ result: 'applied', detail: `active response sent to agent ${p.agent} (${p.action} ${p.path}); 복구 결과는 Wazuh 경보의 sha256_after로 따로 확인(미구현)` });\nif (status === 200) return fin({ result: 'failed', detail: `not_sent:failed_count=${Number(j.failed_count) || 0} ids=${(Array.isArray(j.failed_ids) ? j.failed_ids : []).filter(x => /^\\d{3}$/.test(String(x))).join(',')}` });\nreturn fin({ result: 'failed', detail: `${status} ${reason}`.trim() });\n"
+    }
+   },
+   {
+    "id": "a81490a1-9362-5d63-8b22-978f3eaa7416",
+    "name": "결과 정리",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     1200,
+     0
+    ],
+    "parameters": {
+     "jsCode": "const j = $input.first().json;\nreturn [{ json: j.stop ? j.final : j }];\n"
+    }
+   }
+  ],
+  "connections": {
+   "Execute Workflow Trigger": {
+    "main": [
+     [
+      {
+       "node": "요청 준비",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "요청 준비": {
+    "main": [
+     [
+      {
+       "node": "외부 호출?",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "외부 호출?": {
+    "main": [
+     [
+      {
+       "node": "Wazuh 호출 (haedam-17)",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "결과 정리",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Wazuh 호출 (haedam-17)": {
+    "main": [
+     [
+      {
+       "node": "응답 해석",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "응답 해석": {
+    "main": [
+     [
+      {
+       "node": "결과 정리",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  }
+ }
+]

@@ -1,0 +1,10 @@
+{
+  "note":"합성 예시. 실제 API 호출·탐지·차단 결과가 아니다.",
+  "create_petition":{"title":"보행로 가로등 점검 요청","content":"해담동 보행로의 가로등이 점등되지 않아 점검을 요청합니다.","category":"도로·교통"},
+  "denied":{"success":false,"error":{"code":"NOT_FOUND","message":"요청한 민원을 찾을 수 없습니다."}},
+  "event":{"schema_version":"1.0","event_id":"c38d17ba-2935-40cb-81cf-26bd79edce45","timestamp":"2026-10-19T10:00:00Z","source":"haedam-portal","event_type":"web.not_found","username":null,"src_ip":"192.0.2.10","asset_id":"haedam-portal","outcome":"failure","details":{"resource":"unmatched","method":"GET","status":404}},
+  "file_access_event":{"schema_version":"1.0","event_id":"5b0f7a52-7d1e-4c55-9f43-2a4d8f1c6e01","timestamp":"2026-10-20T10:00:00Z","source":"haedam-portal","event_type":"web.file_access","username":null,"src_ip":"192.0.2.10","asset_id":"haedam-portal","outcome":"success","details":{"resource":"/assets/<path:filename>","method":"GET","status":200,"file_key":"assets/index-sample.js"}},
+  "ip_block_result":{"success":true,"data":{"ip":"192.0.2.10","blocked":true,"changed":true,"expires_at":"2026-10-20T10:30:00Z"}},
+  "ip_block_event":{"schema_version":"1.0","event_id":"0e6c2f8b-31a4-4f7d-8d65-7b9e2c4a1f10","timestamp":"2026-10-20T10:00:05Z","source":"haedam-portal","event_type":"web.ip_blocked","username":null,"src_ip":"198.51.100.5","asset_id":"haedam-portal","outcome":"success","details":{"resource":"/api/v1/response/ips/<action>","method":"POST","status":200,"target_ip":"192.0.2.10"}},
+  "account_unlocked_event":{"schema_version":"1.0","event_id":"7d3a9e14-6b2f-4c81-a5d0-3e9f1b7c2a64","timestamp":"2026-10-22T10:05:00Z","source":"haedam-portal","event_type":"auth.account_unlocked","username":"zz_sample_staff","src_ip":"192.0.2.20","asset_id":"haedam-portal","outcome":"success","details":{"resource":"/api/v1/admin/users/<int:user_id>/unlock","method":"POST","status":200,"actor_user_id":5,"actor_username":"zz_sample_admin","reason_code":"false_positive"}}
+}

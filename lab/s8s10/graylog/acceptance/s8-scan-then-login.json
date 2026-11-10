@@ -1,0 +1,80 @@
+{
+  "title": "S8 포털 스캔·로그인 반복 (src_ip) [isolated acceptance 203.0.113.21]",
+  "description": "B S8. 15분 안 같은 src_ip에서 포털 없는 경로 404(web-scan)와 로그인 실패(login-bruteforce)가 모두 있음. 순서 요구 안 함. 기준: team_docs/기획서_합의본.md ④ 이벤트 조건 10/31 집 후보: 포털404/401만 포함하며429는 제외. 실제 Graylog 게시·발동은 미검증. Acceptance scope only; import DISABLED until D verifies runtime readiness.",
+  "priority": 2,
+  "alert": true,
+  "config": {
+    "type": "aggregation-v1",
+    "query": "((source:haedam-portal AND rule:\"web-scan\" AND status:404) OR (source:haedam-portal AND rule:\"login-bruteforce\" AND status:401)) AND src_ip:203.0.113.21",
+    "query_parameters": [],
+    "filters": [],
+    "streams": [
+      "REPLACE_portal_stream_id"
+    ],
+    "group_by": [
+      "src_ip"
+    ],
+    "series": [
+      {
+        "id": "card(rule)",
+        "type": "card",
+        "field": "rule"
+      }
+    ],
+    "conditions": {
+      "expression": {
+        "expr": ">",
+        "left": {
+          "expr": "number-ref",
+          "ref": "card(rule)"
+        },
+        "right": {
+          "expr": "number",
+          "value": 1
+        }
+      }
+    },
+    "search_within_ms": 900000,
+    "execute_every_ms": 60000,
+    "use_cron_scheduling": false,
+    "event_limit": 100
+  },
+  "field_spec": {
+    "src_ip": {
+      "data_type": "string",
+      "providers": [
+        {
+          "type": "template-v1",
+          "template": "${source.src_ip}",
+          "require_values": true
+        }
+      ]
+    },
+    "case_id": {
+      "data_type": "string",
+      "providers": [
+        {
+          "type": "template-v1",
+          "template": "S8",
+          "require_values": true
+        }
+      ]
+    }
+  },
+  "key_spec": [
+    "src_ip"
+  ],
+  "notification_settings": {
+    "grace_period_ms": 900000,
+    "backlog_size": 20
+  },
+  "notifications": [],
+  "storage": [
+    {
+      "type": "persist-to-streams-v1",
+      "streams": [
+        "000000000000000000000002"
+      ]
+    }
+  ]
+}

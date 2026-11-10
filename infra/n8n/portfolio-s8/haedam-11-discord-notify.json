@@ -1,0 +1,53 @@
+{
+  "id": "haedamDiscord01",
+  "name": "[Portfolio S8] haedam-11 Discord 알림 (113)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "0544d87b-5ef2-5901-baa0-b5655bcfc5ea",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "s8-local-notice",
+      "name": "Local ticket notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{ctx:$input.first().json.ctx,sent:false,error:null,notification_channel:'ticket-dashboard'}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Local ticket notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

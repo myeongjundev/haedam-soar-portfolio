@@ -1,0 +1,117 @@
+services:
+  portal:
+    environment:
+      GELF_ENABLED: "1"
+      GELF_HOST: graylog
+      GELF_PORT: "12201"
+      GELF_TRANSPORT: tcp
+      DASHBOARD_URL: http://127.0.0.1:${TICKET_PORT:-18089}
+
+  graylog-mongo:
+    image: mongo:6.0.28
+    volumes:
+      - graylog-mongo:/data/db
+      - graylog-mongo-config:/data/configdb
+    networks: [graylog-backend]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand({ping:1}).ok ? 0 : 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  graylog-search:
+    image: opensearchproject/opensearch:2.5.0
+    environment:
+      discovery.type: single-node
+      action.auto_create_index: "false"
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ulimits:
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - graylog-search:/usr/share/opensearch/data
+    networks: [graylog-backend]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:9200/"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  graylog:
+    image: graylog/graylog:6.1.16
+    environment:
+      GRAYLOG_PASSWORD_SECRET: ${GRAYLOG_PASSWORD_SECRET:?Set GRAYLOG_PASSWORD_SECRET in .env.soc}
+      GRAYLOG_ROOT_PASSWORD_SHA2: ${GRAYLOG_ROOT_PASSWORD_SHA2:?Set GRAYLOG_ROOT_PASSWORD_SHA2 in .env.soc}
+      GRAYLOG_MONGODB_URI: mongodb://graylog-mongo:27017/graylog
+      GRAYLOG_ELASTICSEARCH_HOSTS: http://graylog-search:9200
+      GRAYLOG_HTTP_EXTERNAL_URI: http://127.0.0.1:${GRAYLOG_PORT:-19000}/
+      GRAYLOG_SKIP_PREFLIGHT_CHECKS: "true"
+      GRAYLOG_SERVER_JAVA_OPTS: "-Xms512m -Xmx512m"
+      GRAYLOG_ROOT_TIMEZONE: Asia/Seoul
+    depends_on:
+      graylog-mongo:
+        condition: service_healthy
+      graylog-search:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${GRAYLOG_PORT:-19000}:9000"
+      - "127.0.0.1:${GELF_PORT:-22201}:12201/tcp"
+    volumes:
+      - graylog-data:/usr/share/graylog/data
+    networks: [default, graylog-backend]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:9000/api/system/lbstatus"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.39.5
+    environment:
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env.soc}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_SECURE_COOKIE: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      GENERIC_TIMEZONE: Asia/Seoul
+      TZ: Asia/Seoul
+      WEBHOOK_URL: http://127.0.0.1:${N8N_PORT:-15678}/
+    ports:
+      - "127.0.0.1:${N8N_PORT:-15678}:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz/readiness').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  ticket-store:
+    init: true
+    build: ./services/ticket-store
+    environment:
+      TICKET_STORE_KEY: ${TICKET_STORE_KEY:?Set TICKET_STORE_KEY in .env.soc}
+      DASHBOARD_ORIGIN: http://127.0.0.1:${TICKET_PORT:-18089}
+    ports:
+      - "127.0.0.1:${TICKET_PORT:-18089}:8089"
+    volumes:
+      - ticket-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8089/', timeout=3).close()"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+networks:
+  graylog-backend:
+    internal: true
+
+volumes:
+  graylog-mongo:
+  graylog-mongo-config:
+  graylog-search:
+  graylog-data:
+  n8n-data:
+  ticket-data:

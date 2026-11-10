@@ -1,0 +1,932 @@
+{
+  "id": "portfolioS4Release01",
+  "name": "[Portfolio S4] release",
+  "active": false,
+  "nodes": [
+    {
+      "id": "release-Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "haedam-s4-release",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s4OperatorAuth",
+          "name": "s4OperatorAuth"
+        }
+      },
+      "webhookId": "haedam-s4-release"
+    },
+    {
+      "id": "release-Validate",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s4-operator\", \"event_max_age_seconds\": 660, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.105.21\", \"asset_id\": \"haedam-portal\", \"username\": \"zz_s4_target\"};\n// CFG is injected by the offline builder, never taken from a webhook body.\nconst out = j => [{json:j}];\n// A hold can occur after a partial mutation; do not claim that nothing happened.\nconst held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});\nconst idOK = v => typeof v==='string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst activeOK = (a,ctx) => a && a.bot==='111' && a.via==='portal' && a.action==='lock' && a.target===ctx.target && ['applied','already_applied'].includes(a.result);\nconst snapshotOK = j => j.ok===true && typeof j.exists==='boolean' && Array.isArray(j.actions) && j.actions.every(a=>activeOK(a,j.ctx)) &&\n  (j.exists ? idOK(j.ticket_id) && states.includes(j.status) : j.ticket_id===null && j.status===null && j.actions.length===0);\nconst resource = ctx => ({asset_id:CFG.asset_id,via:'portal',action:'lock',target:ctx.target});\nconst next = j => out({...j,proceed:true});\nconst check = ctx => next({mode:'check',seat:'A',group_key:ctx.group_key,ctx});\nconst ownership = ctx => next({mode:'active',resource:resource(ctx),ctx});\nconst list = ctx => next({action:'list',ctx});\nconst record = (ctx,stage,execution,action=null) => next({ctx,mode:'record',stage,seat:'A',case_id:'S4',\n  group_key:ctx.group_key,title:'S4 failed and successful logins',asset_id:CFG.asset_id,src_ip:CFG.ip,username:ctx.username,\n  event_ids:[ctx.event_id || `s4-release-${execution}`],detected_at:ctx.detected_at || null,\n  received_at:ctx.received_at || null,idempotency_key:`s4-${execution}-${stage}`,action});\n\nconst accountOK = j => j.ok===true && j.result==='listed' && j.account && j.account.username===CFG.username &&\n Number.isSafeInteger(j.account.user_id) && j.account.user_id>0 && typeof j.account.locked==='boolean' &&\n Number.isSafeInteger(j.account.active_sessions) && j.account.active_sessions>=0 &&\n (j.account.owner_ticket_id===null || idOK(j.account.owner_ticket_id));\n\nfunction run(stage,j,execution) {\n const x=j.ctx;\n if(stage==='validate_response' || stage==='validate_release') {\n  const b=j.body,release=stage==='validate_release';\n  const keys=release?['case_id','asset_id','src_ip','username','ticket_id']:['case_id','asset_id','src_ip','username','event_id','detected_at'];\n  if(!b || typeof b!=='object' || Array.isArray(b) || Object.keys(b).length!==keys.length || keys.some(k=>typeof b[k]!=='string')) return held('invalid_input',400);\n  if(b.case_id!=='S4' || b.asset_id!==CFG.asset_id || b.src_ip!==CFG.ip || b.username!==CFG.username) return held('invalid_scope',400);\n  if(release && !idOK(b.ticket_id)) return held('invalid_ticket_id',400);\n  if(!release) {\n   if(!/^[A-Za-z0-9_-]{1,128}$/.test(b.event_id) || !/T.*(Z|[+-]\\d\\d:\\d\\d)$/.test(b.detected_at)) return held('invalid_event',400);\n   const age=Date.now()-Date.parse(b.detected_at);\n   if(!Number.isFinite(age) || age < -CFG.future_clock_tolerance_seconds*1000 || age>CFG.event_max_age_seconds*1000) return held('stale_or_future_event',400);\n   if(!CFG.detection_enabled) return held('held_detection_disabled');\n  }\n  return list({cfg:{dry_run:false,store_real:true},seat:'A',case_id:'S4',asset_id:CFG.asset_id,src_ip:CFG.ip,\n    username:b.username,group_key:`S4|${b.username}`,event_id:b.event_id,detected_at:b.detected_at,\n    received_at:release?undefined:new Date().toISOString(),requested_ticket_id:b.ticket_id,\n    approver:release?CFG.operator_name:undefined,release});\n }\n if(stage==='identity') {\n  if(!accountOK(j)) return held('held_account_identity',503);\n  return check({...x,user_id:j.account.user_id,target:`${x.username}:${j.account.user_id}`});\n }\n if(stage==='snapshot') {\n  if(!snapshotOK(j)) return held('held_ticket_check',503);\n  if(j.actions.length>1 || (['closed','restored'].includes(j.status) && j.actions.length)) return held('held_inconsistent_ticket');\n  if(x.release && (!j.exists || j.ticket_id!==x.requested_ticket_id)) return held('held_stale_release_ticket');\n  return ownership({...x,snapshot:{exists:j.exists,ticket_id:j.ticket_id,status:j.status,actions:j.actions}});\n }\n if(stage==='owners' || stage==='owners_before_block') {\n  const r=resource(x);\n  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='lock' && a.target===x.target && typeof a.bot==='string'))) return held('held_resource_check',503);\n  const own=x.snapshot.actions.length===1;\n  if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='111'))) return held('held_other_resource_ticket');\n  if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');\n  return list(x);\n }\n if(stage==='portal_before' || stage==='portal_before_block') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id) return held('held_portal_readback',503);\n  const blocked=j.account.locked,own=x.snapshot.actions.length===1,claim=j.account.owner_ticket_id;\n  if(claim!==null && (!own || claim!==x.snapshot.ticket_id)) return held('held_portal_claim_mismatch');\n  if(own && blocked && claim!==x.snapshot.ticket_id) return held('held_portal_claim_mismatch');\n  if(x.release) {\n   if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});\n   return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unlock'});\n  }\n  if(own) return blocked && j.account.active_sessions===0 ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');\n  if(blocked) return held('held_unowned_portal_block');\n  if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'lock'});\n  return record(x,'detected',execution);\n }\n if(stage==='detected_ack') {\n  if(j.ok!==true || !idOK(j.ticket_id) || !states.includes(j.status)) return held('held_ticket_record',503);\n  if(['restored','closed'].includes(j.status)) return j.duplicate===true?out({ok:true,no_action:true,verdict:'old_event_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_cycle');\n  if(x.snapshot.exists && x.snapshot.status!=='restored' && j.ticket_id!==x.snapshot.ticket_id) return held('held_ticket_changed');\n  if(x.duplicate_active) return ['responding','verified'].includes(j.status)?out({ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_changed');\n  if(x.snapshot.status==='restored' && j.ticket_id===x.snapshot.ticket_id) return held('held_ticket_cycle');\n  return check({...x,ticket_id:j.ticket_id});\n }\n if(stage==='current_before_block') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || !['open','responding','verified'].includes(j.status) || j.actions.length) return held('held_ticket_changed');\n  return ownership({...x,snapshot:{exists:true,ticket_id:j.ticket_id,status:j.status,actions:[]}});\n }\n if(stage==='block_result') {\n  const allowed=['applied','already_applied','failed','rejected'];\n  const result=allowed.includes(j.result)?j.result:'failed';\n  const verified=j.applied_verified===true;\n  return record({...x,response_verified:verified && ['applied','already_applied'].includes(result)},'applied',execution,\n   {bot:'111',via:'portal',action:'lock',target:x.target,result,applied_verified:j.applied_verified??null,\n    effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n    n8n_execution_id:execution,detail:verified?'account_lock_and_sessions_verified':'portal_state_unverified'});\n }\n if(stage==='applied_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || !states.includes(j.status)) return held('held_applied_record_reconcile',503);\n  const ok=x.response_verified===true && ['responding','verified'].includes(j.status);\n  return out({ok,verdict:ok?'responded':'held_response_unverified',http_status:ok?200:503,\n    ticket_id:j.ticket_id,ticket_status:j.status,applied_verified:ok,effect_verified:null});\n }\n if(stage==='release_result') {\n  if(j.ok!==true || !['released','already_applied'].includes(j.result) || j.applied_verified!==true) return held('held_release_unverified',503);\n  return record(x,'released',execution,{bot:'111',via:'portal',action:'unlock',target:x.target,result:'released',\n   applied_verified:true,effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n   n8n_execution_id:execution,detail:`operator ${CFG.operator_name}; account unlocked and claim absent`});\n }\n if(stage==='released_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || j.status!=='restored') return held('held_release_record_reconcile',503);\n  return check(x);\n }\n if(stage==='final_ticket') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || j.status!=='restored' || j.actions.length) return held('held_final_ticket',503);\n  return list(x);\n }\n if(stage==='final_portal') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id || j.account.locked || j.account.owner_ticket_id!==null) return held('held_final_portal',503);\n  return out({ok:true,verdict:'released',http_status:200,ticket_id:x.ticket_id,ticket_status:'restored',applied_verified:true,effect_verified:null});\n }\n return held('unknown_stage',503);\n}\n\nreturn run(\"validate_release\", $input.first().json, String($execution.id));\n"
+      }
+    },
+    {
+      "id": "release-Validate proceed",
+      "name": "Validate proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Validate proceed",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Validate API",
+      "name": "Validate API",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "portfolioS4Portal01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Identity",
+      "name": "Identity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s4-operator\", \"event_max_age_seconds\": 660, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.105.21\", \"asset_id\": \"haedam-portal\", \"username\": \"zz_s4_target\"};\n// CFG is injected by the offline builder, never taken from a webhook body.\nconst out = j => [{json:j}];\n// A hold can occur after a partial mutation; do not claim that nothing happened.\nconst held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});\nconst idOK = v => typeof v==='string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst activeOK = (a,ctx) => a && a.bot==='111' && a.via==='portal' && a.action==='lock' && a.target===ctx.target && ['applied','already_applied'].includes(a.result);\nconst snapshotOK = j => j.ok===true && typeof j.exists==='boolean' && Array.isArray(j.actions) && j.actions.every(a=>activeOK(a,j.ctx)) &&\n  (j.exists ? idOK(j.ticket_id) && states.includes(j.status) : j.ticket_id===null && j.status===null && j.actions.length===0);\nconst resource = ctx => ({asset_id:CFG.asset_id,via:'portal',action:'lock',target:ctx.target});\nconst next = j => out({...j,proceed:true});\nconst check = ctx => next({mode:'check',seat:'A',group_key:ctx.group_key,ctx});\nconst ownership = ctx => next({mode:'active',resource:resource(ctx),ctx});\nconst list = ctx => next({action:'list',ctx});\nconst record = (ctx,stage,execution,action=null) => next({ctx,mode:'record',stage,seat:'A',case_id:'S4',\n  group_key:ctx.group_key,title:'S4 failed and successful logins',asset_id:CFG.asset_id,src_ip:CFG.ip,username:ctx.username,\n  event_ids:[ctx.event_id || `s4-release-${execution}`],detected_at:ctx.detected_at || null,\n  received_at:ctx.received_at || null,idempotency_key:`s4-${execution}-${stage}`,action});\n\nconst accountOK = j => j.ok===true && j.result==='listed' && j.account && j.account.username===CFG.username &&\n Number.isSafeInteger(j.account.user_id) && j.account.user_id>0 && typeof j.account.locked==='boolean' &&\n Number.isSafeInteger(j.account.active_sessions) && j.account.active_sessions>=0 &&\n (j.account.owner_ticket_id===null || idOK(j.account.owner_ticket_id));\n\nfunction run(stage,j,execution) {\n const x=j.ctx;\n if(stage==='validate_response' || stage==='validate_release') {\n  const b=j.body,release=stage==='validate_release';\n  const keys=release?['case_id','asset_id','src_ip','username','ticket_id']:['case_id','asset_id','src_ip','username','event_id','detected_at'];\n  if(!b || typeof b!=='object' || Array.isArray(b) || Object.keys(b).length!==keys.length || keys.some(k=>typeof b[k]!=='string')) return held('invalid_input',400);\n  if(b.case_id!=='S4' || b.asset_id!==CFG.asset_id || b.src_ip!==CFG.ip || b.username!==CFG.username) return held('invalid_scope',400);\n  if(release && !idOK(b.ticket_id)) return held('invalid_ticket_id',400);\n  if(!release) {\n   if(!/^[A-Za-z0-9_-]{1,128}$/.test(b.event_id) || !/T.*(Z|[+-]\\d\\d:\\d\\d)$/.test(b.detected_at)) return held('invalid_event',400);\n   const age=Date.now()-Date.parse(b.detected_at);\n   if(!Number.isFinite(age) || age < -CFG.future_clock_tolerance_seconds*1000 || age>CFG.event_max_age_seconds*1000) return held('stale_or_future_event',400);\n   if(!CFG.detection_enabled) return held('held_detection_disabled');\n  }\n  return list({cfg:{dry_run:false,store_real:true},seat:'A',case_id:'S4',asset_id:CFG.asset_id,src_ip:CFG.ip,\n    username:b.username,group_key:`S4|${b.username}`,event_id:b.event_id,detected_at:b.detected_at,\n    received_at:release?undefined:new Date().toISOString(),requested_ticket_id:b.ticket_id,\n    approver:release?CFG.operator_name:undefined,release});\n }\n if(stage==='identity') {\n  if(!accountOK(j)) return held('held_account_identity',503);\n  return check({...x,user_id:j.account.user_id,target:`${x.username}:${j.account.user_id}`});\n }\n if(stage==='snapshot') {\n  if(!snapshotOK(j)) return held('held_ticket_check',503);\n  if(j.actions.length>1 || (['closed','restored'].includes(j.status) && j.actions.length)) return held('held_inconsistent_ticket');\n  if(x.release && (!j.exists || j.ticket_id!==x.requested_ticket_id)) return held('held_stale_release_ticket');\n  return ownership({...x,snapshot:{exists:j.exists,ticket_id:j.ticket_id,status:j.status,actions:j.actions}});\n }\n if(stage==='owners' || stage==='owners_before_block') {\n  const r=resource(x);\n  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='lock' && a.target===x.target && typeof a.bot==='string'))) return held('held_resource_check',503);\n  const own=x.snapshot.actions.length===1;\n  if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='111'))) return held('held_other_resource_ticket');\n  if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');\n  return list(x);\n }\n if(stage==='portal_before' || stage==='portal_before_block') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id) return held('held_portal_readback',503);\n  const blocked=j.account.locked,own=x.snapshot.actions.length===1,claim=j.account.owner_ticket_id;\n  if(claim!==null && (!own || claim!==x.snapshot.ticket_id)) return held('held_portal_claim_mismatch');\n  if(own && blocked && claim!==x.snapshot.ticket_id) return held('held_portal_claim_mismatch');\n  if(x.release) {\n   if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});\n   return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unlock'});\n  }\n  if(own) return blocked && j.account.active_sessions===0 ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');\n  if(blocked) return held('held_unowned_portal_block');\n  if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'lock'});\n  return record(x,'detected',execution);\n }\n if(stage==='detected_ack') {\n  if(j.ok!==true || !idOK(j.ticket_id) || !states.includes(j.status)) return held('held_ticket_record',503);\n  if(['restored','closed'].includes(j.status)) return j.duplicate===true?out({ok:true,no_action:true,verdict:'old_event_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_cycle');\n  if(x.snapshot.exists && x.snapshot.status!=='restored' && j.ticket_id!==x.snapshot.ticket_id) return held('held_ticket_changed');\n  if(x.duplicate_active) return ['responding','verified'].includes(j.status)?out({ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_changed');\n  if(x.snapshot.status==='restored' && j.ticket_id===x.snapshot.ticket_id) return held('held_ticket_cycle');\n  return check({...x,ticket_id:j.ticket_id});\n }\n if(stage==='current_before_block') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || !['open','responding','verified'].includes(j.status) || j.actions.length) return held('held_ticket_changed');\n  return ownership({...x,snapshot:{exists:true,ticket_id:j.ticket_id,status:j.status,actions:[]}});\n }\n if(stage==='block_result') {\n  const allowed=['applied','already_applied','failed','rejected'];\n  const result=allowed.includes(j.result)?j.result:'failed';\n  const verified=j.applied_verified===true;\n  return record({...x,response_verified:verified && ['applied','already_applied'].includes(result)},'applied',execution,\n   {bot:'111',via:'portal',action:'lock',target:x.target,result,applied_verified:j.applied_verified??null,\n    effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n    n8n_execution_id:execution,detail:verified?'account_lock_and_sessions_verified':'portal_state_unverified'});\n }\n if(stage==='applied_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || !states.includes(j.status)) return held('held_applied_record_reconcile',503);\n  const ok=x.response_verified===true && ['responding','verified'].includes(j.status);\n  return out({ok,verdict:ok?'responded':'held_response_unverified',http_status:ok?200:503,\n    ticket_id:j.ticket_id,ticket_status:j.status,applied_verified:ok,effect_verified:null});\n }\n if(stage==='release_result') {\n  if(j.ok!==true || !['released','already_applied'].includes(j.result) || j.applied_verified!==true) return held('held_release_unverified',503);\n  return record(x,'released',execution,{bot:'111',via:'portal',action:'unlock',target:x.target,result:'released',\n   applied_verified:true,effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n   n8n_execution_id:execution,detail:`operator ${CFG.operator_name}; account unlocked and claim absent`});\n }\n if(stage==='released_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || j.status!=='restored') return held('held_release_record_reconcile',503);\n  return check(x);\n }\n if(stage==='final_ticket') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || j.status!=='restored' || j.actions.length) return held('held_final_ticket',503);\n  return list(x);\n }\n if(stage==='final_portal') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id || j.account.locked || j.account.owner_ticket_id!==null) return held('held_final_portal',503);\n  return out({ok:true,verdict:'released',http_status:200,ticket_id:x.ticket_id,ticket_status:'restored',applied_verified:true,effect_verified:null});\n }\n return held('unknown_stage',503);\n}\n\nreturn run(\"identity\", $input.first().json, String($execution.id));\n"
+      }
+    },
+    {
+      "id": "release-Identity proceed",
+      "name": "Identity proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Identity proceed",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Identity API",
+      "name": "Identity API",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1680,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "portfolioS4Ticket01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Snapshot",
+      "name": "Snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        320
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s4-operator\", \"event_max_age_seconds\": 660, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.105.21\", \"asset_id\": \"haedam-portal\", \"username\": \"zz_s4_target\"};\n// CFG is injected by the offline builder, never taken from a webhook body.\nconst out = j => [{json:j}];\n// A hold can occur after a partial mutation; do not claim that nothing happened.\nconst held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});\nconst idOK = v => typeof v==='string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst activeOK = (a,ctx) => a && a.bot==='111' && a.via==='portal' && a.action==='lock' && a.target===ctx.target && ['applied','already_applied'].includes(a.result);\nconst snapshotOK = j => j.ok===true && typeof j.exists==='boolean' && Array.isArray(j.actions) && j.actions.every(a=>activeOK(a,j.ctx)) &&\n  (j.exists ? idOK(j.ticket_id) && states.includes(j.status) : j.ticket_id===null && j.status===null && j.actions.length===0);\nconst resource = ctx => ({asset_id:CFG.asset_id,via:'portal',action:'lock',target:ctx.target});\nconst next = j => out({...j,proceed:true});\nconst check = ctx => next({mode:'check',seat:'A',group_key:ctx.group_key,ctx});\nconst ownership = ctx => next({mode:'active',resource:resource(ctx),ctx});\nconst list = ctx => next({action:'list',ctx});\nconst record = (ctx,stage,execution,action=null) => next({ctx,mode:'record',stage,seat:'A',case_id:'S4',\n  group_key:ctx.group_key,title:'S4 failed and successful logins',asset_id:CFG.asset_id,src_ip:CFG.ip,username:ctx.username,\n  event_ids:[ctx.event_id || `s4-release-${execution}`],detected_at:ctx.detected_at || null,\n  received_at:ctx.received_at || null,idempotency_key:`s4-${execution}-${stage}`,action});\n\nconst accountOK = j => j.ok===true && j.result==='listed' && j.account && j.account.username===CFG.username &&\n Number.isSafeInteger(j.account.user_id) && j.account.user_id>0 && typeof j.account.locked==='boolean' &&\n Number.isSafeInteger(j.account.active_sessions) && j.account.active_sessions>=0 &&\n (j.account.owner_ticket_id===null || idOK(j.account.owner_ticket_id));\n\nfunction run(stage,j,execution) {\n const x=j.ctx;\n if(stage==='validate_response' || stage==='validate_release') {\n  const b=j.body,release=stage==='validate_release';\n  const keys=release?['case_id','asset_id','src_ip','username','ticket_id']:['case_id','asset_id','src_ip','username','event_id','detected_at'];\n  if(!b || typeof b!=='object' || Array.isArray(b) || Object.keys(b).length!==keys.length || keys.some(k=>typeof b[k]!=='string')) return held('invalid_input',400);\n  if(b.case_id!=='S4' || b.asset_id!==CFG.asset_id || b.src_ip!==CFG.ip || b.username!==CFG.username) return held('invalid_scope',400);\n  if(release && !idOK(b.ticket_id)) return held('invalid_ticket_id',400);\n  if(!release) {\n   if(!/^[A-Za-z0-9_-]{1,128}$/.test(b.event_id) || !/T.*(Z|[+-]\\d\\d:\\d\\d)$/.test(b.detected_at)) return held('invalid_event',400);\n   const age=Date.now()-Date.parse(b.detected_at);\n   if(!Number.isFinite(age) || age < -CFG.future_clock_tolerance_seconds*1000 || age>CFG.event_max_age_seconds*1000) return held('stale_or_future_event',400);\n   if(!CFG.detection_enabled) return held('held_detection_disabled');\n  }\n  return list({cfg:{dry_run:false,store_real:true},seat:'A',case_id:'S4',asset_id:CFG.asset_id,src_ip:CFG.ip,\n    username:b.username,group_key:`S4|${b.username}`,event_id:b.event_id,detected_at:b.detected_at,\n    received_at:release?undefined:new Date().toISOString(),requested_ticket_id:b.ticket_id,\n    approver:release?CFG.operator_name:undefined,release});\n }\n if(stage==='identity') {\n  if(!accountOK(j)) return held('held_account_identity',503);\n  return check({...x,user_id:j.account.user_id,target:`${x.username}:${j.account.user_id}`});\n }\n if(stage==='snapshot') {\n  if(!snapshotOK(j)) return held('held_ticket_check',503);\n  if(j.actions.length>1 || (['closed','restored'].includes(j.status) && j.actions.length)) return held('held_inconsistent_ticket');\n  if(x.release && (!j.exists || j.ticket_id!==x.requested_ticket_id)) return held('held_stale_release_ticket');\n  return ownership({...x,snapshot:{exists:j.exists,ticket_id:j.ticket_id,status:j.status,actions:j.actions}});\n }\n if(stage==='owners' || stage==='owners_before_block') {\n  const r=resource(x);\n  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='lock' && a.target===x.target && typeof a.bot==='string'))) return held('held_resource_check',503);\n  const own=x.snapshot.actions.length===1;\n  if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='111'))) return held('held_other_resource_ticket');\n  if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');\n  return list(x);\n }\n if(stage==='portal_before' || stage==='portal_before_block') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id) return held('held_portal_readback',503);\n  const blocked=j.account.locked,own=x.snapshot.actions.length===1,claim=j.account.owner_ticket_id;\n  if(claim!==null && (!own || claim!==x.snapshot.ticket_id)) return held('held_portal_claim_mismatch');\n  if(own && blocked && claim!==x.snapshot.ticket_id) return held('held_portal_claim_mismatch');\n  if(x.release) {\n   if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});\n   return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unlock'});\n  }\n  if(own) return blocked && j.account.active_sessions===0 ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');\n  if(blocked) return held('held_unowned_portal_block');\n  if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'lock'});\n  return record(x,'detected',execution);\n }\n if(stage==='detected_ack') {\n  if(j.ok!==true || !idOK(j.ticket_id) || !states.includes(j.status)) return held('held_ticket_record',503);\n  if(['restored','closed'].includes(j.status)) return j.duplicate===true?out({ok:true,no_action:true,verdict:'old_event_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_cycle');\n  if(x.snapshot.exists && x.snapshot.status!=='restored' && j.ticket_id!==x.snapshot.ticket_id) return held('held_ticket_changed');\n  if(x.duplicate_active) return ['responding','verified'].includes(j.status)?out({ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_changed');\n  if(x.snapshot.status==='restored' && j.ticket_id===x.snapshot.ticket_id) return held('held_ticket_cycle');\n  return check({...x,ticket_id:j.ticket_id});\n }\n if(stage==='current_before_block') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || !['open','responding','verified'].includes(j.status) || j.actions.length) return held('held_ticket_changed');\n  return ownership({...x,snapshot:{exists:true,ticket_id:j.ticket_id,status:j.status,actions:[]}});\n }\n if(stage==='block_result') {\n  const allowed=['applied','already_applied','failed','rejected'];\n  const result=allowed.includes(j.result)?j.result:'failed';\n  const verified=j.applied_verified===true;\n  return record({...x,response_verified:verified && ['applied','already_applied'].includes(result)},'applied',execution,\n   {bot:'111',via:'portal',action:'lock',target:x.target,result,applied_verified:j.applied_verified??null,\n    effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n    n8n_execution_id:execution,detail:verified?'account_lock_and_sessions_verified':'portal_state_unverified'});\n }\n if(stage==='applied_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || !states.includes(j.status)) return held('held_applied_record_reconcile',503);\n  const ok=x.response_verified===true && ['responding','verified'].includes(j.status);\n  return out({ok,verdict:ok?'responded':'held_response_unverified',http_status:ok?200:503,\n    ticket_id:j.ticket_id,ticket_status:j.status,applied_verified:ok,effect_verified:null});\n }\n if(stage==='release_result') {\n  if(j.ok!==true || !['released','already_applied'].includes(j.result) || j.applied_verified!==true) return held('held_release_unverified',503);\n  return record(x,'released',execution,{bot:'111',via:'portal',action:'unlock',target:x.target,result:'released',\n   applied_verified:true,effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n   n8n_execution_id:execution,detail:`operator ${CFG.operator_name}; account unlocked and claim absent`});\n }\n if(stage==='released_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || j.status!=='restored') return held('held_release_record_reconcile',503);\n  return check(x);\n }\n if(stage==='final_ticket') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || j.status!=='restored' || j.actions.length) return held('held_final_ticket',503);\n  return list(x);\n }\n if(stage==='final_portal') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id || j.account.locked || j.account.owner_ticket_id!==null) return held('held_final_portal',503);\n  return out({ok:true,verdict:'released',http_status:200,ticket_id:x.ticket_id,ticket_status:'restored',applied_verified:true,effect_verified:null});\n }\n return held('unknown_stage',503);\n}\n\nreturn run(\"snapshot\", $input.first().json, String($execution.id));\n"
+      }
+    },
+    {
+      "id": "release-Snapshot proceed",
+      "name": "Snapshot proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        280,
+        320
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Snapshot proceed",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Snapshot API",
+      "name": "Snapshot API",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        320
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "portfolioS4Ticket01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Owners",
+      "name": "Owners",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        840,
+        320
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s4-operator\", \"event_max_age_seconds\": 660, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.105.21\", \"asset_id\": \"haedam-portal\", \"username\": \"zz_s4_target\"};\n// CFG is injected by the offline builder, never taken from a webhook body.\nconst out = j => [{json:j}];\n// A hold can occur after a partial mutation; do not claim that nothing happened.\nconst held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});\nconst idOK = v => typeof v==='string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst activeOK = (a,ctx) => a && a.bot==='111' && a.via==='portal' && a.action==='lock' && a.target===ctx.target && ['applied','already_applied'].includes(a.result);\nconst snapshotOK = j => j.ok===true && typeof j.exists==='boolean' && Array.isArray(j.actions) && j.actions.every(a=>activeOK(a,j.ctx)) &&\n  (j.exists ? idOK(j.ticket_id) && states.includes(j.status) : j.ticket_id===null && j.status===null && j.actions.length===0);\nconst resource = ctx => ({asset_id:CFG.asset_id,via:'portal',action:'lock',target:ctx.target});\nconst next = j => out({...j,proceed:true});\nconst check = ctx => next({mode:'check',seat:'A',group_key:ctx.group_key,ctx});\nconst ownership = ctx => next({mode:'active',resource:resource(ctx),ctx});\nconst list = ctx => next({action:'list',ctx});\nconst record = (ctx,stage,execution,action=null) => next({ctx,mode:'record',stage,seat:'A',case_id:'S4',\n  group_key:ctx.group_key,title:'S4 failed and successful logins',asset_id:CFG.asset_id,src_ip:CFG.ip,username:ctx.username,\n  event_ids:[ctx.event_id || `s4-release-${execution}`],detected_at:ctx.detected_at || null,\n  received_at:ctx.received_at || null,idempotency_key:`s4-${execution}-${stage}`,action});\n\nconst accountOK = j => j.ok===true && j.result==='listed' && j.account && j.account.username===CFG.username &&\n Number.isSafeInteger(j.account.user_id) && j.account.user_id>0 && typeof j.account.locked==='boolean' &&\n Number.isSafeInteger(j.account.active_sessions) && j.account.active_sessions>=0 &&\n (j.account.owner_ticket_id===null || idOK(j.account.owner_ticket_id));\n\nfunction run(stage,j,execution) {\n const x=j.ctx;\n if(stage==='validate_response' || stage==='validate_release') {\n  const b=j.body,release=stage==='validate_release';\n  const keys=release?['case_id','asset_id','src_ip','username','ticket_id']:['case_id','asset_id','src_ip','username','event_id','detected_at'];\n  if(!b || typeof b!=='object' || Array.isArray(b) || Object.keys(b).length!==keys.length || keys.some(k=>typeof b[k]!=='string')) return held('invalid_input',400);\n  if(b.case_id!=='S4' || b.asset_id!==CFG.asset_id || b.src_ip!==CFG.ip || b.username!==CFG.username) return held('invalid_scope',400);\n  if(release && !idOK(b.ticket_id)) return held('invalid_ticket_id',400);\n  if(!release) {\n   if(!/^[A-Za-z0-9_-]{1,128}$/.test(b.event_id) || !/T.*(Z|[+-]\\d\\d:\\d\\d)$/.test(b.detected_at)) return held('invalid_event',400);\n   const age=Date.now()-Date.parse(b.detected_at);\n   if(!Number.isFinite(age) || age < -CFG.future_clock_tolerance_seconds*1000 || age>CFG.event_max_age_seconds*1000) return held('stale_or_future_event',400);\n   if(!CFG.detection_enabled) return held('held_detection_disabled');\n  }\n  return list({cfg:{dry_run:false,store_real:true},seat:'A',case_id:'S4',asset_id:CFG.asset_id,src_ip:CFG.ip,\n    username:b.username,group_key:`S4|${b.username}`,event_id:b.event_id,detected_at:b.detected_at,\n    received_at:release?undefined:new Date().toISOString(),requested_ticket_id:b.ticket_id,\n    approver:release?CFG.operator_name:undefined,release});\n }\n if(stage==='identity') {\n  if(!accountOK(j)) return held('held_account_identity',503);\n  return check({...x,user_id:j.account.user_id,target:`${x.username}:${j.account.user_id}`});\n }\n if(stage==='snapshot') {\n  if(!snapshotOK(j)) return held('held_ticket_check',503);\n  if(j.actions.length>1 || (['closed','restored'].includes(j.status) && j.actions.length)) return held('held_inconsistent_ticket');\n  if(x.release && (!j.exists || j.ticket_id!==x.requested_ticket_id)) return held('held_stale_release_ticket');\n  return ownership({...x,snapshot:{exists:j.exists,ticket_id:j.ticket_id,status:j.status,actions:j.actions}});\n }\n if(stage==='owners' || stage==='owners_before_block') {\n  const r=resource(x);\n  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='lock' && a.target===x.target && typeof a.bot==='string'))) return held('held_resource_check',503);\n  const own=x.snapshot.actions.length===1;\n  if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='111'))) return held('held_other_resource_ticket');\n  if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');\n  return list(x);\n }\n if(stage==='portal_before' || stage==='portal_before_block') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id) return held('held_portal_readback',503);\n  const blocked=j.account.locked,own=x.snapshot.actions.length===1,claim=j.account.owner_ticket_id;\n  if(claim!==null && (!own || claim!==x.snapshot.ticket_id)) return held('held_portal_claim_mismatch');\n  if(own && blocked && claim!==x.snapshot.ticket_id) return held('held_portal_claim_mismatch');\n  if(x.release) {\n   if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});\n   return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unlock'});\n  }\n  if(own) return blocked && j.account.active_sessions===0 ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');\n  if(blocked) return held('held_unowned_portal_block');\n  if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'lock'});\n  return record(x,'detected',execution);\n }\n if(stage==='detected_ack') {\n  if(j.ok!==true || !idOK(j.ticket_id) || !states.includes(j.status)) return held('held_ticket_record',503);\n  if(['restored','closed'].includes(j.status)) return j.duplicate===true?out({ok:true,no_action:true,verdict:'old_event_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_cycle');\n  if(x.snapshot.exists && x.snapshot.status!=='restored' && j.ticket_id!==x.snapshot.ticket_id) return held('held_ticket_changed');\n  if(x.duplicate_active) return ['responding','verified'].includes(j.status)?out({ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_changed');\n  if(x.snapshot.status==='restored' && j.ticket_id===x.snapshot.ticket_id) return held('held_ticket_cycle');\n  return check({...x,ticket_id:j.ticket_id});\n }\n if(stage==='current_before_block') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || !['open','responding','verified'].includes(j.status) || j.actions.length) return held('held_ticket_changed');\n  return ownership({...x,snapshot:{exists:true,ticket_id:j.ticket_id,status:j.status,actions:[]}});\n }\n if(stage==='block_result') {\n  const allowed=['applied','already_applied','failed','rejected'];\n  const result=allowed.includes(j.result)?j.result:'failed';\n  const verified=j.applied_verified===true;\n  return record({...x,response_verified:verified && ['applied','already_applied'].includes(result)},'applied',execution,\n   {bot:'111',via:'portal',action:'lock',target:x.target,result,applied_verified:j.applied_verified??null,\n    effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n    n8n_execution_id:execution,detail:verified?'account_lock_and_sessions_verified':'portal_state_unverified'});\n }\n if(stage==='applied_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || !states.includes(j.status)) return held('held_applied_record_reconcile',503);\n  const ok=x.response_verified===true && ['responding','verified'].includes(j.status);\n  return out({ok,verdict:ok?'responded':'held_response_unverified',http_status:ok?200:503,\n    ticket_id:j.ticket_id,ticket_status:j.status,applied_verified:ok,effect_verified:null});\n }\n if(stage==='release_result') {\n  if(j.ok!==true || !['released','already_applied'].includes(j.result) || j.applied_verified!==true) return held('held_release_unverified',503);\n  return record(x,'released',execution,{bot:'111',via:'portal',action:'unlock',target:x.target,result:'released',\n   applied_verified:true,effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n   n8n_execution_id:execution,detail:`operator ${CFG.operator_name}; account unlocked and claim absent`});\n }\n if(stage==='released_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || j.status!=='restored') return held('held_release_record_reconcile',503);\n  return check(x);\n }\n if(stage==='final_ticket') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || j.status!=='restored' || j.actions.length) return held('held_final_ticket',503);\n  return list(x);\n }\n if(stage==='final_portal') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id || j.account.locked || j.account.owner_ticket_id!==null) return held('held_final_portal',503);\n  return out({ok:true,verdict:'released',http_status:200,ticket_id:x.ticket_id,ticket_status:'restored',applied_verified:true,effect_verified:null});\n }\n return held('unknown_stage',503);\n}\n\nreturn run(\"owners\", $input.first().json, String($execution.id));\n"
+      }
+    },
+    {
+      "id": "release-Owners proceed",
+      "name": "Owners proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        320
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Owners proceed",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Owners API",
+      "name": "Owners API",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1400,
+        320
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "portfolioS4Portal01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Portal before",
+      "name": "Portal before",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        320
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s4-operator\", \"event_max_age_seconds\": 660, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.105.21\", \"asset_id\": \"haedam-portal\", \"username\": \"zz_s4_target\"};\n// CFG is injected by the offline builder, never taken from a webhook body.\nconst out = j => [{json:j}];\n// A hold can occur after a partial mutation; do not claim that nothing happened.\nconst held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});\nconst idOK = v => typeof v==='string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst activeOK = (a,ctx) => a && a.bot==='111' && a.via==='portal' && a.action==='lock' && a.target===ctx.target && ['applied','already_applied'].includes(a.result);\nconst snapshotOK = j => j.ok===true && typeof j.exists==='boolean' && Array.isArray(j.actions) && j.actions.every(a=>activeOK(a,j.ctx)) &&\n  (j.exists ? idOK(j.ticket_id) && states.includes(j.status) : j.ticket_id===null && j.status===null && j.actions.length===0);\nconst resource = ctx => ({asset_id:CFG.asset_id,via:'portal',action:'lock',target:ctx.target});\nconst next = j => out({...j,proceed:true});\nconst check = ctx => next({mode:'check',seat:'A',group_key:ctx.group_key,ctx});\nconst ownership = ctx => next({mode:'active',resource:resource(ctx),ctx});\nconst list = ctx => next({action:'list',ctx});\nconst record = (ctx,stage,execution,action=null) => next({ctx,mode:'record',stage,seat:'A',case_id:'S4',\n  group_key:ctx.group_key,title:'S4 failed and successful logins',asset_id:CFG.asset_id,src_ip:CFG.ip,username:ctx.username,\n  event_ids:[ctx.event_id || `s4-release-${execution}`],detected_at:ctx.detected_at || null,\n  received_at:ctx.received_at || null,idempotency_key:`s4-${execution}-${stage}`,action});\n\nconst accountOK = j => j.ok===true && j.result==='listed' && j.account && j.account.username===CFG.username &&\n Number.isSafeInteger(j.account.user_id) && j.account.user_id>0 && typeof j.account.locked==='boolean' &&\n Number.isSafeInteger(j.account.active_sessions) && j.account.active_sessions>=0 &&\n (j.account.owner_ticket_id===null || idOK(j.account.owner_ticket_id));\n\nfunction run(stage,j,execution) {\n const x=j.ctx;\n if(stage==='validate_response' || stage==='validate_release') {\n  const b=j.body,release=stage==='validate_release';\n  const keys=release?['case_id','asset_id','src_ip','username','ticket_id']:['case_id','asset_id','src_ip','username','event_id','detected_at'];\n  if(!b || typeof b!=='object' || Array.isArray(b) || Object.keys(b).length!==keys.length || keys.some(k=>typeof b[k]!=='string')) return held('invalid_input',400);\n  if(b.case_id!=='S4' || b.asset_id!==CFG.asset_id || b.src_ip!==CFG.ip || b.username!==CFG.username) return held('invalid_scope',400);\n  if(release && !idOK(b.ticket_id)) return held('invalid_ticket_id',400);\n  if(!release) {\n   if(!/^[A-Za-z0-9_-]{1,128}$/.test(b.event_id) || !/T.*(Z|[+-]\\d\\d:\\d\\d)$/.test(b.detected_at)) return held('invalid_event',400);\n   const age=Date.now()-Date.parse(b.detected_at);\n   if(!Number.isFinite(age) || age < -CFG.future_clock_tolerance_seconds*1000 || age>CFG.event_max_age_seconds*1000) return held('stale_or_future_event',400);\n   if(!CFG.detection_enabled) return held('held_detection_disabled');\n  }\n  return list({cfg:{dry_run:false,store_real:true},seat:'A',case_id:'S4',asset_id:CFG.asset_id,src_ip:CFG.ip,\n    username:b.username,group_key:`S4|${b.username}`,event_id:b.event_id,detected_at:b.detected_at,\n    received_at:release?undefined:new Date().toISOString(),requested_ticket_id:b.ticket_id,\n    approver:release?CFG.operator_name:undefined,release});\n }\n if(stage==='identity') {\n  if(!accountOK(j)) return held('held_account_identity',503);\n  return check({...x,user_id:j.account.user_id,target:`${x.username}:${j.account.user_id}`});\n }\n if(stage==='snapshot') {\n  if(!snapshotOK(j)) return held('held_ticket_check',503);\n  if(j.actions.length>1 || (['closed','restored'].includes(j.status) && j.actions.length)) return held('held_inconsistent_ticket');\n  if(x.release && (!j.exists || j.ticket_id!==x.requested_ticket_id)) return held('held_stale_release_ticket');\n  return ownership({...x,snapshot:{exists:j.exists,ticket_id:j.ticket_id,status:j.status,actions:j.actions}});\n }\n if(stage==='owners' || stage==='owners_before_block') {\n  const r=resource(x);\n  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='lock' && a.target===x.target && typeof a.bot==='string'))) return held('held_resource_check',503);\n  const own=x.snapshot.actions.length===1;\n  if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='111'))) return held('held_other_resource_ticket');\n  if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');\n  return list(x);\n }\n if(stage==='portal_before' || stage==='portal_before_block') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id) return held('held_portal_readback',503);\n  const blocked=j.account.locked,own=x.snapshot.actions.length===1,claim=j.account.owner_ticket_id;\n  if(claim!==null && (!own || claim!==x.snapshot.ticket_id)) return held('held_portal_claim_mismatch');\n  if(own && blocked && claim!==x.snapshot.ticket_id) return held('held_portal_claim_mismatch');\n  if(x.release) {\n   if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});\n   return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unlock'});\n  }\n  if(own) return blocked && j.account.active_sessions===0 ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');\n  if(blocked) return held('held_unowned_portal_block');\n  if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'lock'});\n  return record(x,'detected',execution);\n }\n if(stage==='detected_ack') {\n  if(j.ok!==true || !idOK(j.ticket_id) || !states.includes(j.status)) return held('held_ticket_record',503);\n  if(['restored','closed'].includes(j.status)) return j.duplicate===true?out({ok:true,no_action:true,verdict:'old_event_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_cycle');\n  if(x.snapshot.exists && x.snapshot.status!=='restored' && j.ticket_id!==x.snapshot.ticket_id) return held('held_ticket_changed');\n  if(x.duplicate_active) return ['responding','verified'].includes(j.status)?out({ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_changed');\n  if(x.snapshot.status==='restored' && j.ticket_id===x.snapshot.ticket_id) return held('held_ticket_cycle');\n  return check({...x,ticket_id:j.ticket_id});\n }\n if(stage==='current_before_block') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || !['open','responding','verified'].includes(j.status) || j.actions.length) return held('held_ticket_changed');\n  return ownership({...x,snapshot:{exists:true,ticket_id:j.ticket_id,status:j.status,actions:[]}});\n }\n if(stage==='block_result') {\n  const allowed=['applied','already_applied','failed','rejected'];\n  const result=allowed.includes(j.result)?j.result:'failed';\n  const verified=j.applied_verified===true;\n  return record({...x,response_verified:verified && ['applied','already_applied'].includes(result)},'applied',execution,\n   {bot:'111',via:'portal',action:'lock',target:x.target,result,applied_verified:j.applied_verified??null,\n    effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n    n8n_execution_id:execution,detail:verified?'account_lock_and_sessions_verified':'portal_state_unverified'});\n }\n if(stage==='applied_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || !states.includes(j.status)) return held('held_applied_record_reconcile',503);\n  const ok=x.response_verified===true && ['responding','verified'].includes(j.status);\n  return out({ok,verdict:ok?'responded':'held_response_unverified',http_status:ok?200:503,\n    ticket_id:j.ticket_id,ticket_status:j.status,applied_verified:ok,effect_verified:null});\n }\n if(stage==='release_result') {\n  if(j.ok!==true || !['released','already_applied'].includes(j.result) || j.applied_verified!==true) return held('held_release_unverified',503);\n  return record(x,'released',execution,{bot:'111',via:'portal',action:'unlock',target:x.target,result:'released',\n   applied_verified:true,effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n   n8n_execution_id:execution,detail:`operator ${CFG.operator_name}; account unlocked and claim absent`});\n }\n if(stage==='released_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || j.status!=='restored') return held('held_release_record_reconcile',503);\n  return check(x);\n }\n if(stage==='final_ticket') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || j.status!=='restored' || j.actions.length) return held('held_final_ticket',503);\n  return list(x);\n }\n if(stage==='final_portal') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id || j.account.locked || j.account.owner_ticket_id!==null) return held('held_final_portal',503);\n  return out({ok:true,verdict:'released',http_status:200,ticket_id:x.ticket_id,ticket_status:'restored',applied_verified:true,effect_verified:null});\n }\n return held('unknown_stage',503);\n}\n\nreturn run(\"portal_before\", $input.first().json, String($execution.id));\n"
+      }
+    },
+    {
+      "id": "release-Portal before proceed",
+      "name": "Portal before proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        640
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Portal before proceed",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Portal before API",
+      "name": "Portal before API",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        280,
+        640
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "portfolioS4Portal01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Release result",
+      "name": "Release result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        640
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s4-operator\", \"event_max_age_seconds\": 660, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.105.21\", \"asset_id\": \"haedam-portal\", \"username\": \"zz_s4_target\"};\n// CFG is injected by the offline builder, never taken from a webhook body.\nconst out = j => [{json:j}];\n// A hold can occur after a partial mutation; do not claim that nothing happened.\nconst held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});\nconst idOK = v => typeof v==='string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst activeOK = (a,ctx) => a && a.bot==='111' && a.via==='portal' && a.action==='lock' && a.target===ctx.target && ['applied','already_applied'].includes(a.result);\nconst snapshotOK = j => j.ok===true && typeof j.exists==='boolean' && Array.isArray(j.actions) && j.actions.every(a=>activeOK(a,j.ctx)) &&\n  (j.exists ? idOK(j.ticket_id) && states.includes(j.status) : j.ticket_id===null && j.status===null && j.actions.length===0);\nconst resource = ctx => ({asset_id:CFG.asset_id,via:'portal',action:'lock',target:ctx.target});\nconst next = j => out({...j,proceed:true});\nconst check = ctx => next({mode:'check',seat:'A',group_key:ctx.group_key,ctx});\nconst ownership = ctx => next({mode:'active',resource:resource(ctx),ctx});\nconst list = ctx => next({action:'list',ctx});\nconst record = (ctx,stage,execution,action=null) => next({ctx,mode:'record',stage,seat:'A',case_id:'S4',\n  group_key:ctx.group_key,title:'S4 failed and successful logins',asset_id:CFG.asset_id,src_ip:CFG.ip,username:ctx.username,\n  event_ids:[ctx.event_id || `s4-release-${execution}`],detected_at:ctx.detected_at || null,\n  received_at:ctx.received_at || null,idempotency_key:`s4-${execution}-${stage}`,action});\n\nconst accountOK = j => j.ok===true && j.result==='listed' && j.account && j.account.username===CFG.username &&\n Number.isSafeInteger(j.account.user_id) && j.account.user_id>0 && typeof j.account.locked==='boolean' &&\n Number.isSafeInteger(j.account.active_sessions) && j.account.active_sessions>=0 &&\n (j.account.owner_ticket_id===null || idOK(j.account.owner_ticket_id));\n\nfunction run(stage,j,execution) {\n const x=j.ctx;\n if(stage==='validate_response' || stage==='validate_release') {\n  const b=j.body,release=stage==='validate_release';\n  const keys=release?['case_id','asset_id','src_ip','username','ticket_id']:['case_id','asset_id','src_ip','username','event_id','detected_at'];\n  if(!b || typeof b!=='object' || Array.isArray(b) || Object.keys(b).length!==keys.length || keys.some(k=>typeof b[k]!=='string')) return held('invalid_input',400);\n  if(b.case_id!=='S4' || b.asset_id!==CFG.asset_id || b.src_ip!==CFG.ip || b.username!==CFG.username) return held('invalid_scope',400);\n  if(release && !idOK(b.ticket_id)) return held('invalid_ticket_id',400);\n  if(!release) {\n   if(!/^[A-Za-z0-9_-]{1,128}$/.test(b.event_id) || !/T.*(Z|[+-]\\d\\d:\\d\\d)$/.test(b.detected_at)) return held('invalid_event',400);\n   const age=Date.now()-Date.parse(b.detected_at);\n   if(!Number.isFinite(age) || age < -CFG.future_clock_tolerance_seconds*1000 || age>CFG.event_max_age_seconds*1000) return held('stale_or_future_event',400);\n   if(!CFG.detection_enabled) return held('held_detection_disabled');\n  }\n  return list({cfg:{dry_run:false,store_real:true},seat:'A',case_id:'S4',asset_id:CFG.asset_id,src_ip:CFG.ip,\n    username:b.username,group_key:`S4|${b.username}`,event_id:b.event_id,detected_at:b.detected_at,\n    received_at:release?undefined:new Date().toISOString(),requested_ticket_id:b.ticket_id,\n    approver:release?CFG.operator_name:undefined,release});\n }\n if(stage==='identity') {\n  if(!accountOK(j)) return held('held_account_identity',503);\n  return check({...x,user_id:j.account.user_id,target:`${x.username}:${j.account.user_id}`});\n }\n if(stage==='snapshot') {\n  if(!snapshotOK(j)) return held('held_ticket_check',503);\n  if(j.actions.length>1 || (['closed','restored'].includes(j.status) && j.actions.length)) return held('held_inconsistent_ticket');\n  if(x.release && (!j.exists || j.ticket_id!==x.requested_ticket_id)) return held('held_stale_release_ticket');\n  return ownership({...x,snapshot:{exists:j.exists,ticket_id:j.ticket_id,status:j.status,actions:j.actions}});\n }\n if(stage==='owners' || stage==='owners_before_block') {\n  const r=resource(x);\n  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='lock' && a.target===x.target && typeof a.bot==='string'))) return held('held_resource_check',503);\n  const own=x.snapshot.actions.length===1;\n  if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='111'))) return held('held_other_resource_ticket');\n  if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');\n  return list(x);\n }\n if(stage==='portal_before' || stage==='portal_before_block') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id) return held('held_portal_readback',503);\n  const blocked=j.account.locked,own=x.snapshot.actions.length===1,claim=j.account.owner_ticket_id;\n  if(claim!==null && (!own || claim!==x.snapshot.ticket_id)) return held('held_portal_claim_mismatch');\n  if(own && blocked && claim!==x.snapshot.ticket_id) return held('held_portal_claim_mismatch');\n  if(x.release) {\n   if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});\n   return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unlock'});\n  }\n  if(own) return blocked && j.account.active_sessions===0 ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');\n  if(blocked) return held('held_unowned_portal_block');\n  if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'lock'});\n  return record(x,'detected',execution);\n }\n if(stage==='detected_ack') {\n  if(j.ok!==true || !idOK(j.ticket_id) || !states.includes(j.status)) return held('held_ticket_record',503);\n  if(['restored','closed'].includes(j.status)) return j.duplicate===true?out({ok:true,no_action:true,verdict:'old_event_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_cycle');\n  if(x.snapshot.exists && x.snapshot.status!=='restored' && j.ticket_id!==x.snapshot.ticket_id) return held('held_ticket_changed');\n  if(x.duplicate_active) return ['responding','verified'].includes(j.status)?out({ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_changed');\n  if(x.snapshot.status==='restored' && j.ticket_id===x.snapshot.ticket_id) return held('held_ticket_cycle');\n  return check({...x,ticket_id:j.ticket_id});\n }\n if(stage==='current_before_block') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || !['open','responding','verified'].includes(j.status) || j.actions.length) return held('held_ticket_changed');\n  return ownership({...x,snapshot:{exists:true,ticket_id:j.ticket_id,status:j.status,actions:[]}});\n }\n if(stage==='block_result') {\n  const allowed=['applied','already_applied','failed','rejected'];\n  const result=allowed.includes(j.result)?j.result:'failed';\n  const verified=j.applied_verified===true;\n  return record({...x,response_verified:verified && ['applied','already_applied'].includes(result)},'applied',execution,\n   {bot:'111',via:'portal',action:'lock',target:x.target,result,applied_verified:j.applied_verified??null,\n    effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n    n8n_execution_id:execution,detail:verified?'account_lock_and_sessions_verified':'portal_state_unverified'});\n }\n if(stage==='applied_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || !states.includes(j.status)) return held('held_applied_record_reconcile',503);\n  const ok=x.response_verified===true && ['responding','verified'].includes(j.status);\n  return out({ok,verdict:ok?'responded':'held_response_unverified',http_status:ok?200:503,\n    ticket_id:j.ticket_id,ticket_status:j.status,applied_verified:ok,effect_verified:null});\n }\n if(stage==='release_result') {\n  if(j.ok!==true || !['released','already_applied'].includes(j.result) || j.applied_verified!==true) return held('held_release_unverified',503);\n  return record(x,'released',execution,{bot:'111',via:'portal',action:'unlock',target:x.target,result:'released',\n   applied_verified:true,effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n   n8n_execution_id:execution,detail:`operator ${CFG.operator_name}; account unlocked and claim absent`});\n }\n if(stage==='released_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || j.status!=='restored') return held('held_release_record_reconcile',503);\n  return check(x);\n }\n if(stage==='final_ticket') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || j.status!=='restored' || j.actions.length) return held('held_final_ticket',503);\n  return list(x);\n }\n if(stage==='final_portal') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id || j.account.locked || j.account.owner_ticket_id!==null) return held('held_final_portal',503);\n  return out({ok:true,verdict:'released',http_status:200,ticket_id:x.ticket_id,ticket_status:'restored',applied_verified:true,effect_verified:null});\n }\n return held('unknown_stage',503);\n}\n\nreturn run(\"release_result\", $input.first().json, String($execution.id));\n"
+      }
+    },
+    {
+      "id": "release-Release result proceed",
+      "name": "Release result proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        640
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Release result proceed",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Release result API",
+      "name": "Release result API",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        640
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "portfolioS4Ticket01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Released ack",
+      "name": "Released ack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        640
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s4-operator\", \"event_max_age_seconds\": 660, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.105.21\", \"asset_id\": \"haedam-portal\", \"username\": \"zz_s4_target\"};\n// CFG is injected by the offline builder, never taken from a webhook body.\nconst out = j => [{json:j}];\n// A hold can occur after a partial mutation; do not claim that nothing happened.\nconst held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});\nconst idOK = v => typeof v==='string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst activeOK = (a,ctx) => a && a.bot==='111' && a.via==='portal' && a.action==='lock' && a.target===ctx.target && ['applied','already_applied'].includes(a.result);\nconst snapshotOK = j => j.ok===true && typeof j.exists==='boolean' && Array.isArray(j.actions) && j.actions.every(a=>activeOK(a,j.ctx)) &&\n  (j.exists ? idOK(j.ticket_id) && states.includes(j.status) : j.ticket_id===null && j.status===null && j.actions.length===0);\nconst resource = ctx => ({asset_id:CFG.asset_id,via:'portal',action:'lock',target:ctx.target});\nconst next = j => out({...j,proceed:true});\nconst check = ctx => next({mode:'check',seat:'A',group_key:ctx.group_key,ctx});\nconst ownership = ctx => next({mode:'active',resource:resource(ctx),ctx});\nconst list = ctx => next({action:'list',ctx});\nconst record = (ctx,stage,execution,action=null) => next({ctx,mode:'record',stage,seat:'A',case_id:'S4',\n  group_key:ctx.group_key,title:'S4 failed and successful logins',asset_id:CFG.asset_id,src_ip:CFG.ip,username:ctx.username,\n  event_ids:[ctx.event_id || `s4-release-${execution}`],detected_at:ctx.detected_at || null,\n  received_at:ctx.received_at || null,idempotency_key:`s4-${execution}-${stage}`,action});\n\nconst accountOK = j => j.ok===true && j.result==='listed' && j.account && j.account.username===CFG.username &&\n Number.isSafeInteger(j.account.user_id) && j.account.user_id>0 && typeof j.account.locked==='boolean' &&\n Number.isSafeInteger(j.account.active_sessions) && j.account.active_sessions>=0 &&\n (j.account.owner_ticket_id===null || idOK(j.account.owner_ticket_id));\n\nfunction run(stage,j,execution) {\n const x=j.ctx;\n if(stage==='validate_response' || stage==='validate_release') {\n  const b=j.body,release=stage==='validate_release';\n  const keys=release?['case_id','asset_id','src_ip','username','ticket_id']:['case_id','asset_id','src_ip','username','event_id','detected_at'];\n  if(!b || typeof b!=='object' || Array.isArray(b) || Object.keys(b).length!==keys.length || keys.some(k=>typeof b[k]!=='string')) return held('invalid_input',400);\n  if(b.case_id!=='S4' || b.asset_id!==CFG.asset_id || b.src_ip!==CFG.ip || b.username!==CFG.username) return held('invalid_scope',400);\n  if(release && !idOK(b.ticket_id)) return held('invalid_ticket_id',400);\n  if(!release) {\n   if(!/^[A-Za-z0-9_-]{1,128}$/.test(b.event_id) || !/T.*(Z|[+-]\\d\\d:\\d\\d)$/.test(b.detected_at)) return held('invalid_event',400);\n   const age=Date.now()-Date.parse(b.detected_at);\n   if(!Number.isFinite(age) || age < -CFG.future_clock_tolerance_seconds*1000 || age>CFG.event_max_age_seconds*1000) return held('stale_or_future_event',400);\n   if(!CFG.detection_enabled) return held('held_detection_disabled');\n  }\n  return list({cfg:{dry_run:false,store_real:true},seat:'A',case_id:'S4',asset_id:CFG.asset_id,src_ip:CFG.ip,\n    username:b.username,group_key:`S4|${b.username}`,event_id:b.event_id,detected_at:b.detected_at,\n    received_at:release?undefined:new Date().toISOString(),requested_ticket_id:b.ticket_id,\n    approver:release?CFG.operator_name:undefined,release});\n }\n if(stage==='identity') {\n  if(!accountOK(j)) return held('held_account_identity',503);\n  return check({...x,user_id:j.account.user_id,target:`${x.username}:${j.account.user_id}`});\n }\n if(stage==='snapshot') {\n  if(!snapshotOK(j)) return held('held_ticket_check',503);\n  if(j.actions.length>1 || (['closed','restored'].includes(j.status) && j.actions.length)) return held('held_inconsistent_ticket');\n  if(x.release && (!j.exists || j.ticket_id!==x.requested_ticket_id)) return held('held_stale_release_ticket');\n  return ownership({...x,snapshot:{exists:j.exists,ticket_id:j.ticket_id,status:j.status,actions:j.actions}});\n }\n if(stage==='owners' || stage==='owners_before_block') {\n  const r=resource(x);\n  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='lock' && a.target===x.target && typeof a.bot==='string'))) return held('held_resource_check',503);\n  const own=x.snapshot.actions.length===1;\n  if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='111'))) return held('held_other_resource_ticket');\n  if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');\n  return list(x);\n }\n if(stage==='portal_before' || stage==='portal_before_block') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id) return held('held_portal_readback',503);\n  const blocked=j.account.locked,own=x.snapshot.actions.length===1,claim=j.account.owner_ticket_id;\n  if(claim!==null && (!own || claim!==x.snapshot.ticket_id)) return held('held_portal_claim_mismatch');\n  if(own && blocked && claim!==x.snapshot.ticket_id) return held('held_portal_claim_mismatch');\n  if(x.release) {\n   if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});\n   return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unlock'});\n  }\n  if(own) return blocked && j.account.active_sessions===0 ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');\n  if(blocked) return held('held_unowned_portal_block');\n  if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'lock'});\n  return record(x,'detected',execution);\n }\n if(stage==='detected_ack') {\n  if(j.ok!==true || !idOK(j.ticket_id) || !states.includes(j.status)) return held('held_ticket_record',503);\n  if(['restored','closed'].includes(j.status)) return j.duplicate===true?out({ok:true,no_action:true,verdict:'old_event_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_cycle');\n  if(x.snapshot.exists && x.snapshot.status!=='restored' && j.ticket_id!==x.snapshot.ticket_id) return held('held_ticket_changed');\n  if(x.duplicate_active) return ['responding','verified'].includes(j.status)?out({ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_changed');\n  if(x.snapshot.status==='restored' && j.ticket_id===x.snapshot.ticket_id) return held('held_ticket_cycle');\n  return check({...x,ticket_id:j.ticket_id});\n }\n if(stage==='current_before_block') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || !['open','responding','verified'].includes(j.status) || j.actions.length) return held('held_ticket_changed');\n  return ownership({...x,snapshot:{exists:true,ticket_id:j.ticket_id,status:j.status,actions:[]}});\n }\n if(stage==='block_result') {\n  const allowed=['applied','already_applied','failed','rejected'];\n  const result=allowed.includes(j.result)?j.result:'failed';\n  const verified=j.applied_verified===true;\n  return record({...x,response_verified:verified && ['applied','already_applied'].includes(result)},'applied',execution,\n   {bot:'111',via:'portal',action:'lock',target:x.target,result,applied_verified:j.applied_verified??null,\n    effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n    n8n_execution_id:execution,detail:verified?'account_lock_and_sessions_verified':'portal_state_unverified'});\n }\n if(stage==='applied_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || !states.includes(j.status)) return held('held_applied_record_reconcile',503);\n  const ok=x.response_verified===true && ['responding','verified'].includes(j.status);\n  return out({ok,verdict:ok?'responded':'held_response_unverified',http_status:ok?200:503,\n    ticket_id:j.ticket_id,ticket_status:j.status,applied_verified:ok,effect_verified:null});\n }\n if(stage==='release_result') {\n  if(j.ok!==true || !['released','already_applied'].includes(j.result) || j.applied_verified!==true) return held('held_release_unverified',503);\n  return record(x,'released',execution,{bot:'111',via:'portal',action:'unlock',target:x.target,result:'released',\n   applied_verified:true,effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n   n8n_execution_id:execution,detail:`operator ${CFG.operator_name}; account unlocked and claim absent`});\n }\n if(stage==='released_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || j.status!=='restored') return held('held_release_record_reconcile',503);\n  return check(x);\n }\n if(stage==='final_ticket') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || j.status!=='restored' || j.actions.length) return held('held_final_ticket',503);\n  return list(x);\n }\n if(stage==='final_portal') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id || j.account.locked || j.account.owner_ticket_id!==null) return held('held_final_portal',503);\n  return out({ok:true,verdict:'released',http_status:200,ticket_id:x.ticket_id,ticket_status:'restored',applied_verified:true,effect_verified:null});\n }\n return held('unknown_stage',503);\n}\n\nreturn run(\"released_ack\", $input.first().json, String($execution.id));\n"
+      }
+    },
+    {
+      "id": "release-Released ack proceed",
+      "name": "Released ack proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        640
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Released ack proceed",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Released ack API",
+      "name": "Released ack API",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        960
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "portfolioS4Ticket01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Final ticket",
+      "name": "Final ticket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        960
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s4-operator\", \"event_max_age_seconds\": 660, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.105.21\", \"asset_id\": \"haedam-portal\", \"username\": \"zz_s4_target\"};\n// CFG is injected by the offline builder, never taken from a webhook body.\nconst out = j => [{json:j}];\n// A hold can occur after a partial mutation; do not claim that nothing happened.\nconst held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});\nconst idOK = v => typeof v==='string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst activeOK = (a,ctx) => a && a.bot==='111' && a.via==='portal' && a.action==='lock' && a.target===ctx.target && ['applied','already_applied'].includes(a.result);\nconst snapshotOK = j => j.ok===true && typeof j.exists==='boolean' && Array.isArray(j.actions) && j.actions.every(a=>activeOK(a,j.ctx)) &&\n  (j.exists ? idOK(j.ticket_id) && states.includes(j.status) : j.ticket_id===null && j.status===null && j.actions.length===0);\nconst resource = ctx => ({asset_id:CFG.asset_id,via:'portal',action:'lock',target:ctx.target});\nconst next = j => out({...j,proceed:true});\nconst check = ctx => next({mode:'check',seat:'A',group_key:ctx.group_key,ctx});\nconst ownership = ctx => next({mode:'active',resource:resource(ctx),ctx});\nconst list = ctx => next({action:'list',ctx});\nconst record = (ctx,stage,execution,action=null) => next({ctx,mode:'record',stage,seat:'A',case_id:'S4',\n  group_key:ctx.group_key,title:'S4 failed and successful logins',asset_id:CFG.asset_id,src_ip:CFG.ip,username:ctx.username,\n  event_ids:[ctx.event_id || `s4-release-${execution}`],detected_at:ctx.detected_at || null,\n  received_at:ctx.received_at || null,idempotency_key:`s4-${execution}-${stage}`,action});\n\nconst accountOK = j => j.ok===true && j.result==='listed' && j.account && j.account.username===CFG.username &&\n Number.isSafeInteger(j.account.user_id) && j.account.user_id>0 && typeof j.account.locked==='boolean' &&\n Number.isSafeInteger(j.account.active_sessions) && j.account.active_sessions>=0 &&\n (j.account.owner_ticket_id===null || idOK(j.account.owner_ticket_id));\n\nfunction run(stage,j,execution) {\n const x=j.ctx;\n if(stage==='validate_response' || stage==='validate_release') {\n  const b=j.body,release=stage==='validate_release';\n  const keys=release?['case_id','asset_id','src_ip','username','ticket_id']:['case_id','asset_id','src_ip','username','event_id','detected_at'];\n  if(!b || typeof b!=='object' || Array.isArray(b) || Object.keys(b).length!==keys.length || keys.some(k=>typeof b[k]!=='string')) return held('invalid_input',400);\n  if(b.case_id!=='S4' || b.asset_id!==CFG.asset_id || b.src_ip!==CFG.ip || b.username!==CFG.username) return held('invalid_scope',400);\n  if(release && !idOK(b.ticket_id)) return held('invalid_ticket_id',400);\n  if(!release) {\n   if(!/^[A-Za-z0-9_-]{1,128}$/.test(b.event_id) || !/T.*(Z|[+-]\\d\\d:\\d\\d)$/.test(b.detected_at)) return held('invalid_event',400);\n   const age=Date.now()-Date.parse(b.detected_at);\n   if(!Number.isFinite(age) || age < -CFG.future_clock_tolerance_seconds*1000 || age>CFG.event_max_age_seconds*1000) return held('stale_or_future_event',400);\n   if(!CFG.detection_enabled) return held('held_detection_disabled');\n  }\n  return list({cfg:{dry_run:false,store_real:true},seat:'A',case_id:'S4',asset_id:CFG.asset_id,src_ip:CFG.ip,\n    username:b.username,group_key:`S4|${b.username}`,event_id:b.event_id,detected_at:b.detected_at,\n    received_at:release?undefined:new Date().toISOString(),requested_ticket_id:b.ticket_id,\n    approver:release?CFG.operator_name:undefined,release});\n }\n if(stage==='identity') {\n  if(!accountOK(j)) return held('held_account_identity',503);\n  return check({...x,user_id:j.account.user_id,target:`${x.username}:${j.account.user_id}`});\n }\n if(stage==='snapshot') {\n  if(!snapshotOK(j)) return held('held_ticket_check',503);\n  if(j.actions.length>1 || (['closed','restored'].includes(j.status) && j.actions.length)) return held('held_inconsistent_ticket');\n  if(x.release && (!j.exists || j.ticket_id!==x.requested_ticket_id)) return held('held_stale_release_ticket');\n  return ownership({...x,snapshot:{exists:j.exists,ticket_id:j.ticket_id,status:j.status,actions:j.actions}});\n }\n if(stage==='owners' || stage==='owners_before_block') {\n  const r=resource(x);\n  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='lock' && a.target===x.target && typeof a.bot==='string'))) return held('held_resource_check',503);\n  const own=x.snapshot.actions.length===1;\n  if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='111'))) return held('held_other_resource_ticket');\n  if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');\n  return list(x);\n }\n if(stage==='portal_before' || stage==='portal_before_block') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id) return held('held_portal_readback',503);\n  const blocked=j.account.locked,own=x.snapshot.actions.length===1,claim=j.account.owner_ticket_id;\n  if(claim!==null && (!own || claim!==x.snapshot.ticket_id)) return held('held_portal_claim_mismatch');\n  if(own && blocked && claim!==x.snapshot.ticket_id) return held('held_portal_claim_mismatch');\n  if(x.release) {\n   if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});\n   return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unlock'});\n  }\n  if(own) return blocked && j.account.active_sessions===0 ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');\n  if(blocked) return held('held_unowned_portal_block');\n  if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'lock'});\n  return record(x,'detected',execution);\n }\n if(stage==='detected_ack') {\n  if(j.ok!==true || !idOK(j.ticket_id) || !states.includes(j.status)) return held('held_ticket_record',503);\n  if(['restored','closed'].includes(j.status)) return j.duplicate===true?out({ok:true,no_action:true,verdict:'old_event_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_cycle');\n  if(x.snapshot.exists && x.snapshot.status!=='restored' && j.ticket_id!==x.snapshot.ticket_id) return held('held_ticket_changed');\n  if(x.duplicate_active) return ['responding','verified'].includes(j.status)?out({ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_changed');\n  if(x.snapshot.status==='restored' && j.ticket_id===x.snapshot.ticket_id) return held('held_ticket_cycle');\n  return check({...x,ticket_id:j.ticket_id});\n }\n if(stage==='current_before_block') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || !['open','responding','verified'].includes(j.status) || j.actions.length) return held('held_ticket_changed');\n  return ownership({...x,snapshot:{exists:true,ticket_id:j.ticket_id,status:j.status,actions:[]}});\n }\n if(stage==='block_result') {\n  const allowed=['applied','already_applied','failed','rejected'];\n  const result=allowed.includes(j.result)?j.result:'failed';\n  const verified=j.applied_verified===true;\n  return record({...x,response_verified:verified && ['applied','already_applied'].includes(result)},'applied',execution,\n   {bot:'111',via:'portal',action:'lock',target:x.target,result,applied_verified:j.applied_verified??null,\n    effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n    n8n_execution_id:execution,detail:verified?'account_lock_and_sessions_verified':'portal_state_unverified'});\n }\n if(stage==='applied_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || !states.includes(j.status)) return held('held_applied_record_reconcile',503);\n  const ok=x.response_verified===true && ['responding','verified'].includes(j.status);\n  return out({ok,verdict:ok?'responded':'held_response_unverified',http_status:ok?200:503,\n    ticket_id:j.ticket_id,ticket_status:j.status,applied_verified:ok,effect_verified:null});\n }\n if(stage==='release_result') {\n  if(j.ok!==true || !['released','already_applied'].includes(j.result) || j.applied_verified!==true) return held('held_release_unverified',503);\n  return record(x,'released',execution,{bot:'111',via:'portal',action:'unlock',target:x.target,result:'released',\n   applied_verified:true,effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n   n8n_execution_id:execution,detail:`operator ${CFG.operator_name}; account unlocked and claim absent`});\n }\n if(stage==='released_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || j.status!=='restored') return held('held_release_record_reconcile',503);\n  return check(x);\n }\n if(stage==='final_ticket') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || j.status!=='restored' || j.actions.length) return held('held_final_ticket',503);\n  return list(x);\n }\n if(stage==='final_portal') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id || j.account.locked || j.account.owner_ticket_id!==null) return held('held_final_portal',503);\n  return out({ok:true,verdict:'released',http_status:200,ticket_id:x.ticket_id,ticket_status:'restored',applied_verified:true,effect_verified:null});\n }\n return held('unknown_stage',503);\n}\n\nreturn run(\"final_ticket\", $input.first().json, String($execution.id));\n"
+      }
+    },
+    {
+      "id": "release-Final ticket proceed",
+      "name": "Final ticket proceed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        960
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Final ticket proceed",
+              "leftValue": "={{ $json.proceed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Final ticket API",
+      "name": "Final ticket API",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        840,
+        960
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "portfolioS4Portal01",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "release-Final portal",
+      "name": "Final portal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        960
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s4-operator\", \"event_max_age_seconds\": 660, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.105.21\", \"asset_id\": \"haedam-portal\", \"username\": \"zz_s4_target\"};\n// CFG is injected by the offline builder, never taken from a webhook body.\nconst out = j => [{json:j}];\n// A hold can occur after a partial mutation; do not claim that nothing happened.\nconst held = (verdict, status=409) => out({ok:false,proceed:false,verdict,http_status:status});\nconst idOK = v => typeof v==='string' && /^T-\\d{8}-\\d{4}$/.test(v);\nconst states = ['open','responding','verified','restored','closed'];\nconst activeOK = (a,ctx) => a && a.bot==='111' && a.via==='portal' && a.action==='lock' && a.target===ctx.target && ['applied','already_applied'].includes(a.result);\nconst snapshotOK = j => j.ok===true && typeof j.exists==='boolean' && Array.isArray(j.actions) && j.actions.every(a=>activeOK(a,j.ctx)) &&\n  (j.exists ? idOK(j.ticket_id) && states.includes(j.status) : j.ticket_id===null && j.status===null && j.actions.length===0);\nconst resource = ctx => ({asset_id:CFG.asset_id,via:'portal',action:'lock',target:ctx.target});\nconst next = j => out({...j,proceed:true});\nconst check = ctx => next({mode:'check',seat:'A',group_key:ctx.group_key,ctx});\nconst ownership = ctx => next({mode:'active',resource:resource(ctx),ctx});\nconst list = ctx => next({action:'list',ctx});\nconst record = (ctx,stage,execution,action=null) => next({ctx,mode:'record',stage,seat:'A',case_id:'S4',\n  group_key:ctx.group_key,title:'S4 failed and successful logins',asset_id:CFG.asset_id,src_ip:CFG.ip,username:ctx.username,\n  event_ids:[ctx.event_id || `s4-release-${execution}`],detected_at:ctx.detected_at || null,\n  received_at:ctx.received_at || null,idempotency_key:`s4-${execution}-${stage}`,action});\n\nconst accountOK = j => j.ok===true && j.result==='listed' && j.account && j.account.username===CFG.username &&\n Number.isSafeInteger(j.account.user_id) && j.account.user_id>0 && typeof j.account.locked==='boolean' &&\n Number.isSafeInteger(j.account.active_sessions) && j.account.active_sessions>=0 &&\n (j.account.owner_ticket_id===null || idOK(j.account.owner_ticket_id));\n\nfunction run(stage,j,execution) {\n const x=j.ctx;\n if(stage==='validate_response' || stage==='validate_release') {\n  const b=j.body,release=stage==='validate_release';\n  const keys=release?['case_id','asset_id','src_ip','username','ticket_id']:['case_id','asset_id','src_ip','username','event_id','detected_at'];\n  if(!b || typeof b!=='object' || Array.isArray(b) || Object.keys(b).length!==keys.length || keys.some(k=>typeof b[k]!=='string')) return held('invalid_input',400);\n  if(b.case_id!=='S4' || b.asset_id!==CFG.asset_id || b.src_ip!==CFG.ip || b.username!==CFG.username) return held('invalid_scope',400);\n  if(release && !idOK(b.ticket_id)) return held('invalid_ticket_id',400);\n  if(!release) {\n   if(!/^[A-Za-z0-9_-]{1,128}$/.test(b.event_id) || !/T.*(Z|[+-]\\d\\d:\\d\\d)$/.test(b.detected_at)) return held('invalid_event',400);\n   const age=Date.now()-Date.parse(b.detected_at);\n   if(!Number.isFinite(age) || age < -CFG.future_clock_tolerance_seconds*1000 || age>CFG.event_max_age_seconds*1000) return held('stale_or_future_event',400);\n   if(!CFG.detection_enabled) return held('held_detection_disabled');\n  }\n  return list({cfg:{dry_run:false,store_real:true},seat:'A',case_id:'S4',asset_id:CFG.asset_id,src_ip:CFG.ip,\n    username:b.username,group_key:`S4|${b.username}`,event_id:b.event_id,detected_at:b.detected_at,\n    received_at:release?undefined:new Date().toISOString(),requested_ticket_id:b.ticket_id,\n    approver:release?CFG.operator_name:undefined,release});\n }\n if(stage==='identity') {\n  if(!accountOK(j)) return held('held_account_identity',503);\n  return check({...x,user_id:j.account.user_id,target:`${x.username}:${j.account.user_id}`});\n }\n if(stage==='snapshot') {\n  if(!snapshotOK(j)) return held('held_ticket_check',503);\n  if(j.actions.length>1 || (['closed','restored'].includes(j.status) && j.actions.length)) return held('held_inconsistent_ticket');\n  if(x.release && (!j.exists || j.ticket_id!==x.requested_ticket_id)) return held('held_stale_release_ticket');\n  return ownership({...x,snapshot:{exists:j.exists,ticket_id:j.ticket_id,status:j.status,actions:j.actions}});\n }\n if(stage==='owners' || stage==='owners_before_block') {\n  const r=resource(x);\n  if(j.ok!==true || !j.resource || Object.keys(j.resource).length!==4 || !Object.keys(r).every(k=>j.resource[k]===r[k]) || !Array.isArray(j.tickets) || !j.tickets.every(t=>idOK(t.ticket_id) && ['A','B','C','D'].includes(t.seat) && states.includes(t.status) && Array.isArray(t.active_actions) && t.active_actions.length>0 && t.active_actions.every(a=>a.via==='portal' && a.action==='lock' && a.target===x.target && typeof a.bot==='string'))) return held('held_resource_check',503);\n  const own=x.snapshot.actions.length===1;\n  if(j.tickets.some(t=>t.ticket_id!==x.snapshot.ticket_id || t.seat!=='A' || t.active_actions.some(a=>a.bot!=='111'))) return held('held_other_resource_ticket');\n  if(own !== (j.tickets.length===1)) return held('held_claim_mismatch');\n  return list(x);\n }\n if(stage==='portal_before' || stage==='portal_before_block') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id) return held('held_portal_readback',503);\n  const blocked=j.account.locked,own=x.snapshot.actions.length===1,claim=j.account.owner_ticket_id;\n  if(claim!==null && (!own || claim!==x.snapshot.ticket_id)) return held('held_portal_claim_mismatch');\n  if(own && blocked && claim!==x.snapshot.ticket_id) return held('held_portal_claim_mismatch');\n  if(x.release) {\n   if(!own) return blocked?held('held_unowned_portal_block'):out({ok:true,no_action:true,verdict:'nothing_to_release',ticket_id:x.snapshot.ticket_id,http_status:200});\n   return next({ctx:{...x,ticket_id:x.snapshot.ticket_id},ticket_id:x.snapshot.ticket_id,action:'unlock'});\n  }\n  if(own) return blocked && j.account.active_sessions===0 ? record({...x,duplicate_active:true},'detected',execution) : held('held_claim_state_drift');\n  if(blocked) return held('held_unowned_portal_block');\n  if(stage==='portal_before_block') return next({ctx:x,ticket_id:x.ticket_id,action:'lock'});\n  return record(x,'detected',execution);\n }\n if(stage==='detected_ack') {\n  if(j.ok!==true || !idOK(j.ticket_id) || !states.includes(j.status)) return held('held_ticket_record',503);\n  if(['restored','closed'].includes(j.status)) return j.duplicate===true?out({ok:true,no_action:true,verdict:'old_event_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_cycle');\n  if(x.snapshot.exists && x.snapshot.status!=='restored' && j.ticket_id!==x.snapshot.ticket_id) return held('held_ticket_changed');\n  if(x.duplicate_active) return ['responding','verified'].includes(j.status)?out({ok:true,no_action:true,verdict:'duplicate_no_action',ticket_id:j.ticket_id,http_status:200}):held('held_ticket_changed');\n  if(x.snapshot.status==='restored' && j.ticket_id===x.snapshot.ticket_id) return held('held_ticket_cycle');\n  return check({...x,ticket_id:j.ticket_id});\n }\n if(stage==='current_before_block') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || !['open','responding','verified'].includes(j.status) || j.actions.length) return held('held_ticket_changed');\n  return ownership({...x,snapshot:{exists:true,ticket_id:j.ticket_id,status:j.status,actions:[]}});\n }\n if(stage==='block_result') {\n  const allowed=['applied','already_applied','failed','rejected'];\n  const result=allowed.includes(j.result)?j.result:'failed';\n  const verified=j.applied_verified===true;\n  return record({...x,response_verified:verified && ['applied','already_applied'].includes(result)},'applied',execution,\n   {bot:'111',via:'portal',action:'lock',target:x.target,result,applied_verified:j.applied_verified??null,\n    effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n    n8n_execution_id:execution,detail:verified?'account_lock_and_sessions_verified':'portal_state_unverified'});\n }\n if(stage==='applied_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || !states.includes(j.status)) return held('held_applied_record_reconcile',503);\n  const ok=x.response_verified===true && ['responding','verified'].includes(j.status);\n  return out({ok,verdict:ok?'responded':'held_response_unverified',http_status:ok?200:503,\n    ticket_id:j.ticket_id,ticket_status:j.status,applied_verified:ok,effect_verified:null});\n }\n if(stage==='release_result') {\n  if(j.ok!==true || !['released','already_applied'].includes(j.result) || j.applied_verified!==true) return held('held_release_unverified',503);\n  return record(x,'released',execution,{bot:'111',via:'portal',action:'unlock',target:x.target,result:'released',\n   applied_verified:true,effect_verified:null,effect_verified_at:null,requested_at:j.requested_at,finished_at:j.finished_at,\n   n8n_execution_id:execution,detail:`operator ${CFG.operator_name}; account unlocked and claim absent`});\n }\n if(stage==='released_ack') {\n  if(j.ok!==true || j.ticket_id!==x.ticket_id || j.status!=='restored') return held('held_release_record_reconcile',503);\n  return check(x);\n }\n if(stage==='final_ticket') {\n  if(!snapshotOK(j) || !j.exists || j.ticket_id!==x.ticket_id || j.status!=='restored' || j.actions.length) return held('held_final_ticket',503);\n  return list(x);\n }\n if(stage==='final_portal') {\n  if(!accountOK(j) || j.account.user_id!==x.user_id || j.account.locked || j.account.owner_ticket_id!==null) return held('held_final_portal',503);\n  return out({ok:true,verdict:'released',http_status:200,ticket_id:x.ticket_id,ticket_status:'restored',applied_verified:true,effect_verified:null});\n }\n return held('unknown_stage',503);\n}\n\nreturn run(\"final_portal\", $input.first().json, String($execution.id));\n"
+      }
+    },
+    {
+      "id": "release-Respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1960,
+        480
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": "={{ $json.http_status || 503 }}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Validate proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate proceed": {
+      "main": [
+        [
+          {
+            "node": "Validate API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate API": {
+      "main": [
+        [
+          {
+            "node": "Identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identity": {
+      "main": [
+        [
+          {
+            "node": "Identity proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identity proceed": {
+      "main": [
+        [
+          {
+            "node": "Identity API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identity API": {
+      "main": [
+        [
+          {
+            "node": "Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Snapshot proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot proceed": {
+      "main": [
+        [
+          {
+            "node": "Snapshot API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snapshot API": {
+      "main": [
+        [
+          {
+            "node": "Owners",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owners": {
+      "main": [
+        [
+          {
+            "node": "Owners proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owners proceed": {
+      "main": [
+        [
+          {
+            "node": "Owners API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owners API": {
+      "main": [
+        [
+          {
+            "node": "Portal before",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Portal before": {
+      "main": [
+        [
+          {
+            "node": "Portal before proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Portal before proceed": {
+      "main": [
+        [
+          {
+            "node": "Portal before API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Portal before API": {
+      "main": [
+        [
+          {
+            "node": "Release result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release result": {
+      "main": [
+        [
+          {
+            "node": "Release result proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release result proceed": {
+      "main": [
+        [
+          {
+            "node": "Release result API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release result API": {
+      "main": [
+        [
+          {
+            "node": "Released ack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Released ack": {
+      "main": [
+        [
+          {
+            "node": "Released ack proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Released ack proceed": {
+      "main": [
+        [
+          {
+            "node": "Released ack API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Released ack API": {
+      "main": [
+        [
+          {
+            "node": "Final ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final ticket": {
+      "main": [
+        [
+          {
+            "node": "Final ticket proceed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final ticket proceed": {
+      "main": [
+        [
+          {
+            "node": "Final ticket API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final ticket API": {
+      "main": [
+        [
+          {
+            "node": "Final portal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final portal": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

@@ -1,0 +1,10 @@
+**
+!infra/
+!infra/wazuh/
+!infra/wazuh/agent/
+!infra/wazuh/agent/**
+!lab/
+!lab/s7/
+!lab/s7/restore/
+!lab/s7/restore/s7_restore.py
+!lab/s7/restore/s7-restore-ar

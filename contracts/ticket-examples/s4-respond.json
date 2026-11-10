@@ -1,0 +1,8 @@
+{
+  "case_id": "S4",
+  "asset_id": "haedam-portal",
+  "src_ip": "172.30.105.21",
+  "username": "zz_s4_target",
+  "event_id": "synthetic_s4_event",
+  "detected_at": "2026-11-10T03:00:00Z"
+}

@@ -1,0 +1,551 @@
+{
+  "as_of": "2026-11-10",
+  "source_commit": "06fb3a4",
+  "note": "Read-only configuration and preserved network inventory. No stack started.",
+  "S7": {
+    "project": "haedam-s7-panel-live",
+    "networks": {
+      "access": {
+        "name": "haedam-s7-panel-live_access",
+        "ipam": {}
+      },
+      "default": {
+        "name": "haedam-s7-panel-live_default",
+        "ipam": {},
+        "internal": true
+      },
+      "graylog-backend": {
+        "name": "haedam-s7-panel-live_graylog-backend",
+        "ipam": {},
+        "internal": true
+      }
+    },
+    "services": {
+      "db": {
+        "networks": {
+          "default": null
+        },
+        "ports": []
+      },
+      "graylog": {
+        "networks": {
+          "access": null,
+          "default": null,
+          "graylog-backend": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 9000,
+            "published": "19130",
+            "protocol": "tcp"
+          },
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 12201,
+            "published": "22330",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "graylog-mongo": {
+        "networks": {
+          "graylog-backend": null
+        },
+        "ports": []
+      },
+      "graylog-search": {
+        "networks": {
+          "graylog-backend": null
+        },
+        "ports": []
+      },
+      "n8n": {
+        "networks": {
+          "access": null,
+          "default": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 5678,
+            "published": "15730",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "portal": {
+        "networks": {
+          "access": null,
+          "default": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 5000,
+            "published": "15030",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "s7-agent": {
+        "networks": {
+          "default": null
+        },
+        "ports": []
+      },
+      "s7-response": {
+        "networks": {
+          "default": null
+        },
+        "ports": []
+      },
+      "ticket-store": {
+        "networks": {
+          "access": null,
+          "default": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 8089,
+            "published": "18130",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "wazuh.dashboard": {
+        "networks": {
+          "access": null,
+          "default": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 5601,
+            "published": "15630",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "wazuh.indexer": {
+        "networks": {
+          "access": null,
+          "default": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 9200,
+            "published": "19230",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "wazuh.manager": {
+        "networks": {
+          "access": null,
+          "default": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 55000,
+            "published": "15530",
+            "protocol": "tcp"
+          }
+        ]
+      }
+    },
+    "observed_networks": [
+      {
+        "name": "haedam-s7-panel-live_default",
+        "internal": true,
+        "ipam": [
+          {
+            "Subnet": "172.29.0.0/16",
+            "Gateway": "172.29.0.1"
+          }
+        ]
+      },
+      {
+        "name": "haedam-s7-panel-live_access",
+        "internal": false,
+        "ipam": [
+          {
+            "Subnet": "172.31.0.0/16",
+            "Gateway": "172.31.0.1"
+          }
+        ]
+      },
+      {
+        "name": "haedam-s7-panel-live_graylog-backend",
+        "internal": true,
+        "ipam": [
+          {
+            "Subnet": "192.168.192.0/20",
+            "Gateway": "192.168.192.1"
+          }
+        ]
+      }
+    ]
+  },
+  "S8": {
+    "project": "haedam-s8-live",
+    "networks": {
+      "default": {
+        "name": "haedam-s8-live_default",
+        "ipam": {}
+      },
+      "graylog-backend": {
+        "name": "haedam-s8-live_graylog-backend",
+        "ipam": {},
+        "internal": true
+      },
+      "s8-clients": {
+        "name": "haedam-s8-live_s8-clients",
+        "ipam": {
+          "config": [
+            {
+              "subnet": "172.30.88.0/24"
+            }
+          ]
+        },
+        "internal": true
+      },
+      "s8-response": {
+        "name": "haedam-s8-live_s8-response",
+        "ipam": {
+          "config": [
+            {
+              "subnet": "172.30.89.0/29"
+            }
+          ]
+        },
+        "internal": true
+      }
+    },
+    "services": {
+      "attacker": {
+        "networks": {
+          "s8-clients": {
+            "ipv4_address": "172.30.88.21"
+          }
+        },
+        "ports": []
+      },
+      "db": {
+        "networks": {
+          "default": null
+        },
+        "ports": []
+      },
+      "graylog": {
+        "networks": {
+          "default": null,
+          "graylog-backend": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 9000,
+            "published": "19100",
+            "protocol": "tcp"
+          },
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 12201,
+            "published": "22300",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "graylog-mongo": {
+        "networks": {
+          "graylog-backend": null
+        },
+        "ports": []
+      },
+      "graylog-search": {
+        "networks": {
+          "graylog-backend": null
+        },
+        "ports": []
+      },
+      "login-only": {
+        "networks": {
+          "s8-clients": {
+            "ipv4_address": "172.30.88.24"
+          }
+        },
+        "ports": []
+      },
+      "n8n": {
+        "networks": {
+          "default": {},
+          "s8-response": {
+            "ipv4_address": "172.30.89.2"
+          }
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 5678,
+            "published": "15700",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "normal": {
+        "networks": {
+          "s8-clients": {
+            "ipv4_address": "172.30.88.22"
+          }
+        },
+        "ports": []
+      },
+      "portal": {
+        "networks": {
+          "default": {},
+          "s8-clients": {
+            "ipv4_address": "172.30.88.10"
+          },
+          "s8-response": {
+            "aliases": [
+              "portal-response"
+            ],
+            "ipv4_address": "172.30.89.3"
+          }
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 5000,
+            "published": "15000",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "scan-only": {
+        "networks": {
+          "s8-clients": {
+            "ipv4_address": "172.30.88.23"
+          }
+        },
+        "ports": []
+      },
+      "ticket-store": {
+        "networks": {
+          "default": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 8089,
+            "published": "18100",
+            "protocol": "tcp"
+          }
+        ]
+      }
+    }
+  },
+  "H1": {
+    "project": "haedam-h1-live",
+    "networks": {
+      "default": {
+        "name": "haedam-h1-live_default",
+        "ipam": {}
+      },
+      "graylog-backend": {
+        "name": "haedam-h1-live_graylog-backend",
+        "ipam": {},
+        "internal": true
+      },
+      "h1-clients": {
+        "name": "haedam-h1-live_h1-clients",
+        "ipam": {
+          "config": [
+            {
+              "subnet": "172.30.90.0/24"
+            }
+          ]
+        },
+        "internal": true
+      },
+      "h1-response": {
+        "name": "haedam-h1-live_h1-response",
+        "ipam": {
+          "config": [
+            {
+              "subnet": "172.30.91.0/29"
+            }
+          ]
+        },
+        "internal": true
+      }
+    },
+    "services": {
+      "attacker": {
+        "networks": {
+          "h1-clients": {
+            "ipv4_address": "172.30.90.21"
+          }
+        },
+        "ports": []
+      },
+      "db": {
+        "networks": {
+          "default": null
+        },
+        "ports": []
+      },
+      "graylog": {
+        "networks": {
+          "default": null,
+          "graylog-backend": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 9000,
+            "published": "19110",
+            "protocol": "tcp"
+          },
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 12201,
+            "published": "22310",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "graylog-mongo": {
+        "networks": {
+          "graylog-backend": null
+        },
+        "ports": []
+      },
+      "graylog-search": {
+        "networks": {
+          "graylog-backend": null
+        },
+        "ports": []
+      },
+      "n8n": {
+        "networks": {
+          "default": {},
+          "h1-response": {
+            "ipv4_address": "172.30.91.2"
+          }
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 5678,
+            "published": "15710",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "normal": {
+        "networks": {
+          "h1-clients": {
+            "ipv4_address": "172.30.90.22"
+          }
+        },
+        "ports": []
+      },
+      "portal": {
+        "networks": {
+          "default": {},
+          "h1-clients": {
+            "ipv4_address": "172.30.90.10"
+          },
+          "h1-response": {
+            "aliases": [
+              "portal-response"
+            ],
+            "ipv4_address": "172.30.91.3"
+          }
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 5000,
+            "published": "15010",
+            "protocol": "tcp"
+          }
+        ]
+      },
+      "ticket-store": {
+        "networks": {
+          "default": null
+        },
+        "ports": [
+          {
+            "mode": "ingress",
+            "host_ip": "127.0.0.1",
+            "target": 8089,
+            "published": "18110",
+            "protocol": "tcp"
+          }
+        ]
+      }
+    }
+  },
+  "S10_proposed": {
+    "status": "configuration only; live validation owned by Claude",
+    "settings": {
+      "project": "haedam-pf-lab",
+      "wan": {
+        "subnet": "203.0.113.0/24",
+        "docker_gateway": "203.0.113.254",
+        "bridge_ip": "203.0.113.253",
+        "pfsense_ip": "203.0.113.1",
+        "pfsense_if": "em0"
+      },
+      "lan": {
+        "subnet": "172.30.94.0/24",
+        "docker_gateway": "172.30.94.254",
+        "bridge_ip": "172.30.94.253",
+        "pfsense_ip": "172.30.94.1",
+        "pfsense_if": "em1"
+      },
+      "portal": {
+        "ip": "172.30.94.10",
+        "port": 5000,
+        "health_path": "/api/v1/health"
+      },
+      "controller": {
+        "ip": "172.30.94.100",
+        "ssh_user": "admin"
+      },
+      "clients": {
+        "attacker": "203.0.113.22",
+        "normal": "203.0.113.12"
+      },
+      "vm": {
+        "memory_mb": 1024
+      },
+      "adapter_path": "/usr/local/sbin/haedam-pf-response"
+    },
+    "settings_sha256": "41f5839474d3449d402822561c7e481ebc08cb9186b62ecc411ba18405d160bf"
+  }
+}
