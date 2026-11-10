@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 import re
 import secrets
+import socket
+import time
 
 from .config import ROOT, load_config
 from .core import Engine, Rejected
@@ -44,12 +46,38 @@ def make_server(config, engine):
             raw=json.dumps(body,ensure_ascii=False).encode() if not isinstance(body,bytes) else body
             self.send_response(status)
             self.send_header('Content-Type',mime); self.send_header('Content-Length',str(len(raw)))
+            self.send_header('Connection','close'); self.close_connection=True
             self.send_header('Cache-Control','no-store'); self.send_header('X-Content-Type-Options','nosniff')
             self.send_header('Referrer-Policy','no-referrer'); self.send_header('X-Frame-Options','DENY')
             self.send_header('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
             if cookie: self.send_header('Set-Cookie','panel_session='+session+'; HttpOnly; SameSite=Strict; Path=/')
             if download: self.send_header('Content-Disposition','attachment; filename="panel-evidence.json"')
             self.end_headers(); self.wfile.write(raw)
+
+        def reject_post(self,status,body):
+            # Send the rejection first. A full close with an unread POST body
+            # can reset TCP and discard this response on Windows (RFC 9112 9.6).
+            # Half-close the writer, then discard only a bounded amount of input
+            # within an absolute deadline. Never parse it or submit a job.
+            try:
+                self.send(status,body); self.wfile.flush()
+                self.connection.shutdown(socket.SHUT_WR)
+                remaining=config['http_max_body_bytes']
+                try:
+                    size=int(self.headers.get('Content-Length',''))
+                    if size>=0:remaining=min(remaining,size)
+                except ValueError:pass
+                deadline=time.monotonic()+config['http_drain_timeout_seconds']
+                while remaining>0:
+                    timeout=deadline-time.monotonic()
+                    if timeout<=0:break
+                    self.connection.settimeout(timeout)
+                    chunk=self.rfile.read1(remaining)
+                    if not chunk:break
+                    remaining-=len(chunk)
+            except OSError:
+                # Peer already closed, reset, or exceeded the bounded wait.
+                pass
 
         def allowed(self,write=False):
             if self.headers.get('Host')!=authority: return False
@@ -81,13 +109,15 @@ def make_server(config, engine):
             return self.send(404,{'error':'not_found'})
 
         def do_POST(self):
-            if not self.allowed(True): return self.send(403,{'error':'forbidden'})
-            if self.path!='/api/jobs': return self.send(404,{'error':'not_found'})
+            if not self.allowed(True): return self.reject_post(403,{'error':'forbidden'})
+            if self.path!='/api/jobs': return self.reject_post(404,{'error':'not_found'})
             if self.headers.get('Content-Type','').split(';')[0]!='application/json':
-                return self.send(415,{'error':'json_required'})
+                return self.reject_post(415,{'error':'json_required'})
+            try:size=int(self.headers.get('Content-Length','0'))
+            except ValueError:return self.reject_post(400,{'error':'invalid_request'})
+            if not 0<size<=config['http_max_body_bytes']:
+                return self.reject_post(413,{'error':'invalid_size'})
             try:
-                size=int(self.headers.get('Content-Length','0'))
-                if not 0<size<=2048: return self.send(413,{'error':'invalid_size'})
                 body=json.loads(self.rfile.read(size))
                 return self.send(202,engine.submit(body))
             except Rejected as exc: return self.send(exc.status,{'error':exc.code})

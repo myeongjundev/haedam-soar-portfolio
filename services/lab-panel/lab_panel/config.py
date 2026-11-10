@@ -19,6 +19,10 @@ def load_config():
             raise ValueError('Invalid bounded timeout')
     if config['worker_timeout_seconds'] <= config['observe_timeout_seconds']:
         raise ValueError('Worker timeout must exceed observation timeout')
+    if type(config['http_max_body_bytes']) is not int or not 1<=config['http_max_body_bytes']<=65536:
+        raise ValueError('Invalid bounded HTTP body size')
+    if type(config['http_drain_timeout_seconds']) not in (int,float) or not 0.05<=config['http_drain_timeout_seconds']<=5:
+        raise ValueError('Invalid bounded HTTP drain timeout')
     config['state_dir'] = str((ROOT / config['state_dir']).resolve())
     if not Path(config['state_dir']).is_relative_to((ROOT / '.local').resolve()):
         raise ValueError('Panel state must be under the ignored .local directory')
