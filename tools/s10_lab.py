@@ -90,8 +90,14 @@ def pipeline_parts():
     text = (lab.ROOT / 'infra/graylog/pipelines/pfsense-parse.txt').read_text(encoding='utf-8')
     rules = re.findall(r'^rule "[^"]+"\n.*?^end$', text, re.M | re.S)
     head = re.search(r'^// (pipeline "pfsense-parse".*?)^// end$', text, re.M | re.S).group(1)
-    pipeline = '\n'.join(line[3:] if line.startswith('// ') else line for line in head.splitlines()) + '\nend\n'
-    return rules, pipeline
+    # The team file lists each stage's rules comma-separated (a summary); Graylog needs one `rule "x";` per line.
+    lines = ['pipeline "pfsense-parse"']
+    for number, mode, names in re.findall(r'^// stage (\d+) match (\w+)\s+rule (.+)$', text, re.M):
+        lines.append(f'stage {number} match {mode}')
+        lines += [f'  rule "{name}";' for name in re.findall(r'"([^"]+)"', names)]
+    if len(lines) < 2 or 'pipeline "pfsense-parse"' not in head:
+        raise RuntimeError('Upstream pfsense-parse pipeline header changed')
+    return rules, '\n'.join(lines) + '\nend\n'
 
 
 def configure():
