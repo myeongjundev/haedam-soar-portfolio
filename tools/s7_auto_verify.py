@@ -124,6 +124,7 @@ p.write_bytes(data); print(hashlib.sha256(data).hexdigest())
 
 def verify():
     b = lab.base
+    lab.require_current_portal()  # before any evidence: a kept volume must not run older code
     definition = json.loads(lab.STATE.read_text())['definition']
     run_id = datetime.now(timezone.utc).strftime('S7AUTO-%Y%m%dT%H%M%SZ')
     result = dict(run_id=run_id,project=lab.PROJECT,started_at=now(),checks={},cases=[],result='running')

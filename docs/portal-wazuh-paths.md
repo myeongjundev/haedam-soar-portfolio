@@ -9,7 +9,7 @@
 | 실제 백엔드 소스 | `haedam-portal-backend/src/` | `/app/src` (RO) | `/var/lib/haedam/backend` (RO) FIM |
 | 실제 앱 JSON 이벤트 | backend `integration/events.py` | `/app/instance/events.jsonl` | `/var/log/haedam-portal/events.jsonl` (RO), JSON logcollector |
 
-`compose.s7.yaml`의 `s7-web`, `s7-backend`, `portal-instance` 볼륨으로 같은 실제 파일을 공유합니다. 호스트의 프로젝트 폴더나 `.env`, Git 이력, DB 파일을 Wazuh에 마운트하지 않습니다. named volume은 첫 초기화 후 이미지 재빌드만으로 갱신되지 않으므로 코드 배포 변경은 새 개인 프로젝트에서 승인된 이미지를 확인한 뒤 진행합니다.
+`compose.s7.yaml`의 `s7-web`, `s7-backend`, `portal-instance` 볼륨으로 같은 실제 파일을 공유합니다. 호스트의 프로젝트 폴더나 `.env`, Git 이력, DB 파일을 Wazuh에 마운트하지 않습니다. named volume은 첫 초기화 후 이미지 재빌드만으로 갱신되지 않으므로 코드 배포 변경은 새 개인 프로젝트에서 승인된 이미지를 확인한 뒤 진행합니다. `s7_lab.py ready`는 실행 중 포털의 `/app/src`가 빌드 이미지와 다르면(재빌드 후 기존 `s7-backend` 재사용) 준비 완료를 표시하지 않고 중단합니다.
 
 Wazuh 기본 FIM 550/553/554로 변경·삭제·추가를 확인합니다. 앱 로그는 `infra/wazuh/portal-rules.xml`의 100710 부모 규칙 아래, 실제 성공 파일 접근 100711과 인증 실패 100712만 경보로 만듭니다. 일상 health/web.request 전부를 경보로 승격하지 않습니다. 파일 내용 diff는 수집하지 않습니다.
 

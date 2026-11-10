@@ -119,7 +119,14 @@ def graylog(path, data=None, method=None):
     return body
 
 
+def require_current_portal():
+    # Never report ready or record evidence while a kept volume runs code other than the built image.
+    for volume in ('s7-backend', 's7-web'):
+        base.require_image_content(volume)
+
+
 def ready():
+    require_current_portal()
     ident = base.wait_for(base.agent_id)
     if ident != env_values()['S7_AGENT_ID']:
         raise RuntimeError('Enrolled agent differs from configured scope; do not broaden RBAC.')
@@ -144,11 +151,7 @@ def up():
 
 
 def baseline():
-    image = base.run(['docker', 'image', 'inspect', PROJECT + '-portal', '--format', '{{.Id}}'])
-    code = ('import hashlib,json,pathlib,os; p=pathlib.Path(os.environ["FRONTEND_DIST"]); '
-            'print(json.dumps({str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest() for f in p.rglob("*") if f.is_file()},sort_keys=True))')
-    expected = base.run(['docker', 'run', '--rm', '--network', 'none', '--entrypoint', 'python', image, '-c', code])
-    if json.loads(expected) != json.loads(compose('exec', '-T', 'portal', 'python', '-c', code)):
+    if base.image_drift(base.mount_target('s7-web')):
         raise RuntimeError('Changed web volume; refusing to replace baseline.')
     exists = compose('exec', '-T', 's7-agent', 'python3', '-c',
         'from pathlib import Path; import sys; print((Path(sys.argv[1])/"baseline.sha256").exists())',

@@ -172,7 +172,40 @@ def wait_for(check, timeout=180):
     raise RuntimeError(scrub('Readiness timed out: ' + str(error)))
 
 
+def image_drift(path):
+    """Files under `path` that differ between the built portal image and the running portal."""
+    # Docker's containerd image store can return a non-runnable config digest
+    # from `compose images -q`; resolve the built image's manifest instead.
+    image_id = run(['docker', 'image', 'inspect', PROJECT + '-portal', '--format', '{{.Id}}'])
+    code = ('import hashlib,json,pathlib,sys; root=pathlib.Path(sys.argv[1]); '
+            'print(json.dumps({str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() '
+            'for p in root.rglob("*") if p.is_file()},sort_keys=True))')
+    expected = json.loads(run(['docker', 'run', '--rm', '--network', 'none', '--entrypoint', 'python',
+                               image_id, '-c', code, path]))
+    actual = json.loads(compose('exec', '-T', 'portal', 'python', '-c', code, path))
+    return sorted(k for k in expected.keys() | actual.keys() if expected.get(k) != actual.get(k))
+
+
+def mount_target(volume):
+    """Where the portal mounts this project's named `volume`, from the effective Compose model."""
+    portal = json.loads(compose('config', '--format', 'json'))['services']['portal']
+    targets = [m['target'] for m in portal.get('volumes', [])
+               if m.get('type') == 'volume' and m.get('source') == volume]
+    if len(targets) != 1:
+        raise RuntimeError('Portal mount for volume ' + volume + ' not found in the Compose config.')
+    return targets[0]
+
+
+def require_image_content(volume):
+    # A named volume keeps its first contents; after `up --build` it can shadow newer image code.
+    stale = image_drift(mount_target(volume))
+    if stale:
+        raise RuntimeError(volume + ' volume is stale vs the built portal image (' + ', '.join(stale[:5]) +
+                           '); start a new S7_PROJECT instead of reusing this one.')
+
+
 def ready():
+    require_image_content('s7-backend')
     cert = compose('exec', '-T', 'wazuh.manager', 'cat', '/var/ossec/api/configuration/ssl/server.crt')
     private_file(API_CA, cert + '\n')
     ident = wait_for(agent_id)
@@ -194,15 +227,7 @@ def restore(*args):
 
 def baseline():
     # Refuse to baseline an altered volume: compare every file to the built image first.
-    # Docker's containerd image store can return a non-runnable config digest
-    # from `compose images -q`; resolve the built image's manifest instead.
-    image_id = run(['docker', 'image', 'inspect', PROJECT + '-portal', '--format', '{{.Id}}'])
-    code = ('import hashlib,json,pathlib; root=pathlib.Path("/app/frontend"); '
-            'print(json.dumps({str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() '
-            'for p in root.rglob("*") if p.is_file()},sort_keys=True))')
-    expected = run(['docker', 'run', '--rm', '--network', 'none', '--entrypoint', 'python', image_id, '-c', code])
-    actual = compose('exec', '-T', 'portal', 'python', '-c', code)
-    if json.loads(expected) != json.loads(actual):
+    if image_drift(mount_target('s7-web')):
         raise RuntimeError('Web volume differs from the built portal image; baseline refused.')
     exists = compose('exec', '-T', 's7-agent', 'sh', '-c',
                      'if test -f /opt/haedam-s7/state/baseline.sha256; then echo yes; fi')
