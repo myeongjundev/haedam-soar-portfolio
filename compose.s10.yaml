@@ -46,6 +46,10 @@ services:
       PF_USER: "${PF_CONTROLLER_SSH_USER:?Run through tools/s10_lab.py}"
 
 networks:
+  # Explicit subnet: Docker's default address pool can be exhausted by other projects' stopped networks.
+  graylog-backend:
+    ipam:
+      config: [{subnet: "${PF_S10_BACKEND_SUBNET:?Run through tools/s10_lab.py}"}]
   s10-response:
     internal: true  # n8n and portal-response only talk inside this subnet
     ipam:

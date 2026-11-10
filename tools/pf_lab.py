@@ -32,7 +32,7 @@ def compose_env(settings=SETTINGS):
         s10 = {'PF_S10_GRAYLOG_IP': s['graylog_ip'], 'PF_S10_N8N_IP': s['n8n_ip'],
                'PF_S10_RELAY_PORT': str(s['relay_port']), 'PF_S10_RESPONSE_SUBNET': s['response_subnet'],
                'PF_S10_RESPONSE_GATEWAY': s['response_gateway'], 'PF_S10_N8N_RESPONSE_IP': s['n8n_response_ip'],
-               'PF_S10_PORTAL_RESPONSE_IP': s['portal_response_ip'],
+               'PF_S10_PORTAL_RESPONSE_IP': s['portal_response_ip'], 'PF_S10_BACKEND_SUBNET': s['backend_subnet'],
                'PF_CONTROLLER_SSH_USER': settings['controller']['ssh_user']}
     return {**s10, 'PF_WAN_SUBNET': wan['subnet'], 'PF_WAN_GATEWAY': wan['docker_gateway'],
             'PF_WAN_BRIDGE_IP': wan['bridge_ip'], 'PF_WAN_PFSENSE_IP': wan['pfsense_ip'],

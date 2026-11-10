@@ -41,6 +41,7 @@
     "n8n_response_ip": "172.30.95.2",
     "portal_response_ip": "172.30.95.3",
     "icmp_tracker": "1731100001",
-    "window_minutes": 15
+    "window_minutes": 15,
+    "backend_subnet": "172.30.96.0/28"
   }
 }
