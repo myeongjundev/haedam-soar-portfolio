@@ -33,10 +33,10 @@ S1은 [개인 설정·입력 도구](docs/s1-personal-prep.md)를 사용합니�
 
 ## 포털과 DB 실행
 
-현재 제출 후보는 **PR #24의 `claude/submission-s10` 브랜치**(열린 PR #1~#23 포함)이며 `main`에는 아직 병합하지 않았습니다. `main`에 병합한 뒤에는 `--branch main`을 사용합니다. 처음 받는 경우 아래처럼 브랜치를 지정합니다. 비공개 저장소 접근 권한이 있는 GitHub 계정으로 Git 인증을 준비합니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다.
+제출 버전은 **`main` 브랜치**입니다(PR #24로 개인 작업 PR #1~#25를 통합). 처음 받는 경우 아래처럼 `main`을 지정하고 현재 커밋을 확인합니다. 비공개 저장소 접근 권한이 있는 GitHub 계정으로 Git 인증을 준비합니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다.
 
 ```powershell
-git clone --single-branch --branch claude/submission-s10 https://github.com/myeongjundev/haedam-soar-portfolio.git
+git clone --single-branch --branch main https://github.com/myeongjundev/haedam-soar-portfolio.git
 Set-Location haedam-soar-portfolio
 git branch --show-current
 git rev-parse --short HEAD
