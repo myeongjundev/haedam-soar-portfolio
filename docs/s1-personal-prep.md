@@ -11,7 +11,7 @@
 | `tools/s1_client.py` | 기본 계획 출력만 수행. 실행 시 개인 Linux 클라이언트·프로젝트·설정 플래그와 실제 소켓 출발지 검증 |
 | `tests/test_s1_personal.py` | 경계 8회/탐지 9회, 중복·잘못된 범위·중지·403/429·리다이렉트·비밀값 비기록을 네트워크 없이 확인 |
 
-API·이벤트·티켓 계약, 포털 코드, 기존 S8/S7/H1/팀 S1 파일은 변경하지 않습니다. S1 대응/원복 워크플로와 실제 관제 설정 반영은 **이번 구현에 포함되지 않습니다**. 번들의 `integration_ready:false`, 결과의 `end_to_end_status:not_run`을 유지합니다.
+API·이벤트·티켓 공통 계약, 포털 코드, 기존 S8/S7/H1/팀 S1 파일은 변경하지 않습니다. 1차 준비 이후 [S1 대응/원복 워크플로와 연결 설정 생성](s1-auto-workflows.md)을 추가했습니다. 실제 관제 설정 반영은 하지 않았습니다. 번들의 `integration_ready:false`, 결과의 `end_to_end_status:not_run`을 유지합니다.
 
 ## 오프라인 사용
 
@@ -59,7 +59,7 @@ py -3.12 tools/s1_client.py --settings .local/s1/settings.json --run-id prep2026
 ## 다음 연결 작업
 
 1. S10과 실행 순서를 정한 뒤 네트워크·포트 충돌, 자원과 프로젝트 소유권을 검사하고 별도 새 볼륨에서 시작합니다.
-2. 개인 Graylog 입력·파이프라인·스트림·인증 알림과 S1 전용 n8n 대응/원복을 구현합니다. username 단독 티켓 묶음과 IP 조치 소유권을 맞추고 요청 본문의 실행 모드 변경을 차단합니다.
+2. 후속 구현된 Graylog 입력·스트림·인증 알림과 S1 전용 n8n 대응/원복을 독립 검토하고 실제 자원 ID·credential에 연결합니다. 현재 구현은 계정+IP 티켓 묶음·자원 소유권 대조·요청의 실행 모드 변경 거부를 포함합니다.
 3. 정상 계정 로그인 대조와 원복 확인 도구를 추가합니다. 포털/Graylog 401 건수, 동일 이벤트의 티켓·실제 IP 차단, 정상 대조, 소유 티켓 해제·최종 활성 조치 없음까지 확인합니다.
 
 이번 작업의 실제 로그인·탐지·자동 대응·원복 요청은 0건입니다. Docker·VM 조작도 수행하지 않았습니다.
@@ -69,4 +69,4 @@ py -3.12 tools/s1_client.py --settings .local/s1/settings.json --run-id prep2026
 - 작업 ID: 개인 S1 준비 1차. 브랜치 `codex/s1-personal-prep`, 선행 커밋 `b0551e8` / PR #16.
 - 검증: Python 3.13.15 기존 팀 가상환경에서 `python -m pytest -q tests` 78 passed, 19 subtests passed. 새 S1 검사는 16개입니다. Python 3.12.10에서 check/init/계획 출력 성공. 실제 HTTP 대신 가짜 전송 객체로 입력 상한·중지·증적을 검사했습니다.
 - 파일 검사: 변경 10개 파일 gitleaks 탐지 0, 로컬 링크 58개 유효, `.local/s1` 비밀값·설정은 Git 제외. Compose 엔진·실제 네트워크·실제 CSRF 로그인·탐지·차단·원복은 미검증.
-- 다음 담당의 첫 행동: 이 PR의 설정/입력 가드와 증적 경계를 독립 검토한 뒤 S1 전용 관제·대응/해제 워크플로를 구현합니다. 현재 번들은 integration_ready=false이므로 팀 S1 JSON을 그대로 게시하지 않습니다.
+- 다음 담당의 첫 행동: 설정/입력 가드와 후속 대응·해제 워크플로를 독립 검토합니다. 현재 번들은 integration_ready=false이므로 팀 S1 JSON을 그대로 게시하거나 실측 완료로 표시하지 않습니다.

@@ -41,16 +41,14 @@ def overlay(s, root, bundle):
 
 
 def definition_template(s, root):
-    d = json.loads((root / 'lab/s1s4/graylog/s1-login-bruteforce.json').read_text(encoding='utf-8'))
-    d['title'] = s['project'] + ' S1 login failures'
-    d['config']['streams'] = []
-    d['config']['query'] += ' AND src_ip:"' + s['addresses']['attacker'] + '"'
-    d['notifications'] = []
-    return d
+    from build_s1_workflows import graylog_artifacts, load_settings
+    return graylog_artifacts(*load_settings(s))['definition']
 
 
 def create_bundle(s, root, output):
     validate(s)
+    from build_s1_workflows import build, load_settings, graylog_artifacts
+    _, integration = load_settings(s)
     root, output = root.resolve(), output.resolve()
     if not output.is_relative_to(root / '.local') or output == root / '.local':
         raise ValueError('output_must_be_a_new_directory_inside_local')
@@ -70,13 +68,18 @@ def create_bundle(s, root, output):
                '-f', str(output / 'compose.s1.json')]
     files = {'settings.json': s, 'compose.s1.json': overlay(s, root, output),
              'graylog-definition.template.json': definition_template(s, root),
+             'integration-settings.json': integration,
+             'graylog-integration.template.json': graylog_artifacts(s, integration),
              'bundle.json': {'case_id': 'S1', 'settings_sha256': digest(s), 'runtime_verified': False,
-                             'integration_ready': False, 'compose_argv': command,
+                             'integration_ready': False, 'integration_artifacts_generated': True,
+                             'integration_settings_sha256': digest(integration), 'compose_argv': command,
                              'clear_process_env_before_future_compose': sorted(env),
                              'pending': ['check network/port conflicts before startup', 'new owned volumes',
-                                         'Graylog stream/input/pipeline/notification binding',
-                                         'S1 n8n target/credential/ownership/response/release implementation',
+                                         'Graylog resource IDs and authentication materialization/import',
+                                         'n8n credential/workflow import and publication; detection remains disabled',
                                          'normal authenticated login and end-to-end observation']}}
+    (output / 'workflows').mkdir()
+    files.update({'workflows/' + name: workflow for name, workflow in build(s, integration).items()})
     for name, body in files.items():
         (output / name).write_text(json.dumps(body, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     return output
