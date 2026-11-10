@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import secrets
 
-from s4_settings import digest, validate
+from s4_settings import PROFILES, digest, plan, validate
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SETTINGS = ROOT / 'infra/s4-settings.json'
@@ -38,7 +38,7 @@ def overlay(s, root, bundle):
                                      {'type': 'bind', 'source': str(bundle / 'runs'), 'target': paths['evidence_mount']}]}
     networks = {}
     for setting, name in [('default', 'default'), ('clients', 's4-clients'), ('response', 's4-response'), ('graylog_backend', 'graylog-backend')]:
-        networks[name] = {'internal': True, 'ipam': {'config': [{'subnet': s['networks'][setting]}]}}
+        networks[name] = {'internal': s['network_internal'][setting], 'ipam': {'config': [{'subnet': s['networks'][setting]}]}}
     return {'name': s['project'], 'services': services, 'networks': networks}
 
 
@@ -47,8 +47,31 @@ def definition_template(s, root):
     return graylog_artifacts(*load_settings(s))['definition']
 
 
-def create_bundle(s, root, output):
+def command_packet(s, run_id, command):
+    plans = {profile: plan(s, run_id, profile) for profile in PROFILES}
+    commands = {}
+    for profile in PROFILES:
+        argv = command + ['exec', '-T', 'attacker', 'python', s['paths']['tools_mount'] + '/s4_client.py',
+                          '--settings', s['paths']['settings_mount'], '--run-id', run_id, '--profile', profile]
+        commands[profile] = {'plan_argv': argv, 'input_argv': argv + ['--execute'],
+                             'password_stdin_required': 200 in plans[profile]['expected_login_statuses']}
+    return {'case_id': 'S4', 'run_id': run_id, 'mode': 'offline_preparation', 'runtime_verified': False,
+            'end_to_end_status': 'not_run', 'plans': plans, 'commands': commands,
+            'prerequisites': ['Explicitly enable input in settings before creating a NEW bundle; never patch a live bundle',
+                              'Check memory, ports and networks; agree runtime order before starting containers',
+                              'Provision two synthetic citizen accounts from normal client; verify password ownership',
+                              'Import actual Graylog IDs/credentials and publish n8n workflows; no template placeholders',
+                              'Keep detector unscheduled during account/session setup, then schedule for observation',
+                              'Exclude prior same-username/source-IP logs from the 600-second search window',
+                              'Run ONE profile, reconcile raw Graylog counts, then observe for 660 seconds',
+                              'Independently verify account lock, other sessions, normal user, ticket and approved recovery'],
+            'not_implemented': ['account provisioning/session retention CLI',
+                                'live lock/ticket/restoration evidence collector']}
+
+
+def create_bundle(s, root, output, run_id='s4prep'):
     validate(s)
+    plan(s, run_id, 'boundary5')  # Refuse invalid identity before creating files/secrets.
     from build_s4_workflows import build, load_settings, graylog_artifacts
     _, integration = load_settings(s)
     root, output = root.resolve(), output.resolve()
@@ -69,6 +92,7 @@ def create_bundle(s, root, output):
                '-p', s['project'], '-f', str(root / 'compose.yaml'), '-f', str(root / 'compose.soc.yaml'),
                '-f', str(output / 'compose.s4.json')]
     files = {'settings.json': s, 'compose.s4.json': overlay(s, root, output),
+             'input-packet.json': command_packet(s, run_id, command),
              'graylog-definition.template.json': definition_template(s, root),
              'integration-settings.json': integration,
              'graylog-integration.template.json': graylog_artifacts(s, integration),
@@ -92,11 +116,12 @@ def main():
     parser.add_argument('action', choices=['check', 'init'])
     parser.add_argument('--settings', type=Path, default=DEFAULT_SETTINGS)
     parser.add_argument('--output', type=Path, default=ROOT / '.local/s4')
+    parser.add_argument('--run-id', default='s4prep')
     args = parser.parse_args()
     try:
         s = validate(json.loads(args.settings.read_text(encoding='utf-8-sig')))
         if args.action == 'init':
-            path = create_bundle(s, ROOT, args.output)
+            path = create_bundle(s, ROOT, args.output, args.run_id)
             print(json.dumps({'created': str(path), 'runtime_verified': False, 'secrets_printed': False}))
         else:
             print(json.dumps({'settings': 'valid', 'project': s['project'], 'settings_sha256': digest(s),
