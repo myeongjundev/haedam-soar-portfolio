@@ -152,6 +152,21 @@ def test_drift_does_not_prevent_existing_incident_observation(harness):
     assert any(m.get('data',{}).get('stage')=='verified' for m in result)
 
 
+def test_drift_does_not_prevent_owned_incident_restoration(harness):
+    row,ticket=observed_setup(harness)
+    harness.verify.lab.require_current_portal=lambda:pytest.fail('New-input guard must not block restoration')
+    def complete(key,ident):
+        assert key==row['key'] and ident==ticket['ticket_id']
+        harness.calls.append('complete_owned_incident')
+        ticket['status']='restored'
+        return 200,{'verdict':'restored'}
+    harness.verify.completion=complete
+    result=harness.invoke(action='restore')
+    assert harness.calls.count('complete_owned_incident')==1
+    assert any(m.get('data',{}).get('stage')=='restored' for m in result)
+    assert (harness.web/'index.html').read_bytes()==(harness.base/'baseline/index.html').read_bytes()
+
+
 def test_open_incident_reports_its_own_reason_not_runtime_drift(harness):
     # The real check compares the web volume with the built image, so an open
     # incident's tampered file also counts as drift; its own reason must win.
