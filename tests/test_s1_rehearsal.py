@@ -75,6 +75,53 @@ class RehearsalTests(unittest.TestCase):
         self.assertEqual(r['artifact_consistency'],'passed');self.assertFalse(r['provenance_attested'])
         self.assertEqual(set(release_body(self.s,'unit',e['ticket_blocked'])),{'case_id','asset_id','src_ip','username','ticket_id'})
 
+    def test_restoration_requires_original_history_and_matching_release(self):
+        for mutation in ('missing_history','unrelated_release_only','changed_history','wrong_bot','wrong_via','wrong_target',
+                         'duplicate_release','unverified_release','release_before_apply'):
+            with self.subTest(mutation=mutation):
+                p,e=self.fixture()
+                actions=deepcopy(e['ticket_restored']['ticket']['actions'])
+                if mutation=='missing_history':actions=actions[1:]
+                elif mutation=='unrelated_release_only':
+                    actions=actions[1:]
+                    actions[0].update(bot='999',target=self.s['addresses']['normal'])
+                elif mutation=='changed_history':actions[0]['result']='already_applied'
+                elif mutation=='wrong_bot':actions[1]['bot']='999'
+                elif mutation=='wrong_via':actions[1]['via']='pfsense'
+                elif mutation=='wrong_target':actions[1]['target']=self.s['addresses']['normal']
+                elif mutation=='duplicate_release':actions[1]['duplicate']=True
+                elif mutation=='unverified_release':actions[1]['applied_verified']=False
+                elif mutation=='release_before_apply':actions.reverse()
+                e['ticket_restored']['ticket']['actions']=actions
+                with self.assertRaises(ValueError):check(self.s,p,e,'a'*24)
+
+    def test_second_precision_restoration_accepts_same_second_probes(self):
+        p,e=self.fixture()
+        for role in ('attacker','normal'):
+            e['probes'][role+'_blocked']['started_at']='2026-11-10T00:16:20.100+00:00'
+            e['probes'][role+'_blocked']['finished_at']='2026-11-10T00:16:20.999+00:00'
+        e['ticket_restored']['ticket']['restored_at']='2026-11-10T09:16:20+09:00'
+        self.assertEqual(check(self.s,p,e,'a'*24)['artifact_consistency'],'passed')
+
+    def test_restoration_precision_does_not_hide_reversed_order(self):
+        for restored,finished in (
+            ('2026-11-10T00:16:20+00:00','2026-11-10T00:16:21+00:00'),
+            ('2026-11-10T00:16:20Z','2026-11-10T00:16:21.001+00:00'),
+            ('2026-11-10T00:16:20.100+00:00','2026-11-10T00:16:20.101+00:00'),
+        ):
+            with self.subTest(restored=restored,finished=finished):
+                p,e=self.fixture()
+                e['ticket_restored']['ticket']['restored_at']=restored
+                e['probes']['attacker_blocked']['finished_at']=finished
+                with self.assertRaises(ValueError):check(self.s,p,e,'a'*24)
+
+    def test_precise_restoration_accepts_probe_finishing_at_recorded_time(self):
+        p,e=self.fixture()
+        timestamp='2026-11-10T00:16:20.100+00:00'
+        e['ticket_restored']['ticket']['restored_at']=timestamp
+        e['probes']['attacker_blocked']['finished_at']=timestamp
+        self.assertEqual(check(self.s,p,e,'a'*24)['artifact_consistency'],'passed')
+
     def test_missing_mixed_run_stale_event_and_incomplete_restoration_rejected(self):
         changes=[lambda e:e['input'].update(run_id='different'),lambda e:e['input'].update(observed_401_count=8),
                  lambda e:e['graylog_event'].update(id='different'),lambda e:e['ticket_restored']['ticket'].update(ticket_id='T-20261110-0002'),
