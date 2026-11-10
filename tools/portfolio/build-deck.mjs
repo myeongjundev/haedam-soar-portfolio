@@ -66,7 +66,7 @@ export function buildPortfolio(p, {root, inventory}) {
   txt(s,'프로젝트별 볼륨 보존 · 메모리 제약에 따라 순차 실행',665,580,550,65,22,C.muted);
 
   s=slide('개인 실측 범위','팀 실행 기록과 개인 환경에서 다시 확인한 결과를 분리했습니다.',`S7은 팀의 FIM+HTTP 접근 성공 상관 정책과 구분되는 개인 FIM 즉시 대응입니다. S1/S4/S12는 이 포트폴리오의 개인 실측이 아직 없습니다. S10은 11/10 Claude 실측 S10-20261110T021934Z입니다.\n출처: ${source('docs/portfolio-plan.md')}\n${source('docs/panel-results-20261110.md')}`);
-  table(s,[['사례','개인 실측 판정','확인한 효과'],['S8 웹 탐색·인증 실패','11/9 통과','공격 IP 403, 정상 200, 해제 200'],['S7 파일 무결성','11/10 버튼 실측 통과','기준 해시 복구, 추가 파일 격리·정리'],['H1 민원 도배','11/9 통과','작성만 429, 정상 시민 작성 201'],['S10 경계·포털 차단','11/10 통과','공격 차단·정상 200, 원복 후 양쪽 200'],['S1·S4·S12','개인 미실측','팀 결과를 개인 통과로 대체하지 않음']],205,[300,330,522],66);
+  table(s,[['사례','개인 실측 판정','확인한 효과'],['S8 웹 탐색·인증 실패','11/9 통과','공격 IP 403, 정상 200, 해제 200'],['S7 파일 무결성','11/10 버튼 실측 통과','기준 해시 복구, 추가 파일 격리·정리'],['H1 민원 도배','11/9 통과','작성만 429, 정상 시민 작성 201'],['S10 경계·포털 차단','11/10 통과','공격 차단·정상 200, 원복 후 양쪽 200'],['S1 반복 로그인 실패','11/10 통과','공격 IP 403, 정상 로그인 유지, 해제 200'],['S4·S12','개인 미실측','팀 결과를 개인 통과로 대체하지 않음']],205,[300,330,522],60);
 
   s=slide('S8  공격 출발지 IP 차단','실제 HTTP 요청의 웹 탐색과 로그인 실패를 같은 출발지로 결합했습니다.',`실행 S8-20261109T013617Z. 조건 충족부터 Graylog 판정 3.828초, 판정부터 차단 API 응답 0.693초. 4.521초는 최초 HTTP403 관측 시각이 아닙니다. 별도 클라이언트 요청으로 실제 효과를 확인했습니다. 한 회차의 관측이며 평균/보장 시간이 아닙니다. 개인 S8은 포털 애플리케이션 차단입니다. pfSense 패킷 드롭은 포함하지 않습니다.\n출처: ${source('docs/s8-results.md')}\n${source('docs/evidence/s8-live-20261109.json')}`);
   metric(s,'4.521초','조건 충족부터 차단 API 응답까지',66,205,1100);
@@ -87,6 +87,11 @@ export function buildPortfolio(p, {root, inventory}) {
   txt(s,'원복 요청→티켓 restored 14.5초 · 잔여 조치 0 · 저장소·relay 장애 시험 별도 통과',66,636,1148,28,21,C.muted);
   metric(s,'15.0초','입력부터 Graylog 상관 탐지까지',66,208);metric(s,'26.2초','입력부터 포털·pfSense 차단 완료까지',680,208);
   table(s,[['대조 항목','시험 클라이언트','정상 클라이언트'],['차단 중','시간 초과(경계 차단)','200 정상 접근'],['원복 후','200 정상 접근','200 정상 접근']],410,[260,410,482],70);
+
+  s=slide('S1  반복 로그인 실패 탐지와 IP 차단','같은 계정·출발지의 실제 로그인 실패 9회를 탐지해 공격 출발지만 차단했습니다.',`Codex 실측 s1fix20261110(코드 e06ed60, PR #25). 9번째 실제 401 로그 15:28:02.012 KST → Graylog 처리 39.216초 → 포털 차단 API 완료 40.299초. 1분 주기 Graylog 평가를 포함한 한 회차 값이며 평균·보장 시간이 아닙니다. 공격 출발지 health 200→403 IP_BLOCKED→200, 정상 출발지 health 200·새 로그인 200 유지. 이벤트 01M7229ZMCN5QNEBME9QJNJ1AA, 티켓 T-20261110-0001 restored·활성 조치 0, 원복 후 DB 활성 IP 차단 0. 8회 경계(31분 무경보)는 반환 노드 수정 전 같은 정책의 별도 회차 s1live20261110입니다. 최종 9회는 기존 개인 S1 스택에 수정본 워크플로를 다시 게시한 재실측이며 새 볼륨 전체 재설치가 아닙니다. 첫 회차에서 하위 흐름 반환 누락으로 티켓 없이 빈 HTTP 200이 나온 실패는 결과 문서에 보존했습니다. 포털 애플리케이션 IP 차단이며 pfSense 차단은 포함하지 않습니다.\n출처: https://github.com/myeongjundev/haedam-soar-portfolio/blob/6bc8ee168434aed7a01facf060c404e6dd86bb64/docs/s1-results.md\nhttps://github.com/myeongjundev/haedam-soar-portfolio/blob/6bc8ee168434aed7a01facf060c404e6dd86bb64/docs/evidence/s1-live-20261110.json\nPR25: https://github.com/myeongjundev/haedam-soar-portfolio/pull/25`);
+  txt(s,'원복 후 티켓 restored·활성 조치 0 · 8회+31분 무경보는 수정 전 별도 회차',66,636,1148,28,21,C.muted);
+  metric(s,'39.2초','9번째 실패부터 Graylog 탐지까지',66,208);metric(s,'40.3초','9번째 실패부터 포털 차단 완료까지',680,208);
+  table(s,[['대조 항목', '시험 클라이언트', '정상 클라이언트'], ['차단 중', '403 IP_BLOCKED', '200 · 새 로그인 유지'], ['원복 후', '200 정상 접근', '200 정상 접근']],410,[260,410,482],70);
 
   s=slide('본인 구현  포털과 대응 API','React 화면과 Flask 백엔드를 보안 이벤트·대응 경로에 연결했습니다.',`팀 단계에서 김명준이 주도한 포털 구현을 개인 레포에 기준 커밋으로 반입했습니다. 프론트994fc45, 백엔드98e549c. H1은 개인 후속 구현이며 팀 티켓 저장소는 김상혁의 구현을 확장했습니다.\n출처: ${source('docs/sources.md')}\n${source('docs/h1-results.md')}`);
   txt(s,'시민·담당자·관리자 화면',66,225,510,65,34,C.teal,true);
@@ -110,7 +115,7 @@ export function buildPortfolio(p, {root, inventory}) {
   txt(s,'배운 점: API 성공 응답 뒤에도 실제 효과와 복구 상태를 따로 확인해야 합니다.',66,613,1150,44,25,C.muted);
 
   s=slide('개선 방향과 남은 검증','현재 완료 범위를 유지하면서 운영에 필요한 검증을 확장합니다.',`S10은 11/10 실측했습니다(S10-20261110T021934Z, docs/s10-results-20261110.md). 남은 S10 검증은 Graylog 알림 재시도, n8n 실행 중 중단, 방화벽 도구 응답 유실, 반복 측정, pfSense ISO 공식 체크섬 대조입니다.\n출처: ${source('docs/submission-integration.md')}\n${source('docs/portfolio-plan.md')}\nPR13: ${repo}/pull/13`);
-  txt(s,'제출 전 우선 확인',66,224,510,60,34,C.teal,true);txt(s,'전체 README 초기 설치 재현\nS1·S4·S12 개인 실측\nS10 제어판 버튼 연결',66,310,540,220,29);
+  txt(s,'제출 전 우선 확인',66,224,510,60,34,C.teal,true);txt(s,'전체 README 초기 설치 재현\nS4·S12 개인 실측\nS10 제어판 버튼 연결',66,310,540,220,29);
   txt(s,'후속 개선',680,224,510,60,34,C.teal,true);txt(s,'manager 중단·중간 크래시 시험\n탐지 임계값과 오탐률 평가\n동시 사건·부분 실패 복구 강화\n티켓 시간 지표와 HTTP 효과 연결',680,310,540,245,29);
   txt(s,'검증 상태 기준  2026.11.10 · S10 실측 반영',66,610,1148,40,24,C.muted);
 
@@ -130,8 +135,8 @@ export function buildPortfolio(p, {root, inventory}) {
   }
   const beforeReview=p.slides.items.map(s=>s.id);
   const reviewSlides=addReviewSlides(p,{root});
-  const reviewIndex=inventory?19:11;
+  const reviewIndex=inventory?20:12;
   p.slides.reorder([...beforeReview.slice(0,reviewIndex),...reviewSlides,...beforeReview.slice(reviewIndex)]);
   p.slides.items.forEach((s,i)=>{const marker=s.shapes.items.find(x=>x.position.top===671&&x.position.left===1150);if(marker)marker.text=String(i+1).padStart(2,'0');else txt(s,String(i+1).padStart(2,'0'),1150,671,64,24,16,C.muted);});
-  return {slideCount:p.slides.items.length,sourceCommit:'06fb3a4',statusAsOf:'2026-11-10 KST, S10 live run included'};
+  return {slideCount:p.slides.items.length,sourceCommit:'06fb3a4',statusAsOf:'2026-11-10 KST, S10 and S1 live runs included'};
 }
