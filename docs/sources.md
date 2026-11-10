@@ -57,3 +57,5 @@ H1 아이디어(민원 도배 탐지와 계정의 작성만 제한)는 반소람
 | 김명준 팀 담당 · S8/S10 | 공격 입력 도구, 차단 효과와 원복 검증. S10 팀 시험에서 PF 차단 중 새 연결 timeout → PF만 해제한 뒤 포털 403 → 포털 해제 후 정상 접근·활성 조치 0 확인 | [S8/S10 입력 반입 PR](https://github.com/NoBugs-Aleph/aleph-soar-capstone/pull/131), [팀 발표 대본](https://github.com/NoBugs-Aleph/aleph-soar-capstone/blob/7155489/team_docs/%EB%B0%9C%ED%91%9C-%EB%8C%80%EB%B3%B8.md) |
 | 팀 공통 구현 | Wazuh·S7, 티켓 저장소, Graylog·n8n 연동, S1/S4/S12의 담당과 반입 경로 | [반입 경로](#반입-경로), [팀 시나리오와 담당](https://github.com/NoBugs-Aleph/aleph-soar-public/blob/main/docs/scenarios.md) |
 | 개인 전환 · P01 | 팀 코드 출처 고정, 웹·DB의 Compose 기동과 마이그레이션, 합성 가입·로그인과 재시작 후 세션 유지 | [11/9 작업일지](../work-log/members/myeongjundev/2026-11-09.md), [개인 P01 PR](https://github.com/myeongjundev/haedam-soar-portfolio/pull/1) |
+
+S4 후속 `tools/s4_client.py`, 입력 계획·번들 패킷과 `docs/s4-live-preparation.md`는 김명준·Codex의 개인 작업입니다. 반소람의 팀 집계 조건을 유지하며 기존 개인 S1 전송/중지/증적 함수를 재사용합니다. S1에서 실측한 관리망 수정도 S4 설정에 반영했습니다. 원본 팀 규칙·워크플로는 바꾸지 않았고, 실제 Flask·임시 SQLite 대조는 개인 S4 실측으로 표시하지 않습니다.

@@ -48,5 +48,11 @@
   "accounts": {
     "target": "zz_s4_target",
     "normal": "zz_s4_normal"
+  },
+  "network_internal": {
+    "default": false,
+    "clients": true,
+    "response": true,
+    "graylog_backend": true
   }
 }
