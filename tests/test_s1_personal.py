@@ -85,6 +85,10 @@ class SettingsTests(unittest.TestCase):
         self.assertIn('172.30.101.41', lab.definition_template(s, ROOT)['config']['query'])
         self.assertEqual(plan(s, 'r1', 'trigger9')['source_ip'], '172.30.101.41')
         self.assertEqual(o['name'], 'haedam-s1-alternate')
+        # Published loopback ports need the non-internal default network; clients stay isolated.
+        self.assertEqual({k: n['internal'] for k, n in o['networks'].items()},
+                         {'default': False, 's1-clients': True, 's1-response': True, 'graylog-backend': True})
+        self.assertEqual(set(o['services']['attacker']['networks']), {'s1-clients'})
 
     def test_bundle_does_not_read_or_overwrite_existing_env(self):
         with tempfile.TemporaryDirectory() as tmp:

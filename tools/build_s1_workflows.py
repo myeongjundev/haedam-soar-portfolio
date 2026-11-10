@@ -83,6 +83,16 @@ def common_workflow(role,c,s):
             code=change(code,'(j.statusCode === 200 && j.body && j.body.data && j.body.data.items) || null',
                         "(j.statusCode === 200 && j.body?.success === true && Array.isArray(j.body?.data?.items) && j.body.data.items.every(i=>i && typeof i.ip==='string') ? j.body.data.items : null)")
         p['jsCode']=code
+    if role=='portal':
+        # n8n returns only main[0] of the last node: list/failed results ending on this IF's
+        # false branch would reach the caller as no items (same fix as team haedam-10, b3c4a1f).
+        branches=w['connections']['반영 확인 필요?']['main']
+        if len(branches)!=2 or branches[1]:
+            raise ValueError('upstream changed: 반영 확인 필요? false branch')
+        w['nodes'].append({'id':'portfolio-s1-portal-pass-through','name':'결과 전달','type':'n8n-nodes-base.code',
+                           'typeVersion':2,'position':[2620,360],
+                           'parameters':{'jsCode':'return $input.all();   // 목록 조회·실패 결과를 하위 워크플로 출력으로 내보낸다'}})
+        branches[1]=[{'node':'결과 전달','type':'main','index':0}]
     return w
 
 

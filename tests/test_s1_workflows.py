@@ -139,6 +139,10 @@ class S1WorkflowTests(unittest.TestCase):
                     for edge in branch:self.assertIn(edge['node'],names)
             for n in w['nodes']:
                 if n['type'].endswith('.executeWorkflow'):self.assertIn(n['parameters']['workflowId']['value'],identifiers)
+                # n8n hands a caller only main[0] of the last node, so no IF branch may end unconnected.
+                if n['type'].endswith('.if'):
+                    branches=w['connections'][n['name']]['main']
+                    self.assertTrue(len(branches)==2 and all(branches),(w['id'],n['name']))
                 if n['type'].endswith('.webhook'):
                     role='detection' if w['id']==IDS['respond'] else 'operator'
                     self.assertEqual(n['credentials']['httpHeaderAuth']['id'],self.c['credentials'][role]['id'])
