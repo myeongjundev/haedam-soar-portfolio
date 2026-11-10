@@ -81,15 +81,15 @@ print(json.dumps({'clean':safe and values==actual,'baseline_hash':hashlib.sha256
         if not result['clean']: raise RuntimeError('dirty_target')
         return result['baseline_hash']
     if action=='attack':
-        # Only before new input: web drift during an incident must not prevent
-        # observation or restoration of that incident.
+        if any(t['status'] in ('open','responding','verified') for t in verify.tickets()):
+            raise RuntimeError('active_ticket')
+        baseline=clean()
+        # Only before new input, and after the incident/dirty checks so their reasons stay
+        # visible: web drift during an incident must not block observing or restoring it.
         try:
             lab.require_current_portal()
         except RuntimeError:
             raise RuntimeError('stale_runtime') from None
-        if any(t['status'] in ('open','responding','verified') for t in verify.tickets()):
-            raise RuntimeError('active_ticket')
-        baseline=clean()
         prepared=json.loads(verify.agent('''import hashlib,sys
 key,marker=sys.argv[1:]; p=web/key
 assert not p.is_symlink() and p.parent.resolve()==p.parent
