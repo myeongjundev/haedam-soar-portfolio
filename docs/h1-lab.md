@@ -61,7 +61,14 @@ py -3.12 tools/h1_control.py release $ticketId
 
 전체 실행기는 고정 계정의 첫 실행만 허용합니다. 두 번째 시험은 이전 증적을 보존하고 **이 프로젝트의 시험 데이터만** 초기화한 새 볼륨에서 수행합니다. 기존 S8·학원 볼륨을 삭제하지 않습니다. `stop`은 데이터를 보존하며 원복을 대신하지 않습니다.
 
-포털 조치는 성공했지만 티켓 기록이 실패하면 같은 실제 탐지 이벤트를 재전송해 기록을 맞춘 뒤 해제합니다. 운영자에게 포털 상태와 티켓 상태를 함께 보여 주고, 기록 실패를 대응 성공으로 표시하지 않습니다. 이 장애 구간의 자동 복구는 별도 고도화 대상입니다.
+포털 제한은 적용됐지만 `applied` 기록이 없으면(티켓 저장소 장애, 제한 응답 시간 초과, n8n 중단) 포털은 제한 중이고 티켓은 `open`·자원 소유권 없음으로 남습니다. 이때 `release`는 409 `held_ticket_status`로 보류됩니다. `status`의 `restriction.ticket_id`를 확인한 뒤 다음 명령으로 그 티켓의 첫 탐지를 저장된 event_id·detected_at 그대로 재전송해 기록을 맞추고 해제합니다. 포털 영수증이 재생되므로 추가 제한은 없습니다.
+
+```powershell
+py -3.12 tools/h1_control.py reconcile T-YYYYMMDD-NNNN
+py -3.12 tools/h1_control.py release T-YYYYMMDD-NNNN
+```
+
+같은 event_id라도 detected_at이 다르면 티켓 저장소의 멱등 충돌이며 n8n은 409 `held_ticket_conflict`로 보류합니다. 재시도해도 같은 결과이므로 `reconcile`을 사용합니다. 저장소 장애는 503 `held_ticket_record`입니다. 포털 해제 직후 `released` 기록이 실패하면 같은 `release`를 다시 실행합니다. 그 사이 새 탐지가 들어오면 티켓에 조치 기록이 남아 있어도 포털 현재 제한을 확인하므로, 제한이 없거나 다른 티켓 소유이면 409 `held_portal_mismatch`로 보류합니다. 기록 실패를 대응 성공으로 표시하지 않으며, 이 구간의 자동 복구는 별도 고도화 대상입니다.
 
 ## 개발 검사
 

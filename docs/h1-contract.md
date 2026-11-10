@@ -19,7 +19,7 @@
 
 티켓 case_id `H1`을 허용합니다. seat는 개인 작업자 김명준의 기존 B, group_key는 `H1:haedam-portal:<username>`입니다. 기존 IP 기반 S8과 충돌하지 않습니다. 자원은 `asset_id=haedam-portal, via=portal, action=restrict_write, target=<username>, bot=112`입니다. 해제 기록도 같은 action 이름에 `result=released`를 사용해 정확한 자원 소유권을 제거합니다.
 
-H1 n8n 탐지 입력은 case_id H1, asset_id haedam-portal, username h1_abuse, 실제 Graylog event_id와 detected_at을 받습니다. 전용 탐지 키로 인증하고 티켓 detected 기록에 성공한 다음 조치합니다. 기록/조회가 실패하면 503, 오래된 티켓/이벤트는 409로 보류합니다. n8n 생산 실행 동시성은 1입니다.
+H1 n8n 탐지 입력은 case_id H1, asset_id haedam-portal, username h1_abuse, 실제 Graylog event_id와 detected_at을 받습니다. 전용 탐지 키로 인증하고 티켓 detected 기록에 성공한 다음 조치합니다. 기록/조회가 실패하면 503, 오래된 티켓/이벤트와 티켓 저장소의 409(같은 키의 다른 본문 등)는 409로 보류합니다. 조치 전에 포털 현재 제한을 읽습니다. 티켓에 이미 조치 기록이 있으면 포털 제한이 그 티켓 소유일 때만 200 `duplicate_no_action`이고, 아니면 409 `held_portal_mismatch`입니다. n8n 생산 실행 동시성은 1입니다.
 
 승인 해제 입력은 같은 case_id·asset_id·username과 정확한 ticket_id입니다. 별도 운영자 키가 필요하며 현재 티켓·케이스·자산·계정·활성 소유권을 확인합니다. 포털의 티켓 소유권 검사는 마지막 방어선입니다. 응답에는 비밀값을 포함하지 않습니다.
 
