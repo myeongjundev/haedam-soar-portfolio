@@ -57,3 +57,5 @@ H1 아이디어(민원 도배 탐지와 계정의 작성만 제한)는 반소람
 | 개인 전환 · P01 | 팀 코드 출처 고정, 웹·DB의 Compose 기동과 마이그레이션, 합성 가입·로그인과 재시작 후 세션 유지 | [11/9 작업일지](../work-log/members/myeongjundev/2026-11-09.md), [개인 P01 PR](https://github.com/myeongjundev/haedam-soar-portfolio/pull/1) |
 
 S4 후속 `tools/s4_client.py`, 입력 계획·번들 패킷과 `docs/s4-live-preparation.md`는 김명준·Codex의 개인 작업입니다. 반소람의 팀 집계 조건을 유지하며 기존 개인 S1 전송/중지/증적 함수를 재사용합니다. S1에서 실측한 관리망 수정도 S4 설정에 반영했습니다. 원본 팀 규칙·워크플로는 바꾸지 않았고, 실제 Flask·임시 SQLite 대조는 개인 S4 실측으로 표시하지 않습니다.
+
+S4 `tools/s4_probe.py`, `s4_collect.py`, `s4_rehearsal.py`, `s4_evidence.py`와 세션·증적 통합 테스트는 김명준·Codex의 개인 후속 구현입니다. 기존 개인 S1 전송/증적 저장 함수, 김명준의 포털 API, 김상혁의 티켓 저장소 및 반소람·김대훈의 S4 탐지/대응 출처를 유지합니다. 생성 워크플로를 실제 Flask·임시 SQLite에 연결한 오프라인 검증이며 실제 n8n/Graylog 실행으로 표시하지 않습니다. [구현·실측 경계](s4-session-evidence.md).

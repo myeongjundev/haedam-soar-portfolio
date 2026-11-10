@@ -29,13 +29,27 @@ def overlay(s, root, bundle):
     for name in ('attacker', 'normal'):
         services[name] = {'image': s['client_image'], 'init': True,
                          'command': ['python', '-c', 'import time; time.sleep(2147483647)'],
-                         'environment': {'HAEDAM_S4_PROJECT': s['project']},
+                         'environment': {'HAEDAM_S4_PROJECT': s['project'], 'HAEDAM_S4_ROLE': name},
                          'labels': {'haedam.case': 'S4'},
                          'read_only': True, 'cap_drop': ['ALL'], 'security_opt': ['no-new-privileges:true'],
                          'networks': {'s4-clients': {'ipv4_address': addresses[name]}},
                          'volumes': [{'type': 'bind', 'source': str(root / 'tools'), 'target': paths['tools_mount'], 'read_only': True},
                                      {'type': 'bind', 'source': str(bundle / 'settings.json'), 'target': paths['settings_mount'], 'read_only': True},
                                      {'type': 'bind', 'source': str(bundle / 'runs'), 'target': paths['evidence_mount']}]}
+    services['normal']['volumes'].append({'type': 'bind', 'source': str(bundle / 'private'),
+        'target': paths['private_mount']})
+    services['observer'] = {
+        'image': s['client_image'], 'profiles': ['s4-evidence'], 'init': True,
+        'command': ['python', '-c', 'import time; time.sleep(2147483647)'],
+        'network_mode': 'service:n8n', 'depends_on': ['n8n'],
+        'environment': {'HAEDAM_S4_PROJECT': s['project'], 'HAEDAM_S4_ROLE': 'observer'},
+        'read_only': True, 'cap_drop': ['ALL'], 'security_opt': ['no-new-privileges:true'],
+        'volumes': [
+            {'type': 'bind', 'source': str(root / 'tools'), 'target': paths['tools_mount'], 'read_only': True},
+            {'type': 'bind', 'source': str(bundle / 'settings.json'), 'target': paths['settings_mount'], 'read_only': True},
+            {'type': 'bind', 'source': str(bundle / 'integration-settings.json'), 'target': paths['integration_mount'], 'read_only': True},
+            {'type': 'bind', 'source': str(bundle / 'runs'), 'target': paths['evidence_mount']}]
+    }
     networks = {}
     for setting, name in [('default', 'default'), ('clients', 's4-clients'), ('response', 's4-response'), ('graylog_backend', 'graylog-backend')]:
         networks[name] = {'internal': s['network_internal'][setting], 'ipam': {'config': [{'subnet': s['networks'][setting]}]}}
@@ -48,6 +62,7 @@ def definition_template(s, root):
 
 
 def command_packet(s, run_id, command):
+    from s4_probe import plan as probe_plan
     plans = {profile: plan(s, run_id, profile) for profile in PROFILES}
     commands = {}
     for profile in PROFILES:
@@ -55,6 +70,18 @@ def command_packet(s, run_id, command):
                           '--settings', s['paths']['settings_mount'], '--run-id', run_id, '--profile', profile]
         commands[profile] = {'plan_argv': argv, 'input_argv': argv + ['--execute'],
                              'password_stdin_required': 200 in plans[profile]['expected_login_statuses']}
+    for phase in ('baseline', 'locked', 'restored'):
+        argv = command + ['exec', '-T', 'normal', 'python', s['paths']['tools_mount'] + '/s4_probe.py',
+            '--settings', s['paths']['settings_mount'], '--run-id', run_id, '--phase', phase]
+        commands['probe_' + phase] = {'plan_argv': argv, 'input_argv': argv + ['--execute'],
+                                      'stdin': 'JSON object with target and normal passwords'}
+        plans['probe_' + phase] = probe_plan(s, run_id, phase)
+        argv = command + ['--profile', 's4-evidence', 'exec', '-T', 'observer', 'python',
+            s['paths']['tools_mount'] + '/s4_collect.py', '--settings', s['paths']['settings_mount'],
+            '--integration', s['paths']['integration_mount'], '--run-id', run_id, '--phase', phase]
+        if phase != 'baseline': argv += ['--ticket-id', '<actual_ticket_id>']
+        commands['snapshot_' + phase] = {'plan_argv': argv, 'input_argv': argv + ['--execute'],
+            'stdin': 'PORTAL_RESPONSE_KEY only', 'requires_actual_ticket_id': phase != 'baseline'}
     return {'case_id': 'S4', 'run_id': run_id, 'mode': 'offline_preparation', 'runtime_verified': False,
             'end_to_end_status': 'not_run', 'plans': plans, 'commands': commands,
             'prerequisites': ['Explicitly enable input in settings before creating a NEW bundle; never patch a live bundle',
@@ -65,8 +92,9 @@ def command_packet(s, run_id, command):
                               'Exclude prior same-username/source-IP logs from the 600-second search window',
                               'Run ONE profile, reconcile raw Graylog counts, then observe for 660 seconds',
                               'Independently verify account lock, other sessions, normal user, ticket and approved recovery'],
-            'not_implemented': ['account provisioning/session retention CLI',
-                                'live lock/ticket/restoration evidence collector']}
+            'not_implemented': ['automatic Graylog event export', 'automatic operator release submission'],
+            'evidence_order': ['probe_baseline', 'snapshot_baseline', 'trigger6', 'probe_locked',
+                               'snapshot_locked', 'approved release outside collector', 'probe_restored', 'snapshot_restored']}
 
 
 def create_bundle(s, root, output, run_id='s4prep'):
@@ -79,6 +107,7 @@ def create_bundle(s, root, output, run_id='s4prep'):
         raise ValueError('output_must_be_a_new_directory_inside_local')
     output.mkdir(parents=True, exist_ok=False)
     (output / 'runs').mkdir()
+    (output / 'private').mkdir(mode=0o700)
     env = {key: secrets.token_hex(32) for key in ('MYSQL_ROOT_PASSWORD', 'MYSQL_PASSWORD', 'GRAYLOG_ADMIN_PASSWORD',
             'N8N_ENCRYPTION_KEY', 'TICKET_STORE_KEY', 'PORTAL_RESPONSE_KEY', 'S4_DETECTION_KEY', 'S4_OPERATOR_KEY', 'S4_RELEASE_KEY')}
     env['GRAYLOG_PASSWORD_SECRET'] = secrets.token_hex(48)

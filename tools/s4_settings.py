@@ -13,12 +13,12 @@ def digest(value):
 def validate(s):
     required = {'schema_version', 'project', 'execution_enabled', 'asset_id', 'network_status', 'networks',
                 'addresses', 'host_ports', 'client_image', 'paths', 'portal_internal_port', 'username_prefix',
-                'policy', 'request_timeout_seconds', 'stop_filename', 'accounts', 'network_internal'}
+                'policy', 'request_timeout_seconds', 'stop_filename', 'accounts', 'network_internal', 'observation'}
     if not isinstance(s, dict) or set(s) != required:
         raise ValueError('invalid_settings_keys')
     groups = {'networks': {'default', 'clients', 'response', 'graylog_backend'},
               'addresses': {'portal_client', 'attacker', 'normal', 'n8n_response', 'portal_response'},
-              'paths': {'tools_mount', 'settings_mount', 'evidence_mount', 'health', 'session', 'login'},
+              'paths': {'tools_mount', 'settings_mount', 'evidence_mount', 'health', 'session', 'login', 'register', 'private_mount', 'integration_mount'},
               'policy': {'total_threshold', 'window_seconds', 'execute_every_seconds',
                          'notification_grace_seconds', 'input_interval_seconds', 'boundary_observation_seconds'}}
     for key, keys in groups.items():
@@ -76,7 +76,7 @@ def validate(s):
             raise ValueError('invalid_path')
     if len(set(paths.values())) != len(paths):
         raise ValueError('duplicate_paths')
-    mounts = [PurePosixPath(paths[k]) for k in ('tools_mount', 'settings_mount', 'evidence_mount')]
+    mounts = [PurePosixPath(paths[k]) for k in ('tools_mount', 'settings_mount', 'evidence_mount', 'private_mount', 'integration_mount')]
     if any(a == PurePosixPath('/') or a in b.parents for a in mounts for b in mounts if a != b):
         raise ValueError('overlapping_mounts')
     if not re.fullmatch(r'[A-Za-z0-9_.-]{1,30}', s['stop_filename']) or s['stop_filename'] in ('.', '..'):
@@ -99,6 +99,8 @@ def validate(s):
         raise ValueError('invalid_accounts')
     if any(not isinstance(v,str) or not re.fullmatch(r'zz_[a-z0-9_]{1,37}',v) or not v.startswith(s['username_prefix']) for v in s['accounts'].values()) or len(set(s['accounts'].values()))!=2:
         raise ValueError('distinct_synthetic_accounts_required')
+    if s['observation'] != {'ticket_read_url': 'http://ticket-store:8089'}:
+        raise ValueError('owned_ticket_read_service_required')
     return s
 
 
