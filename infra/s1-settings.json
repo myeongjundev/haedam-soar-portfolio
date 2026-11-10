@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "project": "haedam-s1-lab",
+  "execution_enabled": false,
+  "asset_id": "haedam-portal",
+  "network_status": "proposed_not_checked_against_running_networks",
+  "networks": {
+    "default": "172.30.100.0/24",
+    "clients": "172.30.101.0/24",
+    "response": "172.30.102.0/29",
+    "graylog_backend": "172.30.103.0/29"
+  },
+  "addresses": {
+    "portal_client": "172.30.101.10",
+    "attacker": "172.30.101.21",
+    "normal": "172.30.101.22",
+    "n8n_response": "172.30.102.2",
+    "portal_response": "172.30.102.3"
+  },
+  "host_ports": {"PORTAL_PORT": 15060, "GRAYLOG_PORT": 19160, "N8N_PORT": 15760, "GELF_PORT": 22360, "TICKET_PORT": 18160},
+  "client_image": "python:3.12-slim",
+  "paths": {
+    "tools_mount": "/opt/s1",
+    "settings_mount": "/run/s1/settings.json",
+    "evidence_mount": "/evidence",
+    "health": "/api/v1/health",
+    "session": "/api/v1/auth/me",
+    "login": "/api/v1/auth/login"
+  },
+  "portal_internal_port": 5000,
+  "username_prefix": "zz_s1_",
+  "policy": {
+    "failure_threshold": 9,
+    "window_seconds": 1800,
+    "execute_every_seconds": 60,
+    "notification_grace_seconds": 1800,
+    "input_interval_seconds": 100,
+    "boundary_observation_seconds": 1860
+  },
+  "request_timeout_seconds": 10,
+  "stop_filename": "STOP"
+}

@@ -31,6 +31,8 @@
 
 ## 개인 기여와 검증 근거
 
+개인 S1의 `infra/s1-settings.json`, `tools/s1_settings.py`, `tools/s1_lab.py`, `tools/s1_client.py`, `tests/test_s1_personal.py`는 김명준·Codex의 후속 구현입니다. 반소람의 팀 S1 탐지 기준과 김명준의 기존 Kali 입력 도구를 참고해, 개인 Docker 클라이언트의 실제 소켓 출발지·요청 상한·중지·비밀정보 없는 입력 증적을 구현했습니다. 팀 S1 JSON과 기존 도구는 보존했습니다. Graylog/n8n 실제 연결이나 개인 차단·원복 완료를 의미하지 않습니다. [구현 범위](s1-personal-prep.md).
+
 개인 S7 자동 연결의 `compose.s7-auto.yaml`, `services/s7-response/`, `infra/wazuh/agent/s7_guard.py`, `tools/*s7_auto*`, `infra/n8n/portfolio-s7/`, `infra/graylog/s7-fim.json`은 김명준·Codex의 후속 구현입니다. 김상혁의 파일 복구 함수를 그대로 호출하며 팀 티켓 저장소에는 완료 조치 이름과 활성 조치/대시보드 판정 일치 수정만 추가했습니다. [설치와 범위](s7-auto-lab.md), [개인 연결 계약](s7-auto-contract.md). 반소람 님의 제어판 소개 HTML은 후속 UI 흐름 참고이며 실제 제어판 소스나 팀원 실측으로 반입하지 않았습니다.
 
 개인 S7의 `compose.s7.yaml`, `infra/wazuh/`, `tools/s7_lab.py`, `tools/s7_verify.py`는 김명준·Codex의 컨테이너 배치와 재실측 추가입니다. 김상혁의 `lab/s7/restore/` 두 실행 파일은 수정하지 않고 컨테이너 경로 환경변수로 사용합니다. Wazuh 설정은 [wazuh/wazuh-docker v4.9.0](https://github.com/wazuh/wazuh-docker/tree/cb63566719ce2e78b9d3c111a0a61d743fc699fc/single-node)의 indexer/dashboard/certs 설정을 반입·조정했습니다. 라이선스와 저작권 고지는 `infra/wazuh/LICENSE.upstream`에 보존했습니다. 개인 결과는 [S7 실측](s7-results.md)이며 팀의 n8n 자동 대응 실측을 대신하지 않습니다.
