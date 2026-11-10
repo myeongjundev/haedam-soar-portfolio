@@ -89,6 +89,11 @@ def account_action(target_filter, scope, action, data):
         return ok(previous)
     if target.role == "admin":
         fail(403, "FORBIDDEN", "관리자 계정은 자동 대응 대상에서 제외합니다.")
+    # A separate responder takes authority: an earlier S4 ticket must no longer unlock it.
+    from ..models import S4AccountClaim
+    claim = db.session.get(S4AccountClaim, target.id)
+    if claim:
+        db.session.delete(claim)
     from ..auth import revoke_sessions
     changed = not target.locked if action == "lock" else True
     if action == "reset":

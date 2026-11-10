@@ -18,6 +18,11 @@ def locked_user(user_id):
         fail(404, "NOT_FOUND", "계정을 찾을 수 없습니다.")
     if target.id == g.user.id:
         fail(409, "CONFLICT", "본인 계정은 이 화면에서 변경할 수 없습니다.")
+    # Manual ownership supersedes an S4 response, in the same transaction as the change.
+    from ..models import S4AccountClaim
+    claim = db.session.get(S4AccountClaim, target.id)
+    if claim:
+        db.session.delete(claim)
     return target, users
 
 

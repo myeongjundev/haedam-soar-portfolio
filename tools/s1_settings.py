@@ -18,7 +18,7 @@ def validate(s):
         raise ValueError('invalid_settings_keys')
     groups = {'networks': {'default', 'clients', 'response', 'graylog_backend'},
               'addresses': {'portal_client', 'attacker', 'normal', 'n8n_response', 'portal_response'},
-              'paths': {'tools_mount', 'settings_mount', 'evidence_mount', 'health', 'session', 'login'},
+              'paths': {'tools_mount', 'settings_mount', 'evidence_mount', 'health', 'session', 'login', 'register'},
               'policy': {'failure_threshold', 'window_seconds', 'execute_every_seconds',
                          'notification_grace_seconds', 'input_interval_seconds', 'boundary_observation_seconds'}}
     for key, keys in groups.items():

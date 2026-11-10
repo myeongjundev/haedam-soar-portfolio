@@ -1,0 +1,173 @@
+{
+  "input": {
+    "title": "haedam-s4-lab GELF TCP",
+    "type": "org.graylog2.inputs.gelf.tcp.GELFTCPInput",
+    "global": true,
+    "configuration": {
+      "bind_address": "0.0.0.0",
+      "port": 12201,
+      "number_worker_threads": 2,
+      "recv_buffer_size": 1048576,
+      "max_message_size": 2097152,
+      "tls_enable": false,
+      "tcp_keepalive": true,
+      "use_null_delimiter": true
+    }
+  },
+  "stream": {
+    "title": "haedam-s4-lab portal",
+    "description": "Dedicated S4 GELF input",
+    "matching_type": "AND",
+    "remove_matches_from_default_stream": false,
+    "rules": [
+      {
+        "type": 1,
+        "field": "source",
+        "value": "haedam-portal",
+        "inverted": false,
+        "description": "Portal source"
+      }
+    ]
+  },
+  "notification": {
+    "title": "haedam-s4-lab authenticated S4",
+    "description": "Personal S4 authenticated notification. Pause definition before release.",
+    "config": {
+      "type": "http-notification-v2",
+      "url": "http://n8n:5678/webhook/haedam-s4-respond",
+      "method": "POST",
+      "content_type": "JSON",
+      "time_zone": "UTC",
+      "headers": "",
+      "basic_auth": null,
+      "api_key_as_header": true,
+      "api_key": "X-S4-Detection-Key",
+      "api_secret": null,
+      "skip_tls_verification": false,
+      "body_template": "{\"case_id\": \"S4\", \"asset_id\": \"haedam-portal\", \"src_ip\": \"${event.fields.src_ip}\", \"username\": \"${event.fields.username}\", \"event_id\": \"${event.id}\", \"detected_at\": \"${event.timestamp_processing}\"}"
+    }
+  },
+  "definition": {
+    "title": "haedam-s4-lab S4 mixed failure and success",
+    "description": "A S4. 10분 안 같은 username+src_ip에서 로그인 실패(401)·성공(200)이 모두 있고 합계 6건 이상. 순서 요구 안 함, 429 제외. 기준: docs/capstone/A-S1-S4-정상패턴.md §1",
+    "priority": 3,
+    "alert": true,
+    "config": {
+      "type": "aggregation-v1",
+      "query": "source:haedam-portal AND ((rule:\"login-bruteforce\" AND status:401) OR (rule:\"login-success\" AND status:200)) AND src_ip:\"172.30.105.21\" AND username:\"zz_s4_target\"",
+      "query_parameters": [],
+      "filters": [],
+      "streams": [],
+      "group_by": [
+        "username",
+        "src_ip"
+      ],
+      "series": [
+        {
+          "id": "count()",
+          "type": "count"
+        },
+        {
+          "id": "card(rule)",
+          "type": "card",
+          "field": "rule"
+        }
+      ],
+      "conditions": {
+        "expression": {
+          "expr": "&&",
+          "left": {
+            "expr": ">",
+            "left": {
+              "expr": "number-ref",
+              "ref": "card(rule)"
+            },
+            "right": {
+              "expr": "number",
+              "value": 1
+            }
+          },
+          "right": {
+            "expr": ">",
+            "left": {
+              "expr": "number-ref",
+              "ref": "count()"
+            },
+            "right": {
+              "expr": "number",
+              "value": 5
+            }
+          }
+        }
+      },
+      "search_within_ms": 600000,
+      "execute_every_ms": 60000,
+      "use_cron_scheduling": false,
+      "event_limit": 100
+    },
+    "field_spec": {
+      "username": {
+        "data_type": "string",
+        "providers": [
+          {
+            "type": "template-v1",
+            "template": "${source.username}",
+            "require_values": true
+          }
+        ]
+      },
+      "src_ip": {
+        "data_type": "string",
+        "providers": [
+          {
+            "type": "template-v1",
+            "template": "${source.src_ip}",
+            "require_values": true
+          }
+        ]
+      },
+      "case_id": {
+        "data_type": "string",
+        "providers": [
+          {
+            "type": "template-v1",
+            "template": "S4",
+            "require_values": true
+          }
+        ]
+      }
+    },
+    "key_spec": [
+      "username",
+      "src_ip"
+    ],
+    "notification_settings": {
+      "grace_period_ms": 600000,
+      "backlog_size": 0
+    },
+    "notifications": [],
+    "storage": [
+      {
+        "type": "persist-to-streams-v1",
+        "streams": [
+          "000000000000000000000002"
+        ]
+      }
+    ]
+  },
+  "schedule_enabled": false,
+  "materialized": false,
+  "required_message_fields": [
+    "source",
+    "rule",
+    "status",
+    "username",
+    "src_ip"
+  ],
+  "url_allowlist": {
+    "id": "portfolio-s4",
+    "type": "literal",
+    "title": "S4 webhook",
+    "value": "http://n8n:5678/webhook/haedam-s4-respond"
+  }
+}

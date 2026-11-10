@@ -33,6 +33,14 @@
 
 ## 개인 기여와 검증 근거
 
+PR #20 이후 `tools/s1_rehearsal.py`, `tools/s1_probe.py`, `tools/s1_evidence.py`와 연결 테스트·실측 절차는 김명준·Codex의 개인 후속 준비입니다. 팀 S1 규칙, 기존 입력기·포털·티켓 계약을 그대로 사용하며 정상 합성 계정 로그인, 개인 import 파일 생성, 회차별 증적 대조를 추가했습니다. 실제 엔진 실행 결과로 표시하지 않습니다. [S1 실측 준비](s1-live-preparation.md).
+
+PR #17/#18 검토 인계 후 S1·S4 티켓 응답 소비 수정과 `tests/generated_workflow_rpc.cjs`, 포털 `tests/test_workflow_store_contract.py`는 김명준·Codex의 후속 작업입니다. 저장소 API를 변경하지 않고 실제 반환 필드에 맞춰 소비자·테스트 모델을 교정했습니다. Claude의 독립 승인이나 실제 n8n 실측으로 표시하지 않습니다. [실패 재현과 검토 기록](s1-s4-review-20261110.md).
+
+개인 S4의 `infra/s4-*.json`, `infra/n8n/s4-src/`, `infra/n8n/portfolio-s4/`, `infra/graylog/portfolio-s4.json`, `tools/*s4*`, 포털 `integration/s4_accounts.py`·소유권 모델/마이그레이션은 김명준·Codex의 후속 구현입니다. 반소람의 팀 S4 집계 기준과 김대훈의 티켓 하위 워크플로 10번, 김상혁의 티켓 저장소 계약을 사용합니다. PR #18 `40e180b`의 오프라인 S1 구조를 별도 파일로 확장하여 계정 ID·티켓 소유권·키 분리·세션 회수·오탐 해제를 추가했습니다. 팀 원본과 S1 구현은 수정하지 않았으며 개인 실제 배포·실측은 아직 아닙니다. [변경 범위와 검증 경계](s4-auto-workflows.md).
+
+개인 S1 자동 대응의 `infra/n8n/s1-src/`, `infra/n8n/portfolio-s1/`, `infra/graylog/portfolio-s1.json`, `infra/s1-integration-settings.json`, `tools/build_s1_workflows.py`는 김명준·Codex의 후속 구현입니다. 반소람의 팀 S1 집계 기준과 김대훈의 n8n 티켓/포털 하위 워크플로를 유지·분리하고, 개인 대상 제한·계정+IP 묶음·티켓 선기록·소유권/현재 상태 대조·운영자 원복을 추가했습니다. 원본 10/12는 수정하지 않고 생성기로 파생합니다. 오프라인 검증이며 개인 실측 완료가 아닙니다. [구성과 검증 경계](s1-auto-workflows.md).
+
 개인 S1의 `infra/s1-settings.json`, `tools/s1_settings.py`, `tools/s1_lab.py`, `tools/s1_client.py`, `tests/test_s1_personal.py`는 김명준·Codex의 후속 구현입니다. 반소람의 팀 S1 탐지 기준과 김명준의 기존 Kali 입력 도구를 참고해, 개인 Docker 클라이언트의 실제 소켓 출발지·요청 상한·중지·비밀정보 없는 입력 증적을 구현했습니다. 팀 S1 JSON과 기존 도구는 보존했습니다. Graylog/n8n 실제 연결이나 개인 차단·원복 완료를 의미하지 않습니다. [구현 범위](s1-personal-prep.md).
 
 개인 S7 자동 연결의 `compose.s7-auto.yaml`, `services/s7-response/`, `infra/wazuh/agent/s7_guard.py`, `tools/*s7_auto*`, `infra/n8n/portfolio-s7/`, `infra/graylog/s7-fim.json`은 김명준·Codex의 후속 구현입니다. 김상혁의 파일 복구 함수를 그대로 호출하며 팀 티켓 저장소에는 완료 조치 이름과 활성 조치/대시보드 판정 일치 수정만 추가했습니다. [설치와 범위](s7-auto-lab.md), [개인 연결 계약](s7-auto-contract.md). 반소람 님의 제어판 소개 HTML은 후속 UI 흐름 참고이며 실제 제어판 소스나 팀원 실측으로 반입하지 않았습니다.

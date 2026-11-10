@@ -13,10 +13,12 @@ from lab_panel.server import make_server
 
 def main():
     port=int(sys.argv[1])
+    limits=json.loads((ROOT/'infra/panel-settings.json').read_text())
     with tempfile.TemporaryDirectory(prefix='panel-ui-test-') as directory:
         cfg=dict(bind='127.0.0.1',port=port,origin=f'http://127.0.0.1:{port}',state_dir=directory,
                  s7_project='haedam-s7-ui-fixture',scope='synthetic-ui-fixture',
                  targets={'index.html':'restore','assets/s7-probe.txt':'quarantine'})
+        cfg.update({key:limits[key] for key in ('http_max_body_bytes','http_drain_timeout_seconds')})
         def runner(action,run,update):
             time.sleep(.3)
             if action=='refresh':
