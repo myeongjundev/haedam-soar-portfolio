@@ -45,6 +45,14 @@ def build():
             end = code.index('\n}', start) + 2
             p['jsCode'] = (code[:start] + f"function protectedIp(ip) {{ return ip === '{ATTACK_IP}' ? null : "
                            "'outside_s10_lab_target'; }" + code[end:])
+        if node['type'].endswith('.code') and "applied_verified: out.ok === true ? (out.applied_verified ?? null) : false" in p['jsCode']:
+            # The adapter's applied_verified means "block present after the call" (state.applied), so a verified
+            # unblock is always false and the release flow stopped after pfSense was already released (11/10).
+            # For unblock, the verified outcome is the readback with no config, table or rule left.
+            p['jsCode'] = s8.replace(p['jsCode'], "applied_verified: out.ok === true ? (out.applied_verified ?? null) : false",
+                "applied_verified: out.ok === true ? (prev.action === 'unblock' ? (out.reason === 'verified_managed_state' && "
+                "!!out.state && out.state.configured === false && out.state.table_present === false && "
+                "out.state.rule_present === false) : (out.applied_verified ?? null)) : false")
         if node['type'].endswith('.ssh'):
             old, node = node['name'], relay_node(node)
             w['connections'][node['name']] = w['connections'].pop(old)
