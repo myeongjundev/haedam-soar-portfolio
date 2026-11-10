@@ -33,13 +33,13 @@ export function addNetworkSlides(p, inventory) {
  tab(s,[['구분','S8','H1'],['클라이언트망','172.30.88.0/24','172.30.90.0/24'],['시험 / 정상 클라이언트','.21 / .22  (추가 대조 .23·.24)','.21 / .22'],['포털 클라이언트 NIC','.10:5000','.10:5000'],['대응망','172.30.89.0/29','172.30.91.0/29'],['n8n / 포털 대응 NIC','.2  /  .3:5000','.2  /  .3:5000']],[330,411,411],205,64,24);
  text(s,'대응 API: portal-response DNS + 인증 키 + n8n 대응 주소 /32 허용',64,614,1152,42,24,C.teal,true);
 
- s=slide('pfSense/S10 계획 망 구조','현재 설정 기준의 구축안입니다. 실제 차단·원복 결과는 Claude 검증 후 갱신합니다.',`계획 설정 출처: claude/p04-pfsense PR13 infra/pfsense/lab-settings.json, compose.pf.yaml. 최신 실행 결과와 통합 망 배치는 아직 확정하지 않았습니다. QEMU 컨테이너 내부에서 FreeBSD pfSense VM이 동작하는 방식이며 native Linux container pfSense가 아닙니다. 컨테이너 bridge .253 주소는 초기 bridge/tap 설정용이며 start.sh에서 제거합니다.\nhttps://github.com/myeongjundev/haedam-soar-portfolio/pull/13`);
+ s=slide('pfSense/S10 실행 망 구조','11/10 P04·S10 실측에 사용한 망입니다. 시험·정상 요청은 pfSense WAN을 거쳐야만 포털에 닿습니다.',`설정 출처: PR13 infra/pfsense/lab-settings.json, compose.pf.yaml, compose.s10.yaml. 실측 P04-20261110T014245Z, S10-20261110T021934Z(docs/s10-results-20261110.md). 두 pf 망은 internal을 쓰지 않고 NAT를 끕니다(internal이면 Docker가 다른 대역 목적지 프레임을 버림). n8n은 컨트롤러의 HTTP relay(8099)를 거쳐 고정 호스트 키 SSH로 팀 PF 도구를 호출합니다. QEMU 컨테이너 내부에서 FreeBSD pfSense VM이 동작하는 방식이며 native Linux container pfSense가 아닙니다. 컨테이너 bridge .253 주소는 초기 bridge/tap 설정용이며 start.sh에서 제거합니다.\nhttps://github.com/myeongjundev/haedam-soar-portfolio/pull/13`);
  text(s,'pf-wan  203.0.113.0/24',64,213,600,42,29,C.teal,true);text(s,'pf-lan  172.30.94.0/24',740,213,500,42,29,C.teal,true);
  const clients=box(s,'시험 .22 / 정상 .12\n경로: LAN via .1',64,285,310,115),pf=box(s,'pfSense CE VM\nem0 203.0.113.1\nem1 172.30.94.1',460,275,320,145,'#F3EADC'),portal2=box(s,'포털 .10:5000\n반환: WAN via .1',866,285,350,115);
  arrow(s,clients,pf);arrow(s,pf,portal2);
- const ctrl=box(s,'컨트롤러 172.30.94.100\nSSH 22 / 제한된 명령',866,475,350,90);arrow(s,ctrl,pf,'left','bottom',true);
- text(s,'QEMU + bridge/tap\n두 Docker 망 모두 internal',64,475,610,90,28);
- text(s,'각 Docker gateway는 .254 / 통과 실측은 pfSense 경유 경로로 수행',64,602,1150,45,25,C.muted);
+ const ctrl=box(s,'컨트롤러 172.30.94.100\nn8n relay 8099 → SSH 22',866,475,350,90);arrow(s,ctrl,pf,'left','bottom',true);
+ text(s,'QEMU + bridge/tap\n두 Docker 망: internal 해제·NAT 끔',64,475,610,90,28);
+ text(s,'각 Docker gateway는 .254 / 차단 전후 요청 모두 pfSense 경유 경로로 실측',64,602,1150,45,25,C.muted);
 
  s=slide('호스트 접근 포트 구성','현재 개인 랩 설정값입니다. 모두 127.0.0.1에 바인딩하며 공용 인터넷에 공개하지 않습니다.',`현재 effective docker compose config에서 비밀값을 제외하고 ports만 추출했습니다. TCP 기준, Wazuh는 HTTPS/TLS입니다. 각 랩은 별도 프로젝트로 실행하며 Docker 메모리 제약에 따라 순차 운용합니다. Panel15800은 Docker publish가 아니라 호스트 Python listener입니다. GELF TCP22330은 S7에 상속된 공개 포트이며 실제 S7 릴레이는 내부HTTP12202를 사용합니다.\n${src}infra/s7-auto-settings.json\n${src}tools/s8_lab.py\n${src}tools/h1_lab.py\n${src}infra/panel-settings.json`);
  function port(c,k){return inventory[c].services[k]?.ports?.[0]?.published||'—';}

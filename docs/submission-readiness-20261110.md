@@ -7,7 +7,7 @@
 | 항목 | 준비된 결과 | 남은 확인 |
 | --- | --- | --- |
 | 개인 GitHub | [저장소](https://github.com/myeongjundev/haedam-soar-portfolio), [통합 초안 PR #16](https://github.com/myeongjundev/haedam-soar-portfolio/pull/16) | 원격 PR은 미병합. 제출할 브랜치와 평가자 비공개 저장소 접근 확인 |
-| 개인 PPT | [26장 PPTX](../output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261110-r3.pptx), [내용과 편집 원본](portfolio/README.md) | [실제 UI 캡처](portfolio/capture-plan.md), S10 완료 후 실측 반영 |
+| 개인 PPT | [27장 PPTX r4](../output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261110-r4.pptx), [내용과 편집 원본](portfolio/README.md) | [실제 UI 캡처](portfolio/capture-plan.md). S10 실측은 r4에 반영(17장). Codex 도구로 원본 재생성 시 배치 재확인 |
 | 이력서와 자기소개서 | [프로젝트 문안과 근거](application-materials.md) | 희망 직무·지원 회사에 맞춘 선택, 본인의 회고 표현 확인 |
 | 기여와 AI 활용 | [출처](sources.md), [개인 작업일지](../work-log/members/myeongjundev/2026-11-10.md) | 팀 공통 구현과 개인 변경 범위 유지 |
 | 설치 안내와 점검 | [랩 선택·설치·재개](installation-guide.md), [새 클론 점검 결과](installation-audit-20261110.md) | 실제 컨테이너 기동·전체 설치 검증은 후속 |

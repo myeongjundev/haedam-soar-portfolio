@@ -3,9 +3,9 @@
 # infra/pfsense/lab-settings.json and the secrets/ISO path from .env.pf. Default layout:
 #
 #   attacker 203.0.113.22, normal 203.0.113.12
-#        | pf-wan 203.0.113.0/24 (internal)
+#        | pf-wan 203.0.113.0/24 (no masquerade; see networks below)
 #   pfSense WAN em0 203.0.113.1  --  LAN em1 172.30.94.1
-#        | pf-lan 172.30.94.0/24 (internal)
+#        | pf-lan 172.30.94.0/24 (no masquerade; see networks below)
 #   portal 172.30.94.10:5000, controller 172.30.94.100 (SSH to the adapter)
 
 services:

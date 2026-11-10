@@ -2,12 +2,13 @@ import {readFileSync} from 'node:fs';
 import {addNetworkSlides} from './network-slides.mjs';
 import {addReviewSlides} from './add-review-slides.mjs';
 // Run buildPortfolio(presentation, {root}) inside an Artifact Session callback.
-// Source facts are pinned to 2026-11-10, before Claude's S10 live verification.
+// Source facts are pinned to 2026-11-10. S10 figures come from Claude's live run S10-20261110T021934Z (PR #13, docs/s10-results-20261110.md).
 export function buildPortfolio(p, {root, inventory}) {
   const C={bg:'#F5F7F3',ink:'#14312E',teal:'#167366',muted:'#536B65',pale:'#E5EEE7',white:'#FFFFFF',amber:'#916019'};
   const F='Malgun Gothic'; p.theme.defaultFont=F;
   const repo='https://github.com/myeongjundev/haedam-soar-portfolio';
   const source=(file)=>`${repo}/blob/06fb3a43d2d9a90e961949c3ffcb7b931dd2af83/${file}`;
+  const s10source=(file)=>`${repo}/blob/38593a73345e4a4b336ab14e47c13a55f545f272/${file}`; // PR #13 head
   let n=0;
   function txt(s,text,x,y,w,h,size=28,color=C.ink,bold=false,name,hyperlink){
     const t=s.shapes.add({geometry:'textbox',hyperlink,name:name||`text-${s.shapes.items.length}`,position:{left:x,top:y,width:w,height:h},fill:'none',line:{fill:'none',width:0}});
@@ -55,17 +56,17 @@ export function buildPortfolio(p, {root, inventory}) {
   txt(s,'가용성',846,228,300,56,36,C.teal,true);txt(s,'공격 주체를 제한하고\n정상 시민의 이용 유지',846,308,350,124,28);
   txt(s,'팀 사례  S1 · S4 · S7 · S8 · S10 · S12\n개인 추가 사례  H1 민원 작성 도배',66,520,1148,94,27,C.muted);
 
-  s=slide('개인 랩 시스템 구성','실측한 연결은 실선, pfSense/S10 추가 연결은 점선으로 구분합니다.',`개념 구성도입니다. S7은 12개 컨테이너로 실행했고, S8/H1은 별도 개인 프로젝트에서 검증했습니다. 모든 시나리오를 동시에 실행한 단일 스택을 뜻하지 않습니다. 약 6GiB Docker 메모리에서 기존 스택과 순차 실행했습니다. pfSense/S10은 Claude 검증 대기입니다.\n출처: ${source('docs/s7-auto-lab.md')}\n${source('docs/s8-lab.md')}\n${source('docs/h1-results.md')}`);
+  s=slide('개인 랩 시스템 구성','사례별 개인 프로젝트에서 실측한 연결입니다. pfSense/S10은 별도 랩이라 점선으로 구분합니다.',`개념 구성도입니다. S7은 12개 컨테이너로 실행했고, S8/H1은 별도 개인 프로젝트에서 검증했습니다. 모든 시나리오를 동시에 실행한 단일 스택을 뜻하지 않습니다. 약 6GiB Docker 메모리에서 기존 스택과 순차 실행했습니다. pfSense/S10은 별도 haedam-pf-lab에서 11/10 실측했습니다(S10-20261110T021934Z).\n출처: ${source('docs/s7-auto-lab.md')}\n${source('docs/s8-lab.md')}\n${source('docs/h1-results.md')}`);
   const portal=node(s,'React / Flask\n포털·앱 로그',64,230,240,100),db=node(s,'MySQL',64,395,240,70);
   const wazuh=node(s,'Wazuh\n파일 변경 감지',375,230,230,100),gray=node(s,'Graylog\n수집·탐지',685,230,230,100),n8n=node(s,'n8n\n대응·원복',995,230,220,100);
   const target=node(s,'포털 차단 / 작성 제한\n파일 복구 / 격리',375,430,390,100),ticket=node(s,'티켓 저장소\n사건·조치 이력',865,430,350,100);
   connect(s,portal,db,'bottom','top');connect(s,portal,wazuh);connect(s,wazuh,gray);connect(s,gray,n8n);connect(s,n8n,ticket,'bottom','top');connect(s,n8n,target,'bottom','top');
   txt(s,'S8·H1 앱 로그도 Graylog로 수집',64,184,1150,38,22,C.muted);
-  const pf=node(s,'pfSense VM / S10  검증 진행 중',64,574,550,56,'#F3EADC');connect(s,target,pf,'bottom','right',true);
+  const pf=node(s,'pfSense VM / S10  11/10 실측 통과',64,574,550,56,'#F3EADC');connect(s,target,pf,'bottom','right',true);
   txt(s,'프로젝트별 볼륨 보존 · 메모리 제약에 따라 순차 실행',665,580,550,65,22,C.muted);
 
-  s=slide('개인 실측 범위','팀 실행 기록과 개인 환경에서 다시 확인한 결과를 분리했습니다.',`S7은 팀의 FIM+HTTP 접근 성공 상관 정책과 구분되는 개인 FIM 즉시 대응입니다. S1/S4/S12는 이 포트폴리오의 개인 실측이 아직 없습니다. S10 상태는 11/10 오전 기준이며 Claude 결과를 받은 뒤 수정합니다.\n출처: ${source('docs/portfolio-plan.md')}\n${source('docs/panel-results-20261110.md')}`);
-  table(s,[['사례','개인 실측 판정','확인한 효과'],['S8 웹 탐색·인증 실패','11/9 통과','공격 IP 403, 정상 200, 해제 200'],['S7 파일 무결성','11/10 버튼 실측 통과','기준 해시 복구, 추가 파일 격리·정리'],['H1 민원 도배','11/9 통과','작성만 429, 정상 시민 작성 201'],['S10 / S1·S4·S12','진행 중 / 개인 미실측','팀 결과를 개인 통과로 대체하지 않음']],205,[300,330,522],78);
+  s=slide('개인 실측 범위','팀 실행 기록과 개인 환경에서 다시 확인한 결과를 분리했습니다.',`S7은 팀의 FIM+HTTP 접근 성공 상관 정책과 구분되는 개인 FIM 즉시 대응입니다. S1/S4/S12는 이 포트폴리오의 개인 실측이 아직 없습니다. S10은 11/10 Claude 실측 S10-20261110T021934Z입니다.\n출처: ${source('docs/portfolio-plan.md')}\n${source('docs/panel-results-20261110.md')}`);
+  table(s,[['사례','개인 실측 판정','확인한 효과'],['S8 웹 탐색·인증 실패','11/9 통과','공격 IP 403, 정상 200, 해제 200'],['S7 파일 무결성','11/10 버튼 실측 통과','기준 해시 복구, 추가 파일 격리·정리'],['H1 민원 도배','11/9 통과','작성만 429, 정상 시민 작성 201'],['S10 경계·포털 차단','11/10 통과','공격 차단·정상 200, 원복 후 양쪽 200'],['S1·S4·S12','개인 미실측','팀 결과를 개인 통과로 대체하지 않음']],205,[300,330,522],66);
 
   s=slide('S8  공격 출발지 IP 차단','실제 HTTP 요청의 웹 탐색과 로그인 실패를 같은 출발지로 결합했습니다.',`실행 S8-20261109T013617Z. 조건 충족부터 Graylog 판정 3.828초, 판정부터 차단 API 응답 0.693초. 4.521초는 최초 HTTP403 관측 시각이 아닙니다. 별도 클라이언트 요청으로 실제 효과를 확인했습니다. 한 회차의 관측이며 평균/보장 시간이 아닙니다. 개인 S8은 포털 애플리케이션 차단입니다. pfSense 패킷 드롭은 포함하지 않습니다.\n출처: ${source('docs/s8-results.md')}\n${source('docs/evidence/s8-live-20261109.json')}`);
   metric(s,'4.521초','조건 충족부터 차단 API 응답까지',66,205,1100);
@@ -81,6 +82,12 @@ export function buildPortfolio(p, {root, inventory}) {
   txt(s,'14.532초',66,205,1100,88,64,C.teal,true);txt(s,'조건 충족부터 작성 제한 API 응답까지',66,300,1120,45,27);
   table(s,[['관찰 대상','제한 중','원복 후'],['시험 계정의 작성','429 제한','201 작성 성공'],['같은 계정의 조회','200 유지','200 유지'],['다른 정상 시민의 작성','201 유지','201 유지']],380,[460,346,346],64);
 
+  s=slide('S10  경계 차단과 포털 차단, 원복','pfSense 경계 로그·웹 탐색·로그인 실패를 결합해 두 단계로 차단했습니다.',`실행 S10-20261110T021934Z(코드 70c0ea6 clean). 입력 02:19:37.686Z, Graylog 이벤트는 15.0초 뒤, 포털 차단 applied 다음 pfSense 차단 applied는 입력에서 26.2초. 원복 요청 02:20:32.916Z부터 티켓 restored 02:20:47.462Z까지 14.5초. 한 회차 관측이며 평균/보장 시간이 아닙니다. 차단 중 공격 요청은 5초 시간 초과, 정상 200, 원복 뒤 양쪽 200·잔여 조치 0. 중복 재전송 2회 duplicate_no_action, 오래된 티켓 원복 503, 재원복 nothing_to_release. 장애 시험 S10FAULT-20261110T020814Z는 Graylog를 거치지 않은 인증 웹훅 직접 입력입니다. 티켓 effect_verified·condition_met_at·verified_at은 비어 있고 화면 MTTD/MTTR은 미측정입니다. 실제 효과는 검증기의 클라이언트 요청으로 확인했습니다. pfSense CE 2.7.2는 Docker 안 QEMU VM(KVM 없음)이며 VM 방식은 11/9 사용자 결정, 강사님 확인 기록은 없습니다. 외부 Discord 알림은 보내지 않았습니다.\n출처: ${s10source('docs/s10-results-20261110.md')}\n${s10source('docs/evidence/s10-live-20261110.json')}\nPR13: ${repo}/pull/13`);
+  // Same frame as the S7 slide; r4 was made by duplicating that slide.
+  txt(s,'원복 요청→티켓 restored 14.5초 · 잔여 조치 0 · 저장소·relay 장애 시험 별도 통과',66,636,1148,28,21,C.muted);
+  metric(s,'15.0초','입력부터 Graylog 상관 탐지까지',66,208);metric(s,'26.2초','입력부터 포털·pfSense 차단 완료까지',680,208);
+  table(s,[['대조 항목','시험 클라이언트','정상 클라이언트'],['차단 중','시간 초과(경계 차단)','200 정상 접근'],['원복 후','200 정상 접근','200 정상 접근']],410,[260,410,482],70);
+
   s=slide('본인 구현  포털과 대응 API','React 화면과 Flask 백엔드를 보안 이벤트·대응 경로에 연결했습니다.',`팀 단계에서 김명준이 주도한 포털 구현을 개인 레포에 기준 커밋으로 반입했습니다. 프론트994fc45, 백엔드98e549c. H1은 개인 후속 구현이며 팀 티켓 저장소는 김상혁의 구현을 확장했습니다.\n출처: ${source('docs/sources.md')}\n${source('docs/h1-results.md')}`);
   txt(s,'시민·담당자·관리자 화면',66,225,510,65,34,C.teal,true);
   txt(s,'React 민원포털\n로그인과 역할별 화면\n민원 등록·조회 흐름',66,318,510,200,30);
@@ -88,7 +95,7 @@ export function buildPortfolio(p, {root, inventory}) {
   txt(s,'Flask 세션·권한 검사\nMySQL 마이그레이션\n앱 이벤트와 IP 대응 API\n개인 H1 계정 작성 제한',680,318,535,240,30);
   txt(s,'팀 원본 커밋과 개인 후속 변경을 출처 문서·PR로 추적',66,600,1130,48,26,C.muted);
 
-  s=slide('개인 실습 제어판','시험 입력과 실제 탐지 확인, 원복 완료를 회차별로 기록합니다.',`실제 11/10 추가 파일 격리 후 티켓 원복 완료 캡처입니다. 반소람의 제어판 소개는 흐름 참고이며 HTML/코드를 반입하지 않았습니다. S7만 버튼 연결했고 S8/H1/S10은 버튼 미연결입니다. 새 입력 전에 프로젝트/worktree/포트/설정/기준 파일/티켓을 확인합니다.\n출처: ${source('docs/panel-lab.md')}\n${source('docs/evidence/panel-probe-restored-20261110.png')}`);
+  s=slide('개인 실습 제어판','시험 입력과 실제 탐지 확인, 원복 완료를 회차별로 기록합니다.',`실제 11/10 추가 파일 격리 후 티켓 원복 완료 캡처입니다. 반소람의 제어판 소개는 흐름 참고이며 HTML/코드를 반입하지 않았습니다. S7만 버튼 연결했고 S8/H1/S10은 버튼 미연결입니다. S10은 CLI로 실측했으며 제어판에서는 실행 잠금입니다. 새 입력 전에 프로젝트/worktree/포트/설정/기준 파일/티켓을 확인합니다.\n출처: ${source('docs/panel-lab.md')}\n${source('docs/evidence/panel-probe-restored-20261110.png')}`);
   txt(s,'입력 전 범위 검사',66,226,580,58,34,C.teal,true);txt(s,'허용한 개인 랩과 파일만 사용\n오래된 실행 볼륨은 새 입력 거부',66,305,570,100,29);
   txt(s,'같은 회차의 근거 보존',66,440,580,58,34,C.teal,true);txt(s,'경보·티켓·파일 효과를 대조\n소유 티켓의 원복 결과를 JSON 저장',66,519,570,105,29);
   image(s,'panel-probe-restored-20261110.png',720,192,495,450);
@@ -102,10 +109,10 @@ export function buildPortfolio(p, {root, inventory}) {
   txt(s,'이미지와 실행 파일 대조',66,480,490,58,33,C.teal,true);txt(s,'불일치 시 새 시험을 보류\n진행 중 사건의 관찰·원복은 유지',595,480,620,96,27);
   txt(s,'배운 점: API 성공 응답 뒤에도 실제 효과와 복구 상태를 따로 확인해야 합니다.',66,613,1150,44,25,C.muted);
 
-  s=slide('개선 방향과 남은 검증','현재 완료 범위를 유지하면서 운영에 필요한 검증을 확장합니다.',`S10은 사용자 지시에 따라 Claude가 PR14 검토와 함께 진행하고 있습니다. 이 슬라이드는 개인 pfSense 부팅/차단/원복의 성공을 주장하지 않습니다. S10 결과가 확정되면 출처·회차·실측을 추가합니다.\n출처: ${source('docs/submission-integration.md')}\n${source('docs/portfolio-plan.md')}\nPR13: ${repo}/pull/13`);
-  txt(s,'제출 전 우선 확인',66,224,510,60,34,C.teal,true);txt(s,'pfSense/S10 실제 경계 차단·원복\n전체 README 초기 설치 재현\n개인 미실측 사례의 상태 명시',66,310,540,220,29);
+  s=slide('개선 방향과 남은 검증','현재 완료 범위를 유지하면서 운영에 필요한 검증을 확장합니다.',`S10은 11/10 실측했습니다(S10-20261110T021934Z, docs/s10-results-20261110.md). 남은 S10 검증은 Graylog 알림 재시도, n8n 실행 중 중단, 방화벽 도구 응답 유실, 반복 측정, pfSense ISO 공식 체크섬 대조입니다.\n출처: ${source('docs/submission-integration.md')}\n${source('docs/portfolio-plan.md')}\nPR13: ${repo}/pull/13`);
+  txt(s,'제출 전 우선 확인',66,224,510,60,34,C.teal,true);txt(s,'전체 README 초기 설치 재현\nS1·S4·S12 개인 실측\nS10 제어판 버튼 연결',66,310,540,220,29);
   txt(s,'후속 개선',680,224,510,60,34,C.teal,true);txt(s,'manager 중단·중간 크래시 시험\n탐지 임계값과 오탐률 평가\n동시 사건·부분 실패 복구 강화\n티켓 시간 지표와 HTTP 효과 연결',680,310,540,245,29);
-  txt(s,'검증 상태 기준  2026.11.10 오전',66,610,1148,40,24,C.muted);
+  txt(s,'검증 상태 기준  2026.11.10 · S10 실측 반영',66,610,1148,40,24,C.muted);
 
   s=slide('출처와 검증 자료','팀 원본, 개인 변경, 실제 실행 증적을 함께 확인할 수 있습니다.',`팀 구성: 김명준(조장, 포털·S8/S10 검증), 반소람(S1/S4), 김상혁(S7/Wazuh/티켓), 김대훈(S12/Graylog/n8n). AI 사용: Codex 구현·재현·자료 정리, Claude 독립 검토·실패 분석·pfSense 작업, 사용자 최종 판단과 병합. 팀 최종 PPT 원본은 현재 개인 레포에 확보하지 못했고 원본 코드·출처 문서·실측을 기반으로 구성했습니다.\n팀 원본: https://github.com/NoBugs-Aleph/aleph-soar-capstone\n개인 원본: ${repo}\n${source('docs/sources.md')}\n${source('docs/panel-results-20261110.md')}`);
   const links=[['팀 원본과 기여 출처',source('docs/sources.md')],['개인 S8 실측 보고서',source('docs/s8-results.md')],['S7 제어판 실측과 캡처',source('docs/panel-results-20261110.md')],['통합 PR #14',`${repo}/pull/14`]];
@@ -123,8 +130,8 @@ export function buildPortfolio(p, {root, inventory}) {
   }
   const beforeReview=p.slides.items.map(s=>s.id);
   const reviewSlides=addReviewSlides(p,{root});
-  const reviewIndex=inventory?18:10;
+  const reviewIndex=inventory?19:11;
   p.slides.reorder([...beforeReview.slice(0,reviewIndex),...reviewSlides,...beforeReview.slice(reviewIndex)]);
   p.slides.items.forEach((s,i)=>{const marker=s.shapes.items.find(x=>x.position.top===671&&x.position.left===1150);if(marker)marker.text=String(i+1).padStart(2,'0');else txt(s,String(i+1).padStart(2,'0'),1150,671,64,24,16,C.muted);});
-  return {slideCount:p.slides.items.length,sourceCommit:'06fb3a4',statusAsOf:'2026-11-10 morning KST'};
+  return {slideCount:p.slides.items.length,sourceCommit:'06fb3a4',statusAsOf:'2026-11-10 KST, S10 live run included'};
 }
