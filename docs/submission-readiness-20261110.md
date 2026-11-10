@@ -38,8 +38,10 @@ pfSense는 Docker 내부 QEMU에서 실행하는 FreeBSD VM 계획입니다. 일
 
 현재 상태를 먼저 전달해야 하는 경우:
 
-> 개인 GitHub: https://github.com/myeongjundev/haedam-soar-portfolio  
-> 개인 포트폴리오 PPT: 첨부 파일  
+> 개인 GitHub: https://github.com/myeongjundev/haedam-soar-portfolio
+>
+> 개인 포트폴리오 PPT: 첨부 파일
+>
 > 현재 포털·DB 및 S7·S8·H1의 개인 실측 근거를 정리했습니다. pfSense/S10과 최종 통합 설치 확인은 진행 중입니다.
 
 전체 설치와 다섯 구성, 검사할 티켓 실측이 실제로 완료된 후에만 과제 확인 문구를 사용합니다:
