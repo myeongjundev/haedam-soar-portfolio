@@ -1,4 +1,4 @@
-# 11/11 제출 후보와 남은 확인
+# 11/11 제출 자료와 남은 확인
 
 제출 목표는 **2026-11-11 오전(KST)**입니다. 11/11 사용자의 최신 지시로 이전 17:30 계획을 앞당겼으며 정확한 시각은 지정되지 않았습니다. 제출 완료 선언이 아니라 현재 증적과 남은 절차를 정리한 문서입니다.
 
@@ -6,13 +6,15 @@
 
 | 대상 | 현재 상태 | 다음 행동 |
 | --- | --- | --- |
-| [개인 저장소](https://github.com/myeongjundev/haedam-soar-portfolio) | PRIVATE, 협업자 1명. 평가자 접근은 미확인 | 평가자 계정과 공유 범위를 정해 접근 확인. 이번 점검에서 공개 전환·초대는 하지 않음 |
-| [PR #30](https://github.com/myeongjundev/haedam-soar-portfolio/pull/30) | S4 실제 수정/증적, HEAD `82eb988`, main 대상 초안·충돌 없음 | 사용자가 검토·병합 |
-| [PR #31](https://github.com/myeongjundev/haedam-soar-portfolio/pull/31) | S12·PPT r7·제출 자료. base는 #30 브랜치, 초안·충돌 없음 | #30 병합 후 base를 main으로 확인/변경하고 검토·병합. #30 브랜치는 #31 base 변경 전 삭제하지 않음 |
+| [개인 저장소](https://github.com/myeongjundev/haedam-soar-portfolio) | PUBLIC. 11/11 공개 전환 후 로그인 없는 README HTTP 200 확인 | 공개 main 주소 제출 |
+| [PR #30](https://github.com/myeongjundev/haedam-soar-portfolio/pull/30) | 사용자 지시로 병합 완료, merge `5db345c` | S4 실측 근거로 보존 |
+| [PR #31](https://github.com/myeongjundev/haedam-soar-portfolio/pull/31) | base를 main으로 바꾼 뒤 병합 완료, merge `6b81197` | S12·PPT r7·README 이미지가 main에 있는지 확인 완료 |
 | [개인 PPT r7](../output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261111-r7.pptx) | 34장, PowerPoint 실제 열기·주요 장 확인 | 이 파일을 제출. 상세 [검증 범위](portfolio/README.md) |
 | [이력서·자소서 기본 문안](application-materials.md) | S1·S4·S10·S12 실측과 문제 해결 반영 | 희망 직무·회사·개인 경력 입력 및 본인 회고 표현 최종 확인 |
 
-이번 새 clone의 검사 기준은 `ea7b4191401660ff6aeba0167c8737ca4097b445`입니다. 후속 변경은 설치·제출·지원 문서 정리이며 앱·탐지·대응 코드를 바꾸지 않았습니다. 검사 시 main은 `937d4bd`로 최신 S4/S12 결과와 PPT r7을 포함하지 않습니다. 두 PR 모두 GitHub 상태 검사/승인 기록이 비어 있어 ‘자동 CI·독립 승인 통과’라고 표시하지 않습니다. 새 clone 호스트 테스트 결과와 충돌 없음 판정은 병합 승인을 대신하지 않습니다.
+새 clone 검사 기준은 `ea7b4191401660ff6aeba0167c8737ca4097b445`이며 당시 main은 `937d4bd`였습니다. 후속으로 사용자 병합 지시를 받아 #30 → #31 순서로 통합했습니다. 두 PR의 GitHub 상태 검사/승인 기록은 비어 있어 ‘자동 CI·독립 승인 통과’라고 표시하지 않습니다. 공개 전환 전 Gitleaks로 80개 커밋을 검사해 탐지 0건을 확인했습니다. 자동 비밀값 검사만으로 모든 이미지·개인정보 검토를 대체하지 않습니다.
+
+[5분 발표·시연 안내와 예상 질문](demo-guide.md), [첨부용 제출 안내](submission-note.md), [제출 ZIP](../output/submission/김명준-개인포트폴리오-제출자료-20261111.zip)을 함께 제공합니다. 발표 자료·기존 실측과 지금 실행하는 시연은 구분합니다.
 
 ## 완료한 근거
 
@@ -23,7 +25,7 @@
 
 ## 남은 설치 검증과 실행 순서
 
-1. 사용자 병합 후 최종 main 커밋을 기록합니다. 이 문서·PPT r7·S4/S12 결과 파일 존재를 확인합니다.
+1. 병합 결과 `6b81197`에 PPT r7·S4/S12 결과·README 이미지가 있음을 확인했습니다. 새 설치 시에는 `git rev-parse HEAD`로 실제 받은 커밋을 별도로 기록합니다.
 2. 기존 환경을 유지해야 하므로 충분한 메모리가 있는 별도 PC에서 [설치 안내](installation-guide.md)의 준비 명령부터 실행합니다. 같은 PC에서 해야 한다면 실행 시점의 메모리·포트·망을 읽기 전용으로 다시 점검하고, 중지할 환경은 별도 지시에 따라 정합니다. 이번 작업은 기존 환경 중지를 허용하지 않습니다.
 3. 포털/DB → 관제 스모크 → 자동 S7 → P04/S10 순서로 **한 랩씩** 실제 설치합니다. 자동 S7만으로 Wazuh·Graylog·n8n·포털/DB 연결을 함께 확인하고, pfSense는 별도 실제 ISO/VM 설치가 필요합니다. 각 랩의 효과·정상 사용자·원복을 확인한 뒤 소유 랩만 정지합니다.
 4. 검사할 티켓 1~2개는 이미 증적이 있는 S7 버튼과 S8 CLI를 우선 준비합니다. 명령·포트·로그인 값은 선택한 랩의 설정과 비공개 환경 파일을 사용합니다. 원복 전에 `stop`으로 종료하지 않습니다.

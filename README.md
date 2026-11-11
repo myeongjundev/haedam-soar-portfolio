@@ -28,7 +28,7 @@
 
 **최신 제출 자료 · 2026-11-11:** [PPT r7 · 34장](output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261111-r7.pptx) · [제출 ZIP](output/submission/김명준-개인포트폴리오-제출자료-20261111.zip) · [설치 순서](docs/installation-guide.md) · [제출 전 확인](docs/submission-readiness-20261111.md)
 
-제출 기준은 **`main` 브랜치**입니다. 변경 이력은 [S4 실측 수정 · PR #30](https://github.com/myeongjundev/haedam-soar-portfolio/pull/30)과 [S12·PPT r7·README 이미지 · PR #31](https://github.com/myeongjundev/haedam-soar-portfolio/pull/31)에 있습니다. 저장소는 비공개이며 평가자 접근 확인이 필요합니다. 권한이 없는 계정이나 로그인하지 않은 브라우저에서는 404로 표시될 수 있습니다.
+제출 기준은 **`main` 브랜치**입니다. [PR #30](https://github.com/myeongjundev/haedam-soar-portfolio/pull/30)과 [PR #31](https://github.com/myeongjundev/haedam-soar-portfolio/pull/31)은 병합 완료했습니다. 11/11 저장소를 **공개**로 전환했고 로그인 없는 README 접근을 확인했습니다. [5분 발표·시연 안내와 예상 질문](docs/demo-guide.md)에서 사례별 증적을 바로 확인할 수 있습니다.
 
 ## 목차
 
@@ -37,6 +37,7 @@
 - [동작 흐름](#동작-흐름)
 - [개인 랩 구성](#개인-랩-구성)
 - [실제 화면](#실제-화면)
+- [문제 해결 사례](#문제-해결-사례)
 - [팀과 역할](#팀과-역할)
 - [설치와 실행](#설치와-실행)
 - [제출물과 문서](#제출물과-문서)
@@ -171,6 +172,16 @@ PPT r7 24장에 실제 Wazuh 화면과 적용 범위를 넣었습니다. n8n·Gr
 
 </details>
 
+## 문제 해결 사례
+
+| 문제 | 확인한 원인과 개선 | 실제 확인 |
+| --- | --- | --- |
+| S4 티켓은 생겼지만 계정이 잠기지 않음 | n8n HTTP Request의 동적 `sendBody`로 JSON 본문 누락. GET 조회와 정적 JSON POST 변경 노드를 분리 | 새 랩 재실측: 대상 로그인 200→401→200, 기존 세션 무효, 정상 계정 유지. [실패·수정 근거](docs/s4-results.md#최초-실패와-수정) |
+| 서비스가 정상인데 요청 수만으로 차단할 가능성 | S12는 요청 수 조건 뒤 실제 health 지연도 확인 | 정상 상태 231건 입력은 무대응, 통제 경합에서만 차단·원복. [결과와 조건](docs/s12-results.md) |
+| 명령 반복과 원복 누락 위험 | 팀원 제어판 아이디어를 개인 S7의 환경 확인→입력→관찰→원복 버튼으로 구현 | 파일 복구·격리 두 회차의 경보·티켓·원복 대조. [버튼 실측](docs/panel-results-20261110.md) |
+
+팀 공통 구현·아이디어 출처와 개인 수정 범위를 구분했습니다. [발표 순서·예상 질문](docs/demo-guide.md), [개인 기여·회고](docs/application-materials.md).
+
 ## 팀과 역할
 
 | 팀원 | 담당 |
@@ -186,7 +197,7 @@ PPT r7 24장에 실제 Wazuh 화면과 적용 범위를 넣었습니다. n8n·Gr
 
 ### 받기
 
-최종 제출 대상인 **`main` 브랜치**를 받습니다. 비공개 저장소 접근 권한이 있는 GitHub 계정으로 Git 인증을 준비합니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다. 11/11 오전 새 클론 감사는 당시 후보 커밋 `ea7b419`를 기준으로 했으며, 최종 main 전체 서비스 재기동 검증과 구분합니다.
+최종 제출 대상인 **`main` 브랜치**를 받습니다. 공개 저장소이므로 조회와 HTTPS clone에는 GitHub 로그인이 필요하지 않습니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다. 11/11 오전 새 클론 감사는 당시 후보 커밋 `ea7b419`를 기준으로 했으며, 최종 main 전체 서비스 재기동 검증과 구분합니다.
 
 ```powershell
 git clone --single-branch --branch main https://github.com/myeongjundev/haedam-soar-portfolio.git
