@@ -83,6 +83,7 @@ function run(id,input,execution){
   else if(kind==='if')branch=expr(p.conditions.conditions[0].leftValue,j)===true?0:1;
   else if(kind==='executeWorkflow')j=run(p.workflowId.value,j,execution);
   else if(kind==='httpRequest'){
+   if(p.sendBody!==undefined && typeof p.sendBody!=='boolean')throw Error('sendBody does not support expressions in n8n');
    const method=expr(p.method,j),url=expr(p.url,j);
    const headers=Object.fromEntries((p.headerParameters?.parameters||[]).map(v=>[v.name,expr(v.value,j)]));
    const body=p.jsonBody?JSON.parse(expr(p.jsonBody,j)):Object.fromEntries((p.bodyParameters?.parameters||[]).map(v=>[v.name,expr(v.value,j)]));

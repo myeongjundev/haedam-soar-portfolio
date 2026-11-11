@@ -94,21 +94,24 @@ def account_workflow(s,c):
     def gate(name,expression):
         node(name,'if',{'conditions':{'options':{'caseSensitive':True,'typeValidation':'strict','version':2},'conditions':[{'id':name,'leftValue':'={{ '+expression+' }}','rightValue':'','operator':{'type':'boolean','operation':'true','singleValue':True}}],'combinator':'and'},'options':{}},2.2)
     def http(name,role,read=False):
-        params={'method':'GET' if read else '={{ $json.action === "list" ? "GET" : "POST" }}',
+        params={'method':'GET' if read else 'POST',
                 'url':'={{ $json.read_url }}' if read else '={{ $json.url }}',
                 'authentication':'genericCredentialType','genericAuthType':'httpHeaderAuth',
                 'options':{'timeout':10000,'response':{'response':{'fullResponse':True,'neverError':True,'responseFormat':'json'}}}}
         if not read:
             params.update(sendHeaders=True,headerParameters={'parameters':[{'name':'Idempotency-Key','value':'={{ $json.idempotency_key }}'}]},
-                          sendBody='={{ $json.action !== "list" }}',specifyBody='json',jsonBody='={{ JSON.stringify($json.data) }}')
+                          sendBody=True,contentType='json',specifyBody='json',jsonBody='={{ JSON.stringify($json.data) }}')
         n=node(name,'httpRequest',params,4.2);n['onError']='continueRegularOutput'
         ident=c['credentials'][role]['id'];n['credentials']={'httpHeaderAuth':{'id':ident,'name':ident}}
     node('Start','executeWorkflowTrigger',{'inputSource':'passthrough'},1.1)
     code('Prepare','prepare');link('Start','Prepare');gate('Valid','$json.valid === true');link('Prepare','Valid')
     code('Invalid','invalid');link('Valid','Invalid',1)
-    gate('Is release','$json.action === "unlock"');link('Valid','Is release')
+    # Send Body is noDataExpression in n8n: GET and POST require separate nodes.
+    gate('Is list','$json.action === "list"');link('Valid','Is list')
+    http('List API','portal',True);link('Is list','List API')
+    gate('Is release','$json.action === "unlock"');link('Is list','Is release',1)
     http('Account API','portal');http('Release API','release');link('Is release','Release API');link('Is release','Account API',1)
-    code('Classify','classify');link('Account API','Classify');link('Release API','Classify')
+    code('Classify','classify');link('List API','Classify');link('Account API','Classify');link('Release API','Classify')
     gate('Readback needed','$json.needs_readback === true');link('Classify','Readback needed')
     code('Done','done');link('Readback needed','Done',1)
     http('Readback','portal',True);link('Readback needed','Readback');code('Verified','verify');link('Readback','Verified')

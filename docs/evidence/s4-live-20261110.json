@@ -1,0 +1,2070 @@
+{
+  "case_id": "S4",
+  "run_id": "s4fix20261110",
+  "data_origin": "live",
+  "scope": "Fresh owned Docker project and volumes; actual Graylog and n8n; synthetic portal account lock and approved release.",
+  "settings": {
+    "schema_version": 1,
+    "project": "haedam-s4-fix",
+    "execution_enabled": true,
+    "asset_id": "haedam-portal",
+    "network_status": "preflight_pending_20261110",
+    "networks": {
+      "default": "172.30.114.0/24",
+      "clients": "172.30.115.0/24",
+      "response": "172.30.116.0/29",
+      "graylog_backend": "172.30.117.0/29"
+    },
+    "addresses": {
+      "portal_client": "172.30.115.10",
+      "attacker": "172.30.115.21",
+      "normal": "172.30.115.22",
+      "n8n_response": "172.30.116.2",
+      "portal_response": "172.30.116.3"
+    },
+    "host_ports": {
+      "PORTAL_PORT": 15070,
+      "GRAYLOG_PORT": 19170,
+      "N8N_PORT": 15770,
+      "GELF_PORT": 22370,
+      "TICKET_PORT": 18170
+    },
+    "client_image": "python:3.12-slim",
+    "paths": {
+      "tools_mount": "/opt/s4",
+      "settings_mount": "/run/s4/settings.json",
+      "evidence_mount": "/evidence",
+      "health": "/api/v1/health",
+      "session": "/api/v1/auth/me",
+      "login": "/api/v1/auth/login",
+      "register": "/api/v1/auth/register",
+      "private_mount": "/private/s4",
+      "integration_mount": "/run/s4/integration.json"
+    },
+    "portal_internal_port": 5000,
+    "username_prefix": "zz_s4_",
+    "policy": {
+      "window_seconds": 600,
+      "execute_every_seconds": 60,
+      "notification_grace_seconds": 600,
+      "input_interval_seconds": 10,
+      "boundary_observation_seconds": 660,
+      "total_threshold": 6
+    },
+    "request_timeout_seconds": 10,
+    "stop_filename": "STOP",
+    "accounts": {
+      "target": "zz_s4_target",
+      "normal": "zz_s4_normal"
+    },
+    "network_internal": {
+      "default": false,
+      "clients": true,
+      "response": true,
+      "graylog_backend": true
+    },
+    "observation": {
+      "ticket_read_url": "http://ticket-store:8089"
+    }
+  },
+  "packet": {
+    "case_id": "S4",
+    "run_id": "s4fix20261110",
+    "project": "haedam-s4-fix",
+    "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+    "integration_sha256": "9e34ed294223d119622bdbf1cb24ea721fa407d0ccb8ba5eb992c55015e58169",
+    "source_sha256": [
+      {
+        "path": "compose.soc.yaml",
+        "sha256": "1e422962e6a40780a3ba8882c901683c02782402c8e95e27697ae32853e5c529"
+      },
+      {
+        "path": "compose.yaml",
+        "sha256": "9d93e50498c3796f1e450363a77451571d27175f06b04bdbf9d18ca5921ab8a9"
+      },
+      {
+        "path": "Dockerfile",
+        "sha256": "2eee49c19a2351f35c9ef6372fe946d40ec2ee6a1f4d7ea4fd635d9e5fce99ef"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/env.py",
+        "sha256": "03ebd5f05d32d95c5289d75c70ba806a33e84b29d07ec8e9d399da147295006b"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/versions/04440ce16125_initial_portal_schema.py",
+        "sha256": "c8cbd314db3b983c65d1748e4cdc82a1c9f9ceca4c6d60549be33a3cecd8f05b"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/versions/7c2e9a41d5b3_add_blocked_ips.py",
+        "sha256": "bbef8f2aa88318ad50088d37d8f7a572527c2ac096ddd8e2b5ad20065770d224"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/versions/91d4e218ac07_petition_write_restrictions.py",
+        "sha256": "fcfd55b91302fb8fb45e8ef3fe6ce12f5719f0ce68faf16744046a789ca3974c"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/versions/a640c2d1e910_s4_account_claims.py",
+        "sha256": "ec7d2cd37de4e79f6d58705328c7d455163d834a44fc450f26df98c58cdfd252"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/__init__.py",
+        "sha256": "687afca567cf2c9910bf6d7fc9563ccf8b0c6ddd38270870a11b603759d0ac4f"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/admin/__init__.py",
+        "sha256": "460dca7bf34c15615ad8238293c699568bef03042e0dd72176a2029b74825ced"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/auth/__init__.py",
+        "sha256": "d17096c7b127f84083cb51f8c81743fb230e507ae3346c39d080391547edd14c"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/cli.py",
+        "sha256": "a3cbbd6aed63507df642712a1bb5f1e458ffbf543ede2d05c13ceaf38fed262c"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/common.py",
+        "sha256": "9483672e992d45423ba163a4aebbb9fc505d6b455cdb473d2eee97d7d83000d8"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/integration/__init__.py",
+        "sha256": "80d09620911af4f6b9c8d899efbf2223ff1614d4360c695ed122c7f4ede3b256"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/integration/events.py",
+        "sha256": "2fa71a64530c01842705d9df4778daa4bba5bc43494c7e5be3cb2b5df8e83a58"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/integration/petition_restrictions.py",
+        "sha256": "ef4c9651b2598514927df608bc5b0d5d4ddf24dadcde976934170877ef9b1042"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/integration/s4_accounts.py",
+        "sha256": "7498e7fc724c9e06ab8b992e872cb316375f1cf2ae3dc782914ea0dd77ec0176"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/models.py",
+        "sha256": "ded792c7b6e88c139348b90d97185221b6fcfefe91ae7b5ef0afd7e5805cdc03"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/petitions/__init__.py",
+        "sha256": "44d347ed90310be2a5d3c9a859849cecb2ef5abfc59089d5abc6e9bab491b7ca"
+      },
+      {
+        "path": "infra/graylog/notifications/s1-n8n-haedam-s1.json",
+        "sha256": "3491529e28e23bd479f0e7fd0b332c7a2e4c2d13d0876c14ca51be05f0d291da"
+      },
+      {
+        "path": "infra/n8n/s4-src/account.js",
+        "sha256": "2ed92f7ba45add3976ddc07dcf79aea0a3632af0723971e05d2ea7692ecf4064"
+      },
+      {
+        "path": "infra/n8n/s4-src/flow.js",
+        "sha256": "337956be69468577a4eb84f730dbeb6b3823c50dd0a0996143910edc03a1d93d"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-00-recv-check.json",
+        "sha256": "5ea86910acd21fa4d540b024b97d24318a66a4ff009d52b2a83a7d09cc18f46d"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-01-ticket-check.json",
+        "sha256": "a7809f35521e6310e812f58bed5418f8c5a64140ef5494a21b0ee3508e057179"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-02-portal-test.json",
+        "sha256": "50169039ab272275bab4eef3a2ffc34b0e650853941c1f2ef32ce4e4d092657f"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-10-result-log.json",
+        "sha256": "beeb6f298cfd6484c9296856530486d31cafab49657196a25e2060d71d2d63db"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-11-discord-notify.json",
+        "sha256": "6186d35bf42a0a662df7935b8d67bbfc4dc1ff0371f29f22a41c6153e8d8394a"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-12-portal-ip-block.json",
+        "sha256": "a305f650d9db08d91c52524bf694d5fc5d8114eff436736f0354afb3587fe558"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-13-portal-account-lock.json",
+        "sha256": "ddacca5387edaf9b1fcc83b59366886d4dfbb26cf0feb22f187e52d1f0684a7e"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-14-pfsense-block.json",
+        "sha256": "9a0827c866339c72ae3703085018e2e2c6818d2f80813a690912d86281ef96b3"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-15-wazuh-restore.json",
+        "sha256": "e545aca12b5fb21961db5d50963a96260a1eec04a20c686f6709aaf749153143"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-16-ticket-decision-offline.json",
+        "sha256": "56f2e5d2010b334dfdcb7bd6760cc5203617c021fb8d0c489571a80f28bc8eb4"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-17-wazuh-token.json",
+        "sha256": "87eca7b05d82fce3c19055c8792a8a9609d125ab094342ee2a9b993b8fc3349f"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-20-s12-main.json",
+        "sha256": "0ee98b63b1abb1fa2366b9355856ed65945b813855ccd58ea3c82c532a6940d1"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-30-s1-main.json",
+        "sha256": "b736bb84e20ae1eb4d2a29546e650edc4d353cb37bbb211f0933b8c3f1423711"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-31-s4-main.json",
+        "sha256": "5103c3b971fe42071f28a724bf26c89ef288ad6fd4e33654618bbd8705f64f30"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-32-s8-s10-main.json",
+        "sha256": "07447c105aa33ff65420574609e7f331b08687da2d9954147c67d27fba9f671f"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-33-s7-main.json",
+        "sha256": "548c0ffb3eb9c61db2f9fe39c06836599f809fc0490fd6cff257e8fd26e8ea26"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-34-s7-live-acceptance.json",
+        "sha256": "544eaa2bee30e5b0f85b8ec1a9b41cdd7a78ecbd11c976844c8e887bbba175d8"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-40-effect-report.json",
+        "sha256": "c3a19a7ef3d07992a3b695bd4699fbd2dd1b4fd8ca2f35c215099d9a595a0a86"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-50-release.json",
+        "sha256": "6c09a8ecf23650c3319269cc37d732dcc39ea7933f678a109b4dbdc2f20292f0"
+      },
+      {
+        "path": "infra/s4-integration-settings.json",
+        "sha256": "18845626328560fc3ae53d7053eb6ddfcdf8081e88caf4ca35c68d19cb98fcfe"
+      },
+      {
+        "path": "lab/s1s4/graylog/s4-fail-then-success.json",
+        "sha256": "f1847e685dd67ee4009608de7bb77091cb993419395eba970bffe823644a1158"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/__init__.py",
+        "sha256": "bf5570bfa469f4091ffe3caffef47ef2c0d1c1d7417746baba985f55214c1cf5"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/__main__.py",
+        "sha256": "70602dfabfffca216c6da39c3bce85cfd0aee309987fa7d05e9c08981eb9128c"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/api_n8n.py",
+        "sha256": "b995d6d7de0bc6f30edc7867b6856a3d14fb4adcf9c5169ea985d4a7b287db50"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/api_read.py",
+        "sha256": "ca44d9cb62d071c36f9d6083b23592cc15434282eba88130b5fe5f8ebe2d8aa4"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/app.py",
+        "sha256": "95fb24bc92aa82fada4c31f3648aac3400bf258f8999a49367ab2712236ae80c"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/core.py",
+        "sha256": "2cf6e2a73d1097e76cac15da5dfde1d8437084dd85cae1a943bbcb9926407fdf"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/dashboard.py",
+        "sha256": "f9037c7876878a1781143f74165588a8c470970c732bf04ab36c748857500c00"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/db.py",
+        "sha256": "ca467ab9e424d61d59804084f24fc2f6a77ac64fe679858622a4d39ddc33eaba"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/s12_measurements.py",
+        "sha256": "ff741e27e6d87d2a9f997fa3d98a8917c68a765d79f7452ce3edfab147693657"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/samples.py",
+        "sha256": "9f2d58771853485e558193578c92f2f80796bc52c7b699ed2ef24ded63b17080"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/validate.py",
+        "sha256": "9017125c238cb85d9c9042027175a2f6c494e628b0bf4cbd6332e86ddbba0181"
+      },
+      {
+        "path": "tools/build_s4_workflows.py",
+        "sha256": "71953e6fdd13b28b145893d840d2b4af0b78488c86cee76ed560bd3095e24a45"
+      },
+      {
+        "path": "tools/s1_client.py",
+        "sha256": "e911b65b76a55022c84668d3aeb1c9db97cdfe085e87ab0ef4b61b48bc9c3583"
+      },
+      {
+        "path": "tools/s1_settings.py",
+        "sha256": "6abbe04acc5f4f36ef1ce446d94d90d39cda1ce086b5ebdcb261b07df1c3d926"
+      },
+      {
+        "path": "tools/s4_client.py",
+        "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+      },
+      {
+        "path": "tools/s4_collect.py",
+        "sha256": "1ffe4d7cd3d83e1006b95951e10c67103e9d1f4fbb021f9337f5ebebbd9bb349"
+      },
+      {
+        "path": "tools/s4_evidence.py",
+        "sha256": "d4030428a9285fb503fe4f49f64ec2d532b92d29cd1d231a927f82c5109e15d8"
+      },
+      {
+        "path": "tools/s4_lab.py",
+        "sha256": "e1e6b58d2d390c1bcc1189b9ec9c98e496916138ee2bfc795d7bb588b98a9055"
+      },
+      {
+        "path": "tools/s4_probe.py",
+        "sha256": "53d9be8bde21ddc29491cd9e74a7b8d62849ed0f8be6c56ae7a1afbee8890019"
+      },
+      {
+        "path": "tools/s4_rehearsal.py",
+        "sha256": "61cfb87f95211cdca4f2428c5c1050946d0cbde082f37fb5a8620e72739a9f59"
+      },
+      {
+        "path": "tools/s4_settings.py",
+        "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+      }
+    ],
+    "clock_tolerance_seconds": 30
+  },
+  "definition_id": "6af2cebc4152f239ec782515",
+  "evidence": {
+    "input": {
+      "case_id": "S4",
+      "run_id": "s4fix20261110",
+      "profile": "trigger6",
+      "mode": "actual_http_input",
+      "project": "haedam-s4-fix",
+      "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+      "client": "attacker",
+      "source_ip": "172.30.115.21",
+      "target_ip": "172.30.115.10",
+      "target_port": 5000,
+      "username": "zz_s4_target",
+      "expected_login_statuses": [
+        401,
+        401,
+        401,
+        401,
+        401,
+        200
+      ],
+      "maximum_login_attempts": 6,
+      "maximum_http_requests": 14,
+      "interval_seconds": 10,
+      "minimum_input_span_seconds": 50,
+      "observation_seconds": 660,
+      "observation_basis": "last_required_login_received_by_Graylog_not_client_finish",
+      "expected_detection": true,
+      "requires_clean_key_window_seconds": 600,
+      "automatic_retry": false,
+      "response_api_called": false,
+      "end_to_end_status": "not_run",
+      "status": "input_complete",
+      "started_at": "2026-11-10T08:11:09.876+00:00",
+      "records": [
+        {
+          "operation": "health",
+          "status": 200,
+          "error_code": null,
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:09.886+00:00",
+          "finished_at": "2026-11-10T08:11:09.900+00:00",
+          "elapsed_seconds": 0.013838
+        },
+        {
+          "operation": "session",
+          "status": 200,
+          "error_code": null,
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:09.906+00:00",
+          "finished_at": "2026-11-10T08:11:09.917+00:00",
+          "elapsed_seconds": 0.011502
+        },
+        {
+          "operation": "login",
+          "status": 401,
+          "error_code": "INVALID_CREDENTIALS",
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:09.922+00:00",
+          "finished_at": "2026-11-10T08:11:10.021+00:00",
+          "elapsed_seconds": 0.098559
+        },
+        {
+          "operation": "session",
+          "status": 200,
+          "error_code": null,
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:20.033+00:00",
+          "finished_at": "2026-11-10T08:11:20.047+00:00",
+          "elapsed_seconds": 0.014345
+        },
+        {
+          "operation": "login",
+          "status": 401,
+          "error_code": "INVALID_CREDENTIALS",
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:20.052+00:00",
+          "finished_at": "2026-11-10T08:11:20.169+00:00",
+          "elapsed_seconds": 0.116431
+        },
+        {
+          "operation": "session",
+          "status": 200,
+          "error_code": null,
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:30.185+00:00",
+          "finished_at": "2026-11-10T08:11:30.199+00:00",
+          "elapsed_seconds": 0.013645
+        },
+        {
+          "operation": "login",
+          "status": 401,
+          "error_code": "INVALID_CREDENTIALS",
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:30.208+00:00",
+          "finished_at": "2026-11-10T08:11:30.324+00:00",
+          "elapsed_seconds": 0.115624
+        },
+        {
+          "operation": "session",
+          "status": 200,
+          "error_code": null,
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:40.337+00:00",
+          "finished_at": "2026-11-10T08:11:40.356+00:00",
+          "elapsed_seconds": 0.018449
+        },
+        {
+          "operation": "login",
+          "status": 401,
+          "error_code": "INVALID_CREDENTIALS",
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:40.361+00:00",
+          "finished_at": "2026-11-10T08:11:40.509+00:00",
+          "elapsed_seconds": 0.147097
+        },
+        {
+          "operation": "session",
+          "status": 200,
+          "error_code": null,
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:50.517+00:00",
+          "finished_at": "2026-11-10T08:11:50.540+00:00",
+          "elapsed_seconds": 0.022749
+        },
+        {
+          "operation": "login",
+          "status": 401,
+          "error_code": "INVALID_CREDENTIALS",
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:11:50.549+00:00",
+          "finished_at": "2026-11-10T08:11:50.647+00:00",
+          "elapsed_seconds": 0.098035
+        },
+        {
+          "operation": "session",
+          "status": 200,
+          "error_code": null,
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:12:00.657+00:00",
+          "finished_at": "2026-11-10T08:12:00.666+00:00",
+          "elapsed_seconds": 0.0091
+        },
+        {
+          "operation": "login",
+          "status": 200,
+          "error_code": null,
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:12:00.671+00:00",
+          "finished_at": "2026-11-10T08:12:00.763+00:00",
+          "elapsed_seconds": 0.092287
+        },
+        {
+          "operation": "session",
+          "status": 200,
+          "error_code": null,
+          "source_ip": "172.30.115.21",
+          "started_at": "2026-11-10T08:12:00.768+00:00",
+          "finished_at": "2026-11-10T08:12:00.772+00:00",
+          "elapsed_seconds": 0.004661
+        }
+      ],
+      "observed_login_statuses": [
+        401,
+        401,
+        401,
+        401,
+        401,
+        200
+      ],
+      "authenticated_identity_checks": 1,
+      "source_sha256": [
+        {
+          "path": "s4_client.py",
+          "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+        },
+        {
+          "path": "s4_settings.py",
+          "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+        },
+        {
+          "path": "s1_client.py",
+          "sha256": "e911b65b76a55022c84668d3aeb1c9db97cdfe085e87ab0ef4b61b48bc9c3583"
+        }
+      ],
+      "finished_at": "2026-11-10T08:12:00.782+00:00"
+    },
+    "graylog_event": {
+      "id": "01M7287TN6S8RBS24G4S6WC84B",
+      "event_definition_id": "6af2cebc4152f239ec782515",
+      "timestamp_processing": "2026-11-10T08:12:22.054Z",
+      "fields": {
+        "username": "zz_s4_target",
+        "src_ip": "172.30.115.21"
+      }
+    },
+    "release_response": {
+      "ok": true,
+      "verdict": "released",
+      "http_status": 200,
+      "ticket_id": "T-20261110-0001",
+      "ticket_status": "restored",
+      "applied_verified": true,
+      "effect_verified": null
+    },
+    "probes": {
+      "baseline": {
+        "case_id": "S4",
+        "run_id": "s4fix20261110",
+        "phase": "baseline",
+        "mode": "actual_http_probe",
+        "project": "haedam-s4-fix",
+        "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+        "source_ip": "172.30.115.22",
+        "target_ip": "172.30.115.10",
+        "target_port": 5000,
+        "accounts": {
+          "target": "zz_s4_target",
+          "normal": "zz_s4_normal"
+        },
+        "maximum_http_requests": 14,
+        "end_to_end_status": "not_run",
+        "status": "probe_passed",
+        "started_at": "2026-11-10T07:59:18.813+00:00",
+        "records": [
+          {
+            "operation": "health",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:18.824+00:00",
+            "finished_at": "2026-11-10T07:59:18.837+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:18.841+00:00",
+            "finished_at": "2026-11-10T07:59:18.858+00:00"
+          },
+          {
+            "operation": "register",
+            "status": 201,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:18.864+00:00",
+            "finished_at": "2026-11-10T07:59:18.953+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:18.957+00:00",
+            "finished_at": "2026-11-10T07:59:18.967+00:00"
+          },
+          {
+            "operation": "register",
+            "status": 201,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:18.971+00:00",
+            "finished_at": "2026-11-10T07:59:19.054+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:19.058+00:00",
+            "finished_at": "2026-11-10T07:59:19.067+00:00"
+          },
+          {
+            "operation": "login",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:19.071+00:00",
+            "finished_at": "2026-11-10T07:59:19.158+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:19.163+00:00",
+            "finished_at": "2026-11-10T07:59:19.169+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:19.173+00:00",
+            "finished_at": "2026-11-10T07:59:19.182+00:00"
+          },
+          {
+            "operation": "login",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:19.186+00:00",
+            "finished_at": "2026-11-10T07:59:19.275+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:19.280+00:00",
+            "finished_at": "2026-11-10T07:59:19.284+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:19.289+00:00",
+            "finished_at": "2026-11-10T07:59:19.299+00:00"
+          },
+          {
+            "operation": "login",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:19.303+00:00",
+            "finished_at": "2026-11-10T07:59:19.405+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T07:59:19.411+00:00",
+            "finished_at": "2026-11-10T07:59:19.418+00:00"
+          }
+        ],
+        "source_sha256": [
+          {
+            "path": "s4_probe.py",
+            "sha256": "53d9be8bde21ddc29491cd9e74a7b8d62849ed0f8be6c56ae7a1afbee8890019"
+          },
+          {
+            "path": "s4_settings.py",
+            "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+          },
+          {
+            "path": "s4_client.py",
+            "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+          },
+          {
+            "path": "s1_client.py",
+            "sha256": "e911b65b76a55022c84668d3aeb1c9db97cdfe085e87ab0ef4b61b48bc9c3583"
+          },
+          {
+            "path": "s1_settings.py",
+            "sha256": "6abbe04acc5f4f36ef1ce446d94d90d39cda1ce086b5ebdcb261b07df1c3d926"
+          }
+        ],
+        "checks": {
+          "target_sessions_prepared": 2,
+          "normal_session_prepared": true
+        },
+        "session_set_id": "bc2691108a0fd8cb2f6e220202ff022b",
+        "user_ids": {
+          "target": 1,
+          "normal": 2
+        },
+        "finished_at": "2026-11-10T07:59:19.602+00:00"
+      },
+      "locked": {
+        "case_id": "S4",
+        "run_id": "s4fix20261110",
+        "phase": "locked",
+        "mode": "actual_http_probe",
+        "project": "haedam-s4-fix",
+        "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+        "source_ip": "172.30.115.22",
+        "target_ip": "172.30.115.10",
+        "target_port": 5000,
+        "accounts": {
+          "target": "zz_s4_target",
+          "normal": "zz_s4_normal"
+        },
+        "maximum_http_requests": 9,
+        "end_to_end_status": "not_run",
+        "status": "probe_passed",
+        "started_at": "2026-11-10T08:12:26.422+00:00",
+        "records": [
+          {
+            "operation": "health",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:12:26.596+00:00",
+            "finished_at": "2026-11-10T08:12:26.609+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:12:26.613+00:00",
+            "finished_at": "2026-11-10T08:12:26.625+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:12:26.629+00:00",
+            "finished_at": "2026-11-10T08:12:26.639+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:12:26.644+00:00",
+            "finished_at": "2026-11-10T08:12:26.654+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:12:26.660+00:00",
+            "finished_at": "2026-11-10T08:12:26.670+00:00"
+          },
+          {
+            "operation": "login",
+            "status": 401,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:12:26.675+00:00",
+            "finished_at": "2026-11-10T08:12:26.761+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:12:26.765+00:00",
+            "finished_at": "2026-11-10T08:12:26.777+00:00"
+          },
+          {
+            "operation": "login",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:12:26.781+00:00",
+            "finished_at": "2026-11-10T08:12:26.874+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:12:26.878+00:00",
+            "finished_at": "2026-11-10T08:12:26.883+00:00"
+          }
+        ],
+        "source_sha256": [
+          {
+            "path": "s4_probe.py",
+            "sha256": "53d9be8bde21ddc29491cd9e74a7b8d62849ed0f8be6c56ae7a1afbee8890019"
+          },
+          {
+            "path": "s4_settings.py",
+            "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+          },
+          {
+            "path": "s4_client.py",
+            "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+          },
+          {
+            "path": "s1_client.py",
+            "sha256": "e911b65b76a55022c84668d3aeb1c9db97cdfe085e87ab0ef4b61b48bc9c3583"
+          },
+          {
+            "path": "s1_settings.py",
+            "sha256": "6abbe04acc5f4f36ef1ce446d94d90d39cda1ce086b5ebdcb261b07df1c3d926"
+          }
+        ],
+        "checks": {
+          "same_passwords": true,
+          "target1_revoked": true,
+          "target2_revoked": true,
+          "normal_old_authenticated": true,
+          "target_new_login_status": 401,
+          "normal_new_authenticated": true
+        },
+        "session_set_id": "bc2691108a0fd8cb2f6e220202ff022b",
+        "user_ids": {
+          "target": 1,
+          "normal": 2
+        },
+        "finished_at": "2026-11-10T08:12:26.887+00:00"
+      },
+      "restored": {
+        "case_id": "S4",
+        "run_id": "s4fix20261110",
+        "phase": "restored",
+        "mode": "actual_http_probe",
+        "project": "haedam-s4-fix",
+        "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+        "source_ip": "172.30.115.22",
+        "target_ip": "172.30.115.10",
+        "target_port": 5000,
+        "accounts": {
+          "target": "zz_s4_target",
+          "normal": "zz_s4_normal"
+        },
+        "maximum_http_requests": 10,
+        "end_to_end_status": "not_run",
+        "status": "probe_passed",
+        "started_at": "2026-11-10T08:13:12.321+00:00",
+        "records": [
+          {
+            "operation": "health",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.483+00:00",
+            "finished_at": "2026-11-10T08:13:12.495+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.500+00:00",
+            "finished_at": "2026-11-10T08:13:12.509+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.513+00:00",
+            "finished_at": "2026-11-10T08:13:12.522+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.527+00:00",
+            "finished_at": "2026-11-10T08:13:12.531+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.536+00:00",
+            "finished_at": "2026-11-10T08:13:12.548+00:00"
+          },
+          {
+            "operation": "login",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.554+00:00",
+            "finished_at": "2026-11-10T08:13:12.647+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.653+00:00",
+            "finished_at": "2026-11-10T08:13:12.659+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.664+00:00",
+            "finished_at": "2026-11-10T08:13:12.676+00:00"
+          },
+          {
+            "operation": "login",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.681+00:00",
+            "finished_at": "2026-11-10T08:13:12.772+00:00"
+          },
+          {
+            "operation": "session",
+            "status": 200,
+            "source_ip": "172.30.115.22",
+            "started_at": "2026-11-10T08:13:12.777+00:00",
+            "finished_at": "2026-11-10T08:13:12.782+00:00"
+          }
+        ],
+        "source_sha256": [
+          {
+            "path": "s4_probe.py",
+            "sha256": "53d9be8bde21ddc29491cd9e74a7b8d62849ed0f8be6c56ae7a1afbee8890019"
+          },
+          {
+            "path": "s4_settings.py",
+            "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+          },
+          {
+            "path": "s4_client.py",
+            "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+          },
+          {
+            "path": "s1_client.py",
+            "sha256": "e911b65b76a55022c84668d3aeb1c9db97cdfe085e87ab0ef4b61b48bc9c3583"
+          },
+          {
+            "path": "s1_settings.py",
+            "sha256": "6abbe04acc5f4f36ef1ce446d94d90d39cda1ce086b5ebdcb261b07df1c3d926"
+          }
+        ],
+        "checks": {
+          "same_passwords": true,
+          "target1_revoked": true,
+          "target2_revoked": true,
+          "normal_old_authenticated": true,
+          "target_new_login_status": 200,
+          "normal_new_authenticated": true
+        },
+        "session_set_id": "bc2691108a0fd8cb2f6e220202ff022b",
+        "user_ids": {
+          "target": 1,
+          "normal": 2
+        },
+        "finished_at": "2026-11-10T08:13:12.786+00:00"
+      }
+    },
+    "snapshots": {
+      "baseline": {
+        "case_id": "S4",
+        "run_id": "s4fix20261110",
+        "phase": "baseline",
+        "project": "haedam-s4-fix",
+        "mode": "actual_http_snapshot",
+        "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+        "integration_sha256": "9e34ed294223d119622bdbf1cb24ea721fa407d0ccb8ba5eb992c55015e58169",
+        "ticket_id": null,
+        "maximum_http_requests": 1,
+        "http_method": "GET",
+        "end_to_end_status": "not_run",
+        "status": "snapshot_passed",
+        "started_at": "2026-11-10T07:59:20.184+00:00",
+        "source_sha256": [
+          {
+            "path": "s4_collect.py",
+            "sha256": "1ffe4d7cd3d83e1006b95951e10c67103e9d1f4fbb021f9337f5ebebbd9bb349"
+          },
+          {
+            "path": "s4_settings.py",
+            "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+          },
+          {
+            "path": "s4_client.py",
+            "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+          },
+          {
+            "path": "build_s4_workflows.py",
+            "sha256": "71953e6fdd13b28b145893d840d2b4af0b78488c86cee76ed560bd3095e24a45"
+          }
+        ],
+        "records": [
+          {
+            "operation": "account",
+            "started_at": "2026-11-10T07:59:20.192+00:00",
+            "finished_at": "2026-11-10T07:59:20.206+00:00"
+          }
+        ],
+        "account": {
+          "username": "zz_s4_target",
+          "user_id": 1,
+          "locked": false,
+          "active_sessions": 2,
+          "owner_ticket_id": null
+        },
+        "finished_at": "2026-11-10T07:59:20.206+00:00"
+      },
+      "locked": {
+        "case_id": "S4",
+        "run_id": "s4fix20261110",
+        "phase": "locked",
+        "project": "haedam-s4-fix",
+        "mode": "actual_http_snapshot",
+        "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+        "integration_sha256": "9e34ed294223d119622bdbf1cb24ea721fa407d0ccb8ba5eb992c55015e58169",
+        "ticket_id": "T-20261110-0001",
+        "maximum_http_requests": 3,
+        "http_method": "GET",
+        "end_to_end_status": "not_run",
+        "status": "snapshot_passed",
+        "started_at": "2026-11-10T08:12:27.316+00:00",
+        "source_sha256": [
+          {
+            "path": "s4_collect.py",
+            "sha256": "1ffe4d7cd3d83e1006b95951e10c67103e9d1f4fbb021f9337f5ebebbd9bb349"
+          },
+          {
+            "path": "s4_settings.py",
+            "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+          },
+          {
+            "path": "s4_client.py",
+            "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+          },
+          {
+            "path": "build_s4_workflows.py",
+            "sha256": "71953e6fdd13b28b145893d840d2b4af0b78488c86cee76ed560bd3095e24a45"
+          }
+        ],
+        "records": [
+          {
+            "operation": "account",
+            "started_at": "2026-11-10T08:12:27.324+00:00",
+            "finished_at": "2026-11-10T08:12:27.336+00:00"
+          },
+          {
+            "operation": "ticket",
+            "started_at": "2026-11-10T08:12:27.336+00:00",
+            "finished_at": "2026-11-10T08:12:27.339+00:00"
+          },
+          {
+            "operation": "account",
+            "started_at": "2026-11-10T08:12:27.339+00:00",
+            "finished_at": "2026-11-10T08:12:27.345+00:00"
+          }
+        ],
+        "account": {
+          "username": "zz_s4_target",
+          "user_id": 1,
+          "locked": true,
+          "active_sessions": 0,
+          "owner_ticket_id": "T-20261110-0001"
+        },
+        "ticket": {
+          "ticket_id": "T-20261110-0001",
+          "seat": "A",
+          "case_id": "S4",
+          "asset_id": "haedam-portal",
+          "src_ip": "172.30.115.21",
+          "username": "zz_s4_target",
+          "group_key": "S4|zz_s4_target",
+          "data_origin": "live",
+          "status": "responding",
+          "created_at": "2026-11-10T08:12:23+00:00",
+          "updated_at": "2026-11-10T08:12:23+00:00",
+          "restored_at": null,
+          "event_ids": [
+            "01M7287TN6S8RBS24G4S6WC84B"
+          ],
+          "actions": [
+            {
+              "bot": "111",
+              "via": "portal",
+              "action": "lock",
+              "target": "zz_s4_target:1",
+              "result": "applied",
+              "applied_verified": true,
+              "effect_verified": null,
+              "duplicate": false
+            }
+          ]
+        },
+        "finished_at": "2026-11-10T08:12:27.345+00:00"
+      },
+      "restored": {
+        "case_id": "S4",
+        "run_id": "s4fix20261110",
+        "phase": "restored",
+        "project": "haedam-s4-fix",
+        "mode": "actual_http_snapshot",
+        "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+        "integration_sha256": "9e34ed294223d119622bdbf1cb24ea721fa407d0ccb8ba5eb992c55015e58169",
+        "ticket_id": "T-20261110-0001",
+        "maximum_http_requests": 3,
+        "http_method": "GET",
+        "end_to_end_status": "not_run",
+        "status": "snapshot_passed",
+        "started_at": "2026-11-10T08:13:13.238+00:00",
+        "source_sha256": [
+          {
+            "path": "s4_collect.py",
+            "sha256": "1ffe4d7cd3d83e1006b95951e10c67103e9d1f4fbb021f9337f5ebebbd9bb349"
+          },
+          {
+            "path": "s4_settings.py",
+            "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+          },
+          {
+            "path": "s4_client.py",
+            "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+          },
+          {
+            "path": "build_s4_workflows.py",
+            "sha256": "71953e6fdd13b28b145893d840d2b4af0b78488c86cee76ed560bd3095e24a45"
+          }
+        ],
+        "records": [
+          {
+            "operation": "account",
+            "started_at": "2026-11-10T08:13:13.245+00:00",
+            "finished_at": "2026-11-10T08:13:13.257+00:00"
+          },
+          {
+            "operation": "ticket",
+            "started_at": "2026-11-10T08:13:13.257+00:00",
+            "finished_at": "2026-11-10T08:13:13.259+00:00"
+          },
+          {
+            "operation": "account",
+            "started_at": "2026-11-10T08:13:13.260+00:00",
+            "finished_at": "2026-11-10T08:13:13.265+00:00"
+          }
+        ],
+        "account": {
+          "username": "zz_s4_target",
+          "user_id": 1,
+          "locked": false,
+          "active_sessions": 1,
+          "owner_ticket_id": null
+        },
+        "ticket": {
+          "ticket_id": "T-20261110-0001",
+          "seat": "A",
+          "case_id": "S4",
+          "asset_id": "haedam-portal",
+          "src_ip": "172.30.115.21",
+          "username": "zz_s4_target",
+          "group_key": "S4|zz_s4_target",
+          "data_origin": "live",
+          "status": "restored",
+          "created_at": "2026-11-10T08:12:23+00:00",
+          "updated_at": "2026-11-10T08:13:11+00:00",
+          "restored_at": "2026-11-10T08:13:11.682Z",
+          "event_ids": [
+            "01M7287TN6S8RBS24G4S6WC84B",
+            "s4-release-16"
+          ],
+          "actions": [
+            {
+              "bot": "111",
+              "via": "portal",
+              "action": "lock",
+              "target": "zz_s4_target:1",
+              "result": "applied",
+              "applied_verified": true,
+              "effect_verified": null,
+              "duplicate": false
+            },
+            {
+              "bot": "111",
+              "via": "portal",
+              "action": "unlock",
+              "target": "zz_s4_target:1",
+              "result": "released",
+              "applied_verified": true,
+              "effect_verified": null,
+              "duplicate": false
+            }
+          ]
+        },
+        "finished_at": "2026-11-10T08:13:13.265+00:00"
+      }
+    }
+  },
+  "consistency": {
+    "case_id": "S4",
+    "run_id": "s4fix20261110",
+    "artifact_consistency": "passed",
+    "provenance_attested": false,
+    "ticket_id": "T-20261110-0001",
+    "event_id": "01M7287TN6S8RBS24G4S6WC84B",
+    "target_login_sequence": [
+      200,
+      401,
+      200
+    ],
+    "old_target_sessions_revoked_after_restore": 2,
+    "normal_session_preserved": true,
+    "same_passwords": true,
+    "ticket_status": "restored",
+    "active_actions": 0,
+    "scope": "supplied artifacts only; Graylog/n8n execution provenance requires separate review"
+  },
+  "source": {
+    "commit": "0f81a970bb211da6a22025e4621530fb8c9fdfe9",
+    "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+    "source_sha256": [
+      {
+        "path": "compose.soc.yaml",
+        "sha256": "1e422962e6a40780a3ba8882c901683c02782402c8e95e27697ae32853e5c529"
+      },
+      {
+        "path": "compose.yaml",
+        "sha256": "9d93e50498c3796f1e450363a77451571d27175f06b04bdbf9d18ca5921ab8a9"
+      },
+      {
+        "path": "Dockerfile",
+        "sha256": "2eee49c19a2351f35c9ef6372fe946d40ec2ee6a1f4d7ea4fd635d9e5fce99ef"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/env.py",
+        "sha256": "03ebd5f05d32d95c5289d75c70ba806a33e84b29d07ec8e9d399da147295006b"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/versions/04440ce16125_initial_portal_schema.py",
+        "sha256": "c8cbd314db3b983c65d1748e4cdc82a1c9f9ceca4c6d60549be33a3cecd8f05b"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/versions/7c2e9a41d5b3_add_blocked_ips.py",
+        "sha256": "bbef8f2aa88318ad50088d37d8f7a572527c2ac096ddd8e2b5ad20065770d224"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/versions/91d4e218ac07_petition_write_restrictions.py",
+        "sha256": "fcfd55b91302fb8fb45e8ef3fe6ce12f5719f0ce68faf16744046a789ca3974c"
+      },
+      {
+        "path": "haedam-portal-backend/migrations/versions/a640c2d1e910_s4_account_claims.py",
+        "sha256": "ec7d2cd37de4e79f6d58705328c7d455163d834a44fc450f26df98c58cdfd252"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/__init__.py",
+        "sha256": "687afca567cf2c9910bf6d7fc9563ccf8b0c6ddd38270870a11b603759d0ac4f"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/admin/__init__.py",
+        "sha256": "460dca7bf34c15615ad8238293c699568bef03042e0dd72176a2029b74825ced"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/auth/__init__.py",
+        "sha256": "d17096c7b127f84083cb51f8c81743fb230e507ae3346c39d080391547edd14c"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/cli.py",
+        "sha256": "a3cbbd6aed63507df642712a1bb5f1e458ffbf543ede2d05c13ceaf38fed262c"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/common.py",
+        "sha256": "9483672e992d45423ba163a4aebbb9fc505d6b455cdb473d2eee97d7d83000d8"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/integration/__init__.py",
+        "sha256": "80d09620911af4f6b9c8d899efbf2223ff1614d4360c695ed122c7f4ede3b256"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/integration/events.py",
+        "sha256": "2fa71a64530c01842705d9df4778daa4bba5bc43494c7e5be3cb2b5df8e83a58"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/integration/petition_restrictions.py",
+        "sha256": "ef4c9651b2598514927df608bc5b0d5d4ddf24dadcde976934170877ef9b1042"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/integration/s4_accounts.py",
+        "sha256": "7498e7fc724c9e06ab8b992e872cb316375f1cf2ae3dc782914ea0dd77ec0176"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/models.py",
+        "sha256": "ded792c7b6e88c139348b90d97185221b6fcfefe91ae7b5ef0afd7e5805cdc03"
+      },
+      {
+        "path": "haedam-portal-backend/src/haedam_portal/petitions/__init__.py",
+        "sha256": "44d347ed90310be2a5d3c9a859849cecb2ef5abfc59089d5abc6e9bab491b7ca"
+      },
+      {
+        "path": "infra/graylog/notifications/s1-n8n-haedam-s1.json",
+        "sha256": "3491529e28e23bd479f0e7fd0b332c7a2e4c2d13d0876c14ca51be05f0d291da"
+      },
+      {
+        "path": "infra/n8n/s4-src/account.js",
+        "sha256": "2ed92f7ba45add3976ddc07dcf79aea0a3632af0723971e05d2ea7692ecf4064"
+      },
+      {
+        "path": "infra/n8n/s4-src/flow.js",
+        "sha256": "337956be69468577a4eb84f730dbeb6b3823c50dd0a0996143910edc03a1d93d"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-00-recv-check.json",
+        "sha256": "5ea86910acd21fa4d540b024b97d24318a66a4ff009d52b2a83a7d09cc18f46d"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-01-ticket-check.json",
+        "sha256": "a7809f35521e6310e812f58bed5418f8c5a64140ef5494a21b0ee3508e057179"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-02-portal-test.json",
+        "sha256": "50169039ab272275bab4eef3a2ffc34b0e650853941c1f2ef32ce4e4d092657f"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-10-result-log.json",
+        "sha256": "beeb6f298cfd6484c9296856530486d31cafab49657196a25e2060d71d2d63db"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-11-discord-notify.json",
+        "sha256": "6186d35bf42a0a662df7935b8d67bbfc4dc1ff0371f29f22a41c6153e8d8394a"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-12-portal-ip-block.json",
+        "sha256": "a305f650d9db08d91c52524bf694d5fc5d8114eff436736f0354afb3587fe558"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-13-portal-account-lock.json",
+        "sha256": "ddacca5387edaf9b1fcc83b59366886d4dfbb26cf0feb22f187e52d1f0684a7e"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-14-pfsense-block.json",
+        "sha256": "9a0827c866339c72ae3703085018e2e2c6818d2f80813a690912d86281ef96b3"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-15-wazuh-restore.json",
+        "sha256": "e545aca12b5fb21961db5d50963a96260a1eec04a20c686f6709aaf749153143"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-16-ticket-decision-offline.json",
+        "sha256": "56f2e5d2010b334dfdcb7bd6760cc5203617c021fb8d0c489571a80f28bc8eb4"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-17-wazuh-token.json",
+        "sha256": "87eca7b05d82fce3c19055c8792a8a9609d125ab094342ee2a9b993b8fc3349f"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-20-s12-main.json",
+        "sha256": "0ee98b63b1abb1fa2366b9355856ed65945b813855ccd58ea3c82c532a6940d1"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-30-s1-main.json",
+        "sha256": "b736bb84e20ae1eb4d2a29546e650edc4d353cb37bbb211f0933b8c3f1423711"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-31-s4-main.json",
+        "sha256": "5103c3b971fe42071f28a724bf26c89ef288ad6fd4e33654618bbd8705f64f30"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-32-s8-s10-main.json",
+        "sha256": "07447c105aa33ff65420574609e7f331b08687da2d9954147c67d27fba9f671f"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-33-s7-main.json",
+        "sha256": "548c0ffb3eb9c61db2f9fe39c06836599f809fc0490fd6cff257e8fd26e8ea26"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-34-s7-live-acceptance.json",
+        "sha256": "544eaa2bee30e5b0f85b8ec1a9b41cdd7a78ecbd11c976844c8e887bbba175d8"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-40-effect-report.json",
+        "sha256": "c3a19a7ef3d07992a3b695bd4699fbd2dd1b4fd8ca2f35c215099d9a595a0a86"
+      },
+      {
+        "path": "infra/n8n/workflows/haedam-50-release.json",
+        "sha256": "6c09a8ecf23650c3319269cc37d732dcc39ea7933f678a109b4dbdc2f20292f0"
+      },
+      {
+        "path": "infra/s4-integration-settings.json",
+        "sha256": "18845626328560fc3ae53d7053eb6ddfcdf8081e88caf4ca35c68d19cb98fcfe"
+      },
+      {
+        "path": "lab/s1s4/graylog/s4-fail-then-success.json",
+        "sha256": "f1847e685dd67ee4009608de7bb77091cb993419395eba970bffe823644a1158"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/__init__.py",
+        "sha256": "bf5570bfa469f4091ffe3caffef47ef2c0d1c1d7417746baba985f55214c1cf5"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/__main__.py",
+        "sha256": "70602dfabfffca216c6da39c3bce85cfd0aee309987fa7d05e9c08981eb9128c"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/api_n8n.py",
+        "sha256": "b995d6d7de0bc6f30edc7867b6856a3d14fb4adcf9c5169ea985d4a7b287db50"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/api_read.py",
+        "sha256": "ca44d9cb62d071c36f9d6083b23592cc15434282eba88130b5fe5f8ebe2d8aa4"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/app.py",
+        "sha256": "95fb24bc92aa82fada4c31f3648aac3400bf258f8999a49367ab2712236ae80c"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/core.py",
+        "sha256": "2cf6e2a73d1097e76cac15da5dfde1d8437084dd85cae1a943bbcb9926407fdf"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/dashboard.py",
+        "sha256": "f9037c7876878a1781143f74165588a8c470970c732bf04ab36c748857500c00"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/db.py",
+        "sha256": "ca467ab9e424d61d59804084f24fc2f6a77ac64fe679858622a4d39ddc33eaba"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/s12_measurements.py",
+        "sha256": "ff741e27e6d87d2a9f997fa3d98a8917c68a765d79f7452ce3edfab147693657"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/samples.py",
+        "sha256": "9f2d58771853485e558193578c92f2f80796bc52c7b699ed2ef24ded63b17080"
+      },
+      {
+        "path": "services/ticket-store/ticket_store/validate.py",
+        "sha256": "9017125c238cb85d9c9042027175a2f6c494e628b0bf4cbd6332e86ddbba0181"
+      },
+      {
+        "path": "tools/build_s4_workflows.py",
+        "sha256": "71953e6fdd13b28b145893d840d2b4af0b78488c86cee76ed560bd3095e24a45"
+      },
+      {
+        "path": "tools/s1_client.py",
+        "sha256": "e911b65b76a55022c84668d3aeb1c9db97cdfe085e87ab0ef4b61b48bc9c3583"
+      },
+      {
+        "path": "tools/s1_settings.py",
+        "sha256": "6abbe04acc5f4f36ef1ce446d94d90d39cda1ce086b5ebdcb261b07df1c3d926"
+      },
+      {
+        "path": "tools/s4_client.py",
+        "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+      },
+      {
+        "path": "tools/s4_collect.py",
+        "sha256": "1ffe4d7cd3d83e1006b95951e10c67103e9d1f4fbb021f9337f5ebebbd9bb349"
+      },
+      {
+        "path": "tools/s4_evidence.py",
+        "sha256": "d4030428a9285fb503fe4f49f64ec2d532b92d29cd1d231a927f82c5109e15d8"
+      },
+      {
+        "path": "tools/s4_lab.py",
+        "sha256": "e1e6b58d2d390c1bcc1189b9ec9c98e496916138ee2bfc795d7bb588b98a9055"
+      },
+      {
+        "path": "tools/s4_probe.py",
+        "sha256": "53d9be8bde21ddc29491cd9e74a7b8d62849ed0f8be6c56ae7a1afbee8890019"
+      },
+      {
+        "path": "tools/s4_rehearsal.py",
+        "sha256": "61cfb87f95211cdca4f2428c5c1050946d0cbde082f37fb5a8620e72739a9f59"
+      },
+      {
+        "path": "tools/s4_settings.py",
+        "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+      }
+    ]
+  },
+  "authorization": [
+    {
+      "endpoint": "respond",
+      "case": "missing",
+      "status": 403
+    },
+    {
+      "endpoint": "respond",
+      "case": "wrong",
+      "status": 403
+    },
+    {
+      "endpoint": "respond",
+      "case": "malformed",
+      "status": 400
+    },
+    {
+      "endpoint": "release",
+      "case": "missing",
+      "status": 403
+    },
+    {
+      "endpoint": "release",
+      "case": "wrong",
+      "status": 403
+    },
+    {
+      "endpoint": "release",
+      "case": "malformed",
+      "status": 400
+    }
+  ],
+  "boundary_input": {
+    "case_id": "S4",
+    "run_id": "s4fix20261110",
+    "profile": "boundary5",
+    "mode": "actual_http_input",
+    "project": "haedam-s4-fix",
+    "settings_sha256": "a8626897a421ca6e43c0b2c9cbe68c66a1e2561a603ef90cf736d222e5987df1",
+    "client": "attacker",
+    "source_ip": "172.30.115.21",
+    "target_ip": "172.30.115.10",
+    "target_port": 5000,
+    "username": "zz_s4_target",
+    "expected_login_statuses": [
+      401,
+      401,
+      401,
+      401,
+      200
+    ],
+    "maximum_login_attempts": 5,
+    "maximum_http_requests": 12,
+    "interval_seconds": 10,
+    "minimum_input_span_seconds": 40,
+    "observation_seconds": 660,
+    "observation_basis": "last_required_login_received_by_Graylog_not_client_finish",
+    "expected_detection": false,
+    "requires_clean_key_window_seconds": 600,
+    "automatic_retry": false,
+    "response_api_called": false,
+    "end_to_end_status": "not_run",
+    "status": "input_complete",
+    "started_at": "2026-11-10T07:59:20.665+00:00",
+    "records": [
+      {
+        "operation": "health",
+        "status": 200,
+        "error_code": null,
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T07:59:20.673+00:00",
+        "finished_at": "2026-11-10T07:59:20.684+00:00",
+        "elapsed_seconds": 0.011424
+      },
+      {
+        "operation": "session",
+        "status": 200,
+        "error_code": null,
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T07:59:20.690+00:00",
+        "finished_at": "2026-11-10T07:59:20.698+00:00",
+        "elapsed_seconds": 0.008714
+      },
+      {
+        "operation": "login",
+        "status": 401,
+        "error_code": "INVALID_CREDENTIALS",
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T07:59:20.703+00:00",
+        "finished_at": "2026-11-10T07:59:20.788+00:00",
+        "elapsed_seconds": 0.084777
+      },
+      {
+        "operation": "session",
+        "status": 200,
+        "error_code": null,
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T07:59:30.799+00:00",
+        "finished_at": "2026-11-10T07:59:30.808+00:00",
+        "elapsed_seconds": 0.009437
+      },
+      {
+        "operation": "login",
+        "status": 401,
+        "error_code": "INVALID_CREDENTIALS",
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T07:59:30.813+00:00",
+        "finished_at": "2026-11-10T07:59:30.900+00:00",
+        "elapsed_seconds": 0.087167
+      },
+      {
+        "operation": "session",
+        "status": 200,
+        "error_code": null,
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T07:59:40.908+00:00",
+        "finished_at": "2026-11-10T07:59:40.919+00:00",
+        "elapsed_seconds": 0.01047
+      },
+      {
+        "operation": "login",
+        "status": 401,
+        "error_code": "INVALID_CREDENTIALS",
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T07:59:40.923+00:00",
+        "finished_at": "2026-11-10T07:59:41.006+00:00",
+        "elapsed_seconds": 0.083391
+      },
+      {
+        "operation": "session",
+        "status": 200,
+        "error_code": null,
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T07:59:51.014+00:00",
+        "finished_at": "2026-11-10T07:59:51.026+00:00",
+        "elapsed_seconds": 0.012169
+      },
+      {
+        "operation": "login",
+        "status": 401,
+        "error_code": "INVALID_CREDENTIALS",
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T07:59:51.032+00:00",
+        "finished_at": "2026-11-10T07:59:51.118+00:00",
+        "elapsed_seconds": 0.086597
+      },
+      {
+        "operation": "session",
+        "status": 200,
+        "error_code": null,
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T08:00:01.129+00:00",
+        "finished_at": "2026-11-10T08:00:01.141+00:00",
+        "elapsed_seconds": 0.011836
+      },
+      {
+        "operation": "login",
+        "status": 200,
+        "error_code": null,
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T08:00:01.145+00:00",
+        "finished_at": "2026-11-10T08:00:01.235+00:00",
+        "elapsed_seconds": 0.089224
+      },
+      {
+        "operation": "session",
+        "status": 200,
+        "error_code": null,
+        "source_ip": "172.30.115.21",
+        "started_at": "2026-11-10T08:00:01.240+00:00",
+        "finished_at": "2026-11-10T08:00:01.244+00:00",
+        "elapsed_seconds": 0.004182
+      }
+    ],
+    "observed_login_statuses": [
+      401,
+      401,
+      401,
+      401,
+      200
+    ],
+    "authenticated_identity_checks": 1,
+    "source_sha256": [
+      {
+        "path": "s4_client.py",
+        "sha256": "c41d55ff405adcedecf7a2c72644d8a2dc9f35c260906614b86b809753eb3420"
+      },
+      {
+        "path": "s4_settings.py",
+        "sha256": "6cfad0cd602f0bbfbd2f4f85be8568d0b4cbe84a0a82d781bf46a5bd5ef316f1"
+      },
+      {
+        "path": "s1_client.py",
+        "sha256": "e911b65b76a55022c84668d3aeb1c9db97cdfe085e87ab0ef4b61b48bc9c3583"
+      }
+    ],
+    "finished_at": "2026-11-10T08:00:01.252+00:00"
+  },
+  "boundary_logs": {
+    "at": "2026-11-10T08:00:01.960098+00:00",
+    "total": 5,
+    "messages": [
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "e1876c10-8e73-45a0-80ce-8243db2fb8cf",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-bruteforce",
+        "_id": "a2d3a051-dcdc-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T07:59:20.787Z",
+        "username": "zz_s4_target",
+        "status": 401
+      },
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "cdd0adcb-e3b9-46dd-a6be-54418da03b49",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-bruteforce",
+        "_id": "a8da9850-dcdc-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T07:59:30.900Z",
+        "username": "zz_s4_target",
+        "status": 401
+      },
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "45b4862e-0fc9-44c4-9b67-6bfe69128f75",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-bruteforce",
+        "_id": "aee0cd00-dcdc-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T07:59:41.006Z",
+        "username": "zz_s4_target",
+        "status": 401
+      },
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "40c09d19-1832-4313-9d4c-07201870bd06",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-bruteforce",
+        "_id": "b4e7c500-dcdc-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T07:59:51.118Z",
+        "username": "zz_s4_target",
+        "status": 401
+      },
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "106c2a47-c2e9-4f30-913d-f8e6abcc830e",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-success",
+        "_id": "baef3231-dcdc-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T08:00:01.234Z",
+        "username": "zz_s4_target",
+        "status": 200
+      }
+    ]
+  },
+  "boundary_observation": {
+    "deadline_epoch": 1794298261.9606292,
+    "checks": [
+      {
+        "at": "2026-11-10T08:00:02.238771+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:00:32.277294+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:01:02.342918+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:01:32.383414+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:02:02.446990+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:02:32.478647+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:03:02.533936+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:03:32.582515+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:04:02.614069+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:04:32.650534+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:05:02.685800+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:05:32.734053+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:06:02.784351+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:06:32.827631+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:07:02.861027+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:07:32.902999+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:08:02.953360+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:08:32.985775+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:09:03.019382+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:09:33.045984+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:10:03.088821+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:10:33.142664+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:11:02.025521+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      },
+      {
+        "at": "2026-11-10T08:11:09.204324+00:00",
+        "event_count": 0,
+        "ticket_count": 0,
+        "definition_state": "ENABLED"
+      }
+    ],
+    "complete": true,
+    "final_window_count": 0
+  },
+  "trigger_logs": {
+    "at": "2026-11-10T08:12:25.956162+00:00",
+    "total": 6,
+    "messages": [
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "0cabd247-6f2e-4897-bbd7-c80abf0c36eb",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-bruteforce",
+        "_id": "498ffe61-dcde-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T08:11:10.020Z",
+        "username": "zz_s4_target",
+        "status": 401
+      },
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "c78af71b-8509-42e2-8fab-9dd86aa25d82",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-bruteforce",
+        "_id": "4f9c74a0-dcde-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T08:11:20.168Z",
+        "username": "zz_s4_target",
+        "status": 401
+      },
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "668555cd-3a76-46d0-a38a-be7552c6960a",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-bruteforce",
+        "_id": "55aa2361-dcde-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T08:11:30.323Z",
+        "username": "zz_s4_target",
+        "status": 401
+      },
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "8bb1f5b2-608c-45d2-b964-d89e47f8db2b",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-bruteforce",
+        "_id": "5bbc17e1-dcde-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T08:11:40.508Z",
+        "username": "zz_s4_target",
+        "status": 401
+      },
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "444ed2d6-2a17-4ba4-832b-d635676ea5f5",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-bruteforce",
+        "_id": "61c6e071-dcde-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T08:11:50.646Z",
+        "username": "zz_s4_target",
+        "status": 401
+      },
+      {
+        "src_ip": "172.30.115.21",
+        "event_id": "de7671b0-52bf-44d9-8e31-309f1eada190",
+        "streams": [
+          "000000000000000000000001",
+          "6af2ce9a4152f239ec7824ea"
+        ],
+        "rule": "login-success",
+        "_id": "67ce9bc0-dcde-11f1-968b-82819781184f",
+        "gl2_source_input": "6af2ce9a4152f239ec7824e5",
+        "timestamp": "2026-11-10T08:12:00.762Z",
+        "username": "zz_s4_target",
+        "status": 200
+      }
+    ]
+  },
+  "network": {
+    "at": "2026-11-10T07:59:17.994342+00:00",
+    "published_ports": {
+      "graylog": "127.0.0.1:19170",
+      "n8n": "127.0.0.1:15770",
+      "portal": "127.0.0.1:15070",
+      "ticket-store": "127.0.0.1:18170"
+    },
+    "attacker_has_default_route": false
+  },
+  "post_release_audit": {
+    "at": "2026-11-10T08:13:14.645960+00:00",
+    "portal_db": {
+      "target_locked": false,
+      "normal_locked": false,
+      "target_active_sessions": 1,
+      "normal_active_sessions": 3,
+      "s4_claim_rows": 0,
+      "old_session_rows_present": {
+        "target1": false,
+        "target2": false,
+        "normal": true
+      },
+      "active_ip_blocks": 0
+    },
+    "n8n_db": {
+      "execution_rows": 0,
+      "payload_rows": 0
+    }
+  },
+  "environment": {
+    "at": "2026-11-10T08:15:29.093369+00:00",
+    "containers": [
+      {
+        "name": "gl-graylog",
+        "same_container": true,
+        "running": true,
+        "health": "healthy",
+        "oom": false
+      },
+      {
+        "name": "gl-mongo",
+        "same_container": true,
+        "running": true,
+        "health": null,
+        "oom": false
+      },
+      {
+        "name": "gl-opensearch",
+        "same_container": true,
+        "running": true,
+        "health": null,
+        "oom": false
+      },
+      {
+        "name": "wazuh-dashboard",
+        "same_container": true,
+        "running": true,
+        "health": null,
+        "oom": false
+      },
+      {
+        "name": "wazuh-manager",
+        "same_container": true,
+        "running": true,
+        "health": null,
+        "oom": false
+      },
+      {
+        "name": "wazuh-indexer",
+        "same_container": true,
+        "running": true,
+        "health": null,
+        "oom": false
+      }
+    ],
+    "service_checks": {
+      "graylog": 200,
+      "wazuh_dashboard": 200,
+      "mysql_tcp": true
+    },
+    "wazuh_core_processes_running": true,
+    "mysql_unchanged": true,
+    "vm_unchanged": true,
+    "own_s4_stopped": true,
+    "first_s4_run_stopped": true,
+    "restored": true
+  },
+  "timing": {
+    "condition_met_at": "2026-11-10T08:12:00.762000+00:00",
+    "detected_at": "2026-11-10T08:12:22.054000+00:00",
+    "lock_api_finished_at": "2026-11-10T08:12:23.496000+00:00",
+    "condition_to_detection_seconds": 21.292,
+    "condition_to_lock_api_seconds": 22.734,
+    "note": "One live run. Client/session effects and ticket state are independently checked; not a performance average."
+  }
+}
