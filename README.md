@@ -106,13 +106,41 @@ flowchart LR
 - **pfSense:** CE 2.7.2를 컨테이너 안 QEMU VM(소프트웨어 에뮬레이션)으로 띄웠습니다. n8n은 고정 호스트 키 SSH relay로 팀 pfSense 제한 도구만 호출합니다.
 - **설정:** 주소·포트·경로는 `infra/*-settings.json`, 비밀값은 Git 밖 `.env*`에서 읽습니다. 게시 포트는 모두 `127.0.0.1`입니다.
 
+<details>
+<summary><b>PPT로 보는 상세 아키텍처·망 구조·포트 구성</b></summary>
+
+PPT r7의 6·7·10·11장을 이미지로 옮겼습니다. 구성도와 설정 표이며 실제 대시보드 캡처와 구분합니다. 이미지를 누르면 크게 볼 수 있습니다.
+
+**S7 서비스 연결과 Docker 망**
+
+![S7 상세 서비스 아키텍처 — Wazuh에서 Graylog·n8n·티켓·대응까지](docs/images/readme-s7-architecture.png)
+
+![S7 Docker 네트워크와 서비스 배치](docs/images/readme-s7-network.png)
+
+S7 CIDR은 11/10 보존된 개인 랩의 관측값입니다. Docker 자동 할당 주소는 새 설치에서 달라질 수 있으며, 서비스 간 연결은 Docker DNS를 사용합니다.
+
+**호스트 접속 포트와 내부 통신 포트**
+
+![S7·S8·H1 호스트 접근 포트](docs/images/readme-host-ports.png)
+
+![로그 전달·자동 대응·DB 내부 통신 포트](docs/images/readme-internal-ports.png)
+
+호스트 포트 표의 범위는 S7·S8·H1입니다. 다른 사례의 접속 주소와 실제 설치 설정은 [사례별 랩](#사례별-랩)과 [설치 가이드](docs/installation-guide.md)를 확인합니다. [이미지 출처와 PPT 장 번호](docs/images/README.md).
+
+</details>
 
 ## 실제 화면
+
+PPT에 사용한 **n8n·Graylog 실제 화면**과 **해담 보안 대시보드·Wazuh 요약 슬라이드**를 함께 볼 수 있습니다. 각 캡션의 사례·촬영 환경을 기준으로 읽어 주세요.
 
 <table>
 <tr>
 <td width="50%"><img src="docs/evidence/s12-20261111/n8n-respond.jpg" alt="S12 실제 n8n 대응 노드"><br><sub><b>11/11 n8n</b> · S12 요청 수 초과 뒤 실제 health 지연을 확인하고 티켓·차단으로 연결한 게시 워크플로</sub></td>
 <td width="50%"><img src="docs/evidence/s12-20261111/graylog-events.jpg" alt="S12 Graylog 실제 집계 이벤트"><br><sub><b>11/11 Graylog</b> · 통제 경합 시험의 116건 이벤트와 정상 상태 대조. 요청 수 초과만으로 차단하지 않음</sub></td>
+</tr>
+<tr>
+<td><a href="docs/images/readme-security-dashboard.png"><img src="docs/images/readme-security-dashboard.png" alt="PPT 23장 — 해담 보안 대시보드 S12 티켓 원복"></a><br><sub><b>해담 보안 대시보드 · PPT 23장</b> · S12 동일 티켓 restored. UI MTTD/MTTR은 미측정이며 효과·시간은 별도 실측 증적으로 확인.</sub><br><a href="docs/evidence/s12-20261111/ticket-restored.jpg">전체 원본 캡처</a> · <a href="docs/s12-results.md">S12 실측 결과</a></td>
+<td><a href="docs/images/readme-wazuh-dashboard.png"><img src="docs/images/readme-wazuh-dashboard.png" alt="PPT 24장 — 기존 관제 Wazuh Overview"></a><br><sub><b>Wazuh · PPT 24장</b> · 11/11 기존 관제 환경: 활성 에이전트 1개·연결 끊김 0개. 개인 S7 동일 회차의 경보 화면은 아님.</sub><br><a href="docs/evidence/wazuh-overview-20261111.jpg">전체 원본 캡처</a> · <a href="docs/panel-results-20261110.md">개인 S7 실측 결과</a></td>
 </tr>
 <tr>
 <td width="50%"><img src="docs/evidence/s1-graylog-trigger9-20261110.jpg" alt="S1 Graylog 로그인 실패 9건"><br><sub><b>S1</b> · Graylog에서 같은 합성 계정의 실제 로그인 실패 9건(100초 간격)</sub></td>
