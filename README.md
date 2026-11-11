@@ -22,11 +22,18 @@
 
 ![공격·탐지·대응·원복 플로우](docs/images/readme-flow.png)
 
-팀 캡스톤 [NoBugs-Aleph/aleph-soar-capstone](https://github.com/NoBugs-Aleph/aleph-soar-capstone)([공개 소개](https://github.com/NoBugs-Aleph/aleph-soar-public))은 학원 PC 두 대와 VMware 내부망에 나뉘어 있었습니다. 이 저장소는 그 구성을 **PC 한 대의 Docker 랩으로 처음부터 다시 설치**하고, 사례마다 새 볼륨에서 탐지·대응·원복을 실측한 개인 포트폴리오입니다. 팀원 코드는 출처를 밝혀 재사용했습니다([출처와 기여](docs/sources.md)).
+**팀 원본:** [NoBugs-Aleph/aleph-soar-capstone](https://github.com/NoBugs-Aleph/aleph-soar-capstone) · [공개 소개](https://github.com/NoBugs-Aleph/aleph-soar-public). **팀원:** 김명준·반소람·김상혁·김대훈. **본인 역할:** 김명준, 팀 조장·React/Flask 포털 구현·S8/S10 시험 입력과 효과·원복 검증. [팀원별 담당](#팀과-역할)과 [코드·자료 출처](docs/sources.md)를 구분해 기록했습니다.
+
+팀 PC 두 대와 VMware 내부망에 나뉘어 있던 구성을 **PC 한 대에서 사례별 Docker 랩으로 재현**한 개인 포트폴리오입니다. 새 볼륨 설치와 수정본 재게시 후 재실측은 각 결과 문서에서 구분합니다. pfSense는 Docker 안 QEMU VM이며, 최종 새 클론에서 다섯 구성 전체를 다시 기동하는 검증은 아직 남아 있습니다.
+
+**최신 제출 자료 · 2026-11-11:** [PPT r7 · 34장](output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261111-r7.pptx) · [제출 ZIP](output/submission/김명준-개인포트폴리오-제출자료-20261111.zip) · [설치 순서](docs/installation-guide.md) · [제출 전 확인](docs/submission-readiness-20261111.md)
+
+현재 최신 후보는 `codex/s12-personal-live`입니다. [PR #30](https://github.com/myeongjundev/haedam-soar-portfolio/pull/30) → [PR #31](https://github.com/myeongjundev/haedam-soar-portfolio/pull/31)이 아직 미병합이므로 현재 main과 구분합니다. 저장소는 비공개이며 평가자 접근 확인이 필요합니다.
 
 ## 목차
 
 - [한눈에 보기](#한눈에-보기)
+- [최신 설치·자료 검증](#최신-설치자료-검증)
 - [동작 흐름](#동작-흐름)
 - [개인 랩 구성](#개인-랩-구성)
 - [실제 화면](#실제-화면)
@@ -51,12 +58,26 @@
 
 > 사례 이름을 누르면 결과 문서로 이동합니다. 시간은 모두 **개인 1회 관측값**이며 평균이나 보장값이 아닙니다. 성공은 API 200이 아니라 별도 클라이언트 요청으로 확인한 실제 효과(403·429·연결 끊김·해시 복구)와 원복 뒤 정상 응답으로 판정했습니다. 같은 이벤트 재전송은 추가 조치를 만들지 않았고, 오래된 티켓으로는 원복할 수 없었습니다. 실행 ID와 원천 증적은 각 결과 문서와 [`docs/evidence`](docs/evidence)에 있습니다.
 
+## 최신 설치·자료 검증
+
+11/11 새 원격 클론 `ea7b419`에서 확인했습니다. 아래 검사는 기존 Docker·VM을 기동·정지·변경하지 않은 호스트 검사이며, 위 사례별 실제 실측과 구분합니다. [명령·검사 범위](docs/installation-audit-20261111.md).
+
+| 항목 | 확인 결과 |
+| --- | --- |
+| 새 개발 환경 | Python 3.12 새 가상환경·잠금 의존성·SQLite 마이그레이션 4개 |
+| 저장소 테스트 | **241 passed · 125 subtests passed** |
+| 백엔드 테스트 | **95 passed · 6 skipped** — 외부 MySQL용 시험 제외 |
+| 설정과 생성물 | Compose 7개 조합 해석·게시 포트 localhost, 워크플로 생성기 7종 일치, JSON 164개 파싱 |
+| 발표 자료 | **PPT r7 34장**, PowerPoint 실제 열기·표지 슬라이드 쇼·24/28/30장 표시 확인 |
+| 남은 설치 검증 | 최종 새 클론의 전체 서비스 기동과 해당 버전 재실측 |
+
 ## 동작 흐름
 
 ```mermaid
 flowchart LR
-  C["공격·정상 클라이언트<br/>허용된 시험 입력"] --> PF["pfSense VM<br/>경계 필터·차단 로그"]
+  C["공격·정상 클라이언트<br/>허용된 시험 입력"] -->|"S10 경계 경로"| PF["pfSense VM<br/>경계 필터·차단 로그"]
   PF --> P["React·Flask 민원포털<br/>앱 이벤트(GELF)"]
+  C -->|"그 외 사례의 전용 클라이언트망"| P
   P --> G["Graylog<br/>상관 탐지"]
   W["Wazuh<br/>파일 무결성 경보"] --> G
   G -->|"인증 웹훅"| N["n8n<br/>대응 워크플로"]
@@ -90,6 +111,10 @@ flowchart LR
 
 <table>
 <tr>
+<td width="50%"><img src="docs/evidence/s12-20261111/n8n-respond.jpg" alt="S12 실제 n8n 대응 노드"><br><sub><b>11/11 n8n</b> · S12 요청 수 초과 뒤 실제 health 지연을 확인하고 티켓·차단으로 연결한 게시 워크플로</sub></td>
+<td width="50%"><img src="docs/evidence/s12-20261111/graylog-events.jpg" alt="S12 Graylog 실제 집계 이벤트"><br><sub><b>11/11 Graylog</b> · 통제 경합 시험의 116건 이벤트와 정상 상태 대조. 요청 수 초과만으로 차단하지 않음</sub></td>
+</tr>
+<tr>
 <td width="50%"><img src="docs/evidence/s1-graylog-trigger9-20261110.jpg" alt="S1 Graylog 로그인 실패 9건"><br><sub><b>S1</b> · Graylog에서 같은 합성 계정의 실제 로그인 실패 9건(100초 간격)</sub></td>
 <td width="50%"><img src="docs/evidence/s10-ticket-restored-20261110.jpg" alt="S10 티켓 원복"><br><sub><b>S10</b> · 티켓 T-20261110-0003: 포털·pfSense 차단과 해제 기록, 상태 restored</sub></td>
 </tr>
@@ -107,6 +132,17 @@ flowchart LR
 </tr>
 </table>
 
+<details>
+<summary><b>Wazuh 실제 화면과 PowerPoint 확인</b> · 11/11 추가</summary>
+
+[Wazuh Overview 원본](docs/evidence/wazuh-overview-20261111.jpg)은 기존 관제 환경의 활성 에이전트 1개·연결 끊김 0개, 최근 24시간 경보를 캡처한 화면입니다. 개인 S7 동일 회차의 경보 UI와 구분하며, 개인 S7 원천 경보 ID와 효과는 위 실측 문서로 대조합니다.
+
+![PPT r7 Wazuh 장을 PowerPoint에서 확인](docs/evidence/ppt-r7-wazuh-powerpoint-20261111.jpg)
+
+PPT r7 24장에 실제 Wazuh 화면과 적용 범위를 넣었습니다. n8n·Graylog·해담 보안 대시보드 실제 화면은 21~23장에 있습니다.
+
+</details>
+
 ## 팀과 역할
 
 | 팀원 | 담당 |
@@ -116,7 +152,7 @@ flowchart LR
 | 김상혁 (@shk12170-dev) | C. S7 파일 무결성, Wazuh, 티켓 저장소 |
 | 김대훈 (@chacha1650a) | D. S12 가용성, Graylog·n8n 관제 연동 |
 
-개인 전환에서는 팀 PC 두 대에 나뉘어 있던 구성을 한 대에서 새 볼륨으로 다시 설치하고, S8·H1·S7·P04/S10·S1을 실제 요청으로 재현했습니다. H1은 반소람 님의 시청 업무 보안 제안을 개인 환경에 구현한 추가 사례입니다.
+개인 전환에서는 S1·S4·개인 S7·S8·P04/S10·통제 조건 S12와 추가 H1을 실제 요청으로 재현했습니다. 설정·배포 생성, 대상·티켓 소유권 검사, 세션·정상 사용자 대조, 원복 증적과 실습 제어판을 보완했습니다. S4의 HTTP 본문 누락은 실제 실패를 재현해 조회/변경 노드를 분리한 뒤 재실측했습니다. H1과 제어판 흐름은 반소람 님의 공유 제안에서 채택했으며, [개인 기여·문제 해결·회고](docs/application-materials.md)에 근거를 정리했습니다.
 
 ## 설치와 실행
 
@@ -180,6 +216,8 @@ fi
 ### 사례별 랩
 
 각 사례는 별도 Docker 프로젝트·포트·볼륨을 사용합니다. 메모리가 작은 PC에서는 하나씩 실행하고, 도구는 다른 프로젝트를 자동으로 멈추지 않습니다.
+
+**새 clone만으로 기존 Docker 프로젝트가 분리되지는 않습니다.** 같은 프로젝트 이름의 컨테이너·볼륨이 남아 있으면 새 설치 대신 재사용·교체될 수 있습니다. 기존 환경을 유지해야 할 때는 별도 PC에서 재현하거나, 각 도구가 지원하는 프로젝트 설정과 충돌을 먼저 확인합니다.
 
 <details>
 <summary><b>S8</b> · 웹 탐색·로그인 반복 → 포털 IP 차단·티켓·원복</summary>
@@ -285,7 +323,7 @@ py -3.12 tools/s10_verify.py               # S10 실제 경로
 py -3.12 tools/s10_failures.py             # 티켓 저장소·relay 장애
 ```
 
-pfSense ISO는 Git에 넣지 않습니다. 실행 중에는 기존 관제 스택을 멈춥니다. 시험 대상은 팀 도구가 허용하는 개인 랩 출발지 하나입니다. [실측 결과](docs/s10-results-20261110.md) · [인수인계](docs/s10-handoff-20261110.md).
+pfSense ISO는 Git에 넣지 않습니다. 11/10 실측은 사용자가 허용한 기존 관제 스택을 일시 중지한 뒤 복원한 결과입니다. 재실행 시에는 자원과 작업 범위를 별도로 확인하며 기존 스택을 자동으로 멈추지 않습니다. 시험 대상은 팀 도구가 허용하는 개인 랩 출발지 하나입니다. [실측 결과](docs/s10-results-20261110.md) · [인수인계](docs/s10-handoff-20261110.md).
 
 </details>
 
@@ -324,11 +362,11 @@ PPT에는 플로우차트, 상세 아키텍처, Docker·pfSense 망 구조, 포�
 - **S12는 통제된 자원 경합 시험입니다.** 11/11 요청 증가와 실제 health 지연을 함께 확인해 차단·티켓·원복을 실측했습니다. 운영 DDoS 방어 성능이나 지속 공격 중 처리량 검증으로 확대하지 않습니다. [개인 설치·실행](docs/s12-lab.md), [결과와 한계](docs/s12-results.md).
 - **새 clone 전체 기동 재현은 오프라인 점검까지입니다.** 설치·시험·Compose 설정 해석은 통과했지만, 최종 버전을 새 clone에서 실제로 띄워 다섯 구성을 다시 확인하지는 않았습니다.
 - **티켓의 효과 확인·MTTD/MTTR은 비어 있습니다.** 실제 효과는 검증기의 클라이언트 요청으로 확인했고, 외부 Discord 알림은 보내지 않았습니다.
-- **수치는 1회 관측값입니다.** 반복 측정, 임계값 기준선, Graylog 알림 재시도·n8n 중단 같은 남은 장애 실측은 개선 과제입니다.
+- **수치는 1회 관측값입니다.** S12 기준선은 해당 개인 랩에서 측정했습니다. 새 환경 기준선 재측정, 반복 측정, Graylog 알림 재시도·n8n 중단 같은 남은 장애 실측은 개선 과제입니다.
 - **부분 실패 복구는 운영자 명령 중심입니다.** 기록 재시도 큐와 상태 대조 자동화가 다음 단계입니다.
 
 ## 작업 방식
 
-[공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 따라 작업별 PR을 열고, 개인 작업일지(`work-log/members/myeongjundev/`)에 실제 확인 결과와 미검증 부분을 기록했습니다. 개인 전환 작업은 AI 코딩 도구를 함께 사용했습니다. Codex는 구현·재현·자료 정리를, Claude는 독립 검토·실패 분석·pfSense/S10 작업을 맡았고, 범위 결정과 결과 확인, 병합은 김명준이 했습니다. 같은 GitHub 계정의 PR 코멘트는 다른 사람의 승인으로 표시하지 않습니다. 새 작업은 [첫 문제 해결 카드](docs/claude-first-task.md)에서 시작합니다.
+[공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 따라 작업별 PR을 열고, 개인 작업일지(`work-log/members/myeongjundev/`)에 실제 확인 결과와 미검증 부분을 기록했습니다. 개인 전환 작업은 AI 코딩 도구를 함께 사용했습니다. Codex는 구현·재현·자료 정리를, Claude는 독립 검토·실패 분석·pfSense/S10 작업을 맡았고, 범위 결정과 결과 확인, 병합은 김명준이 합니다. 같은 GitHub 계정의 PR 코멘트는 다른 사람의 승인으로 표시하지 않습니다. 다음 작업과 병합 순서는 [최신 제출 안내](docs/submission-readiness-20261111.md)를 따릅니다.
 
 최신 제출 목표는 **2026-11-11 수요일 오전(KST)**입니다. 11/11 사용자 지시로 이전 17:30 계획을 앞당겼습니다.
