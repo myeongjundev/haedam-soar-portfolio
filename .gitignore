@@ -24,3 +24,5 @@ __pycache__/
 *.ovpn
 *.p12
 .DS_Store
+# PowerPoint owner/lock files contain local session metadata, not deliverables.
+~$*.pptx
