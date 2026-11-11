@@ -1,6 +1,6 @@
 # 개인 랩 설치 순서와 재개 안내
 
-이 문서는 [README](../README.md)의 Windows 설치 명령을 어떤 순서로 선택할지 설명합니다. 제출 버전은 `main` 브랜치(PR #24 병합)입니다. pfSense/S10은 개인 랩에서 실측했지만, 다섯 구성을 새 clone에서 실제로 기동하는 통합 설치 확인은 아직 미완료입니다. [정적 설치 점검 결과](installation-audit-20261110.md)는 실제 기동 검사와 구분합니다.
+이 문서는 [README](../README.md)의 Windows 설치 명령을 어떤 순서로 선택할지 설명합니다. 11/11 최신 후보는 `codex/s12-personal-live`(PR #31, #30에 의존)이며 최종 제출은 두 PR을 검토·병합한 `main`을 대상으로 합니다. 현재 main만 받으면 최신 S4/S12 결과와 PPT r7이 빠집니다. 다섯 구성을 최종 새 clone에서 실제로 기동하는 통합 설치 확인은 아직 미완료입니다. [11/11 새 clone 점검](installation-audit-20261111.md)은 실제 기동 검사와 구분합니다.
 
 ## 실행할 랩 선택
 
@@ -8,13 +8,17 @@
 
 | 목적 | 설치와 설정 반입 | 실측 | 종료 |
 | --- | --- | --- | --- |
-| 포털·MySQL 기본 | [README](../README.md#포털과-db-실행): `.env` 준비 → Compose up | 헬스·가입·로그인 | `docker compose stop` |
+| 포털·MySQL 기본 | [README](../README.md#포털과-db): `.env` 준비 → Compose up | 헬스·가입·로그인 | `docker compose stop` |
 | Graylog·n8n 연결만 확인 | [관제 스모크](docker-soc.md): `.env.soc` → Compose up → 콘텐츠 팩·수신 워크플로 | 합성 입력과 정상 대조 전달 | 같은 터미널의 `docker compose @soc stop` |
 | S8 차단·티켓·해제 | [S8](s8-lab.md): `s8_lab.py init/up/configure` | `s8_verify.py` | `s8_lab.py stop` |
 | H1 작성 제한·해제 | [H1](h1-lab.md): `h1_lab.py init/up/configure` | `h1_verify.py` | `h1_lab.py stop` |
 | Wazuh 수동 복구 학습 | [수동 S7](s7-lab.md): `s7_lab.py init/up/ready/baseline` | `s7_verify.py` | `s7_lab.py stop` |
 | S7 전체 자동 복구·티켓 | [자동 S7](s7-auto-lab.md): 프로젝트 선택 → `s7_auto_lab.py init/up/ready/configure` | `s7_auto_verify.py`, `s7_auto_failures.py` | `s7_auto_lab.py stop` |
 | S7 버튼 검사 | [제어판](panel-lab.md): 같은 프로젝트의 자동 S7 준비 → `panel.py` | 입력 → 관찰 → 원복 | 제어판 Ctrl+C, 해당 자동 S7 stop |
+| S1 반복 로그인 실패 | [S1 실측 준비](s1-live-preparation.md): 새 번들 → 리소스 ID·키 반입 → 정상 세션 | 경계·9회 입력 → IP 차단·티켓 → 정상 로그인 | 소유 티켓 원복 후 번들의 Compose stop |
+| S4 실패·성공 결합 | [S4 준비](s4-live-preparation.md), [세션·증적](s4-session-evidence.md): 새 번들·대상/정상 계정 | 잠금·세션 회수·정상 대조·원복 | 소유 티켓 원복 후 번들의 Compose stop |
+| S12 가용성 | [S12](s12-lab.md): 새 번들 → baseline configure/measure → measured configure | boundary/healthy/controlled → recover | 원복 확인 후 번들의 Compose stop |
+| P04·S10 경계 차단 | [S10](s10-lab.md): 실제 ISO로 pfSense 설치 → P04 → S10 설정 | 포털·경계 차단과 정상 대조·두 조치 원복 | 해당 문서의 순서로 원복 확인 후 소유 랩 stop |
 
 표의 Python 명령은 `py -3.12 tools/` 뒤에 붙입니다. 각 명령이 성공한 뒤에만 다음으로 넘어갑니다. `up` 성공은 시험 성공이 아니며 `stop`도 티켓이나 방화벽 조치를 해제하지 않습니다.
 
@@ -28,6 +32,9 @@
 | H1 | `.env.h1` | `py -3.12 tools/h1_lab.py init` |
 | 수동 S7 | `.env.s7`, `.local/s7/` 인증서·설정 | `py -3.12 tools/s7_lab.py init` |
 | 자동 S7 | `.env.s7-auto`, 수동 S7 인증서, `.local/s7-auto/` | `py -3.12 tools/s7_auto_lab.py init` |
+| S1 / S4 | 각각 `.local` 새 번들의 `lab.env`, 비공개 계정 파일 | 각 `s1_rehearsal.py` / `s4_rehearsal.py`의 `prepare` 절차 |
+| S12 | `.local` 새 번들의 `lab.env`, owner·import 파일 | `py -3.12 tools/s12_lab.py --settings <설정파일> --output <새폴더>` (설명용 표기, 복사 명령은 S12 문서) |
+| P04 / S10 | 공통 `.env.pf`, `.local/pf`의 VM·키·상태 | S10 문서의 `pf_lab.py init --iso` → `s10_lab.py init` |
 
 새 PC에서는 `.env.example`의 빈 값을 자격증명으로 사용하지 않습니다. 초기화 도구 또는 문서의 난수 생성 절차로 만듭니다. 기존 볼륨을 재사용할 때는 대응하는 환경 파일·n8n 암호화 키·인증서를 함께 보관합니다. Git에 올리거나 캡처에 표시하지 않습니다.
 
@@ -72,6 +79,7 @@ $testPython = Join-Path (Get-Location) 'haedam-portal-backend/.venv/Scripts/pyth
 & $testPython tools/build_s10_workflows.py --check
 & $testPython tools/build_s1_workflows.py --check
 & $testPython tools/build_s4_workflows.py --check
+& $testPython tools/build_s12_workflows.py --check
 Push-Location haedam-portal-backend
 & $testPython -m pytest -q
 Pop-Location

@@ -1,6 +1,6 @@
 # 개인 관제 Docker Compose 설치
 
-먼저 [README](../README.md#포털과-db-실행)의 `.env` 준비까지 진행합니다. `compose.yaml`은 포털·MySQL만 실행할 때 쓰고, 아래 명령은 Graylog·n8n·티켓 저장소를 추가합니다. Docker Desktop의 Linux 엔진을 사용합니다.
+먼저 [README](../README.md#포털과-db)의 `.env` 준비까지 진행합니다. `compose.yaml`은 포털·MySQL만 실행할 때 쓰고, 아래 명령은 Graylog·n8n·티켓 저장소를 추가합니다. Docker Desktop의 Linux 엔진을 사용합니다.
 
 ## 관제용 비밀값 생성
 

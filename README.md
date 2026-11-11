@@ -122,10 +122,10 @@ flowchart LR
 
 ### 받기
 
-제출 버전은 **`main` 브랜치**입니다(PR #24·#28로 개인 작업 PR을 통합). 처음 받는 경우 아래처럼 `main`을 지정하고 현재 커밋을 확인합니다. 비공개 저장소 접근 권한이 있는 GitHub 계정으로 Git 인증을 준비합니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다.
+최종 제출 대상은 **`main` 브랜치**입니다. **11/11 점검 시 S4 실측 수정(PR #30)과 S12·PPT r7(PR #31)은 아직 미병합**이므로, 검토 중인 최신 후보를 재현하려면 아래 후보 브랜치를 받습니다. 김명준이 #30 → #31 순으로 병합한 뒤에는 `--branch main`으로 바꾸고 해당 결과·PPT 파일이 있는지 확인합니다. 비공개 저장소 접근 권한이 있는 GitHub 계정으로 Git 인증을 준비합니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다.
 
 ```powershell
-git clone --single-branch --branch main https://github.com/myeongjundev/haedam-soar-portfolio.git
+git clone --single-branch --branch codex/s12-personal-live https://github.com/myeongjundev/haedam-soar-portfolio.git
 Set-Location haedam-soar-portfolio
 git branch --show-current
 git rev-parse --short HEAD
@@ -298,18 +298,26 @@ pfSense ISO는 Git에 넣지 않습니다. 실행 중에는 기존 관제 스택
 
 </details>
 
+<details>
+<summary><b>S12</b> · 요청 증가와 서비스 지연 확인 후 차단·원복</summary>
+
+S12는 [개인 설치·기준선·차단·원복 절차](docs/s12-lab.md)를 따릅니다. 새 번들에서 기준선을 측정한 뒤 탐지·health 조건을 설정하며, 기본 미측정 설정은 실행 비활성입니다. [통제된 자원 경합 실측 결과](docs/s12-results.md)를 운영 DDoS 성능 검증으로 확대하지 않습니다.
+
+</details>
+
 ## 제출물과 문서
 
 | 항목 | 위치 |
 | --- | --- |
 | 개인 포트폴리오 PPT | [r7 PPTX 34장](output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261111-r7.pptx) · [편집 원본·출처·검증](docs/portfolio/README.md) |
+| 제출 자료 묶음 | [11/11 제출 ZIP](output/submission/김명준-개인포트폴리오-제출자료-20261111.zip) — 동일 PPT·제출 안내·지원 문안·검증 요약·해시 목록 |
 | 과제 검증표 | [개인 설치·실측 상태](docs/portfolio-plan.md) |
-| 제출 준비 | [결과물과 남은 확인](docs/submission-readiness-20261110.md) |
-| 설치 점검 | [새 clone 점검 결과](docs/installation-audit-20261110.md) · [설치 순서](docs/installation-guide.md) |
+| 제출 준비 | [11/11 최종 후보·남은 확인](docs/submission-readiness-20261111.md) |
+| 설치 점검 | [11/11 새 clone 점검](docs/installation-audit-20261111.md) · [이전 점검](docs/installation-audit-20261110.md) · [설치 순서](docs/installation-guide.md) |
 | 출처와 기여 | [팀 원본 기준 커밋·팀원별 출처](docs/sources.md) |
 | 이력서·자기소개서 문안 | [프로젝트 문안과 근거](docs/application-materials.md) |
 
-PPT에는 플로우차트, 상세 아키텍처, Docker·pfSense 망 구조, 포트 구성, 사례별 실측(S8·S7·H1·S10·S1), n8n 노드 연결도, Graylog·Wazuh 경보 증적, 제어판 화면과 개선 방향을 담았습니다.
+PPT에는 플로우차트, 상세 아키텍처, Docker·pfSense 망 구조, 포트 구성, 사례별 실측(S8·S7·H1·S10·S1·S4·S12), n8n 노드 연결도와 실제 화면, Graylog·Wazuh 경보 증적·실제 관제 화면, 제어판 화면과 개선 방향을 담았습니다.
 
 ## 한계와 다음 단계
 
@@ -323,4 +331,4 @@ PPT에는 플로우차트, 상세 아키텍처, Docker·pfSense 망 구조, 포�
 
 [공통 작업 규칙](AGENTS.md)과 [과제 검증표](docs/portfolio-plan.md)를 따라 작업별 PR을 열고, 개인 작업일지(`work-log/members/myeongjundev/`)에 실제 확인 결과와 미검증 부분을 기록했습니다. 개인 전환 작업은 AI 코딩 도구를 함께 사용했습니다. Codex는 구현·재현·자료 정리를, Claude는 독립 검토·실패 분석·pfSense/S10 작업을 맡았고, 범위 결정과 결과 확인, 병합은 김명준이 했습니다. 같은 GitHub 계정의 PR 코멘트는 다른 사람의 승인으로 표시하지 않습니다. 새 작업은 [첫 문제 해결 카드](docs/claude-first-task.md)에서 시작합니다.
 
-마감은 **2026-11-11 수요일 오후 5시 30분 KST**입니다.
+최신 제출 목표는 **2026-11-11 수요일 오전(KST)**입니다. 11/11 사용자 지시로 이전 17:30 계획을 앞당겼습니다.
