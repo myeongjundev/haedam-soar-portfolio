@@ -28,7 +28,7 @@
 
 **최신 제출 자료 · 2026-11-11:** [PPT r7 · 34장](output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261111-r7.pptx) · [제출 ZIP](output/submission/김명준-개인포트폴리오-제출자료-20261111.zip) · [설치 순서](docs/installation-guide.md) · [제출 전 확인](docs/submission-readiness-20261111.md)
 
-현재 최신 후보는 `codex/s12-personal-live`입니다. [PR #30](https://github.com/myeongjundev/haedam-soar-portfolio/pull/30) → [PR #31](https://github.com/myeongjundev/haedam-soar-portfolio/pull/31)이 아직 미병합이므로 현재 main과 구분합니다. 저장소는 비공개이며 평가자 접근 확인이 필요합니다.
+제출 기준은 **`main` 브랜치**입니다. 변경 이력은 [S4 실측 수정 · PR #30](https://github.com/myeongjundev/haedam-soar-portfolio/pull/30)과 [S12·PPT r7·README 이미지 · PR #31](https://github.com/myeongjundev/haedam-soar-portfolio/pull/31)에 있습니다. 저장소는 비공개이며 평가자 접근 확인이 필요합니다. 권한이 없는 계정이나 로그인하지 않은 브라우저에서는 404로 표시될 수 있습니다.
 
 ## 목차
 
@@ -186,10 +186,10 @@ PPT r7 24장에 실제 Wazuh 화면과 적용 범위를 넣었습니다. n8n·Gr
 
 ### 받기
 
-최종 제출 대상은 **`main` 브랜치**입니다. **11/11 점검 시 S4 실측 수정(PR #30)과 S12·PPT r7(PR #31)은 아직 미병합**이므로, 검토 중인 최신 후보를 재현하려면 아래 후보 브랜치를 받습니다. 김명준이 #30 → #31 순으로 병합한 뒤에는 `--branch main`으로 바꾸고 해당 결과·PPT 파일이 있는지 확인합니다. 비공개 저장소 접근 권한이 있는 GitHub 계정으로 Git 인증을 준비합니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다.
+최종 제출 대상인 **`main` 브랜치**를 받습니다. 비공개 저장소 접근 권한이 있는 GitHub 계정으로 Git 인증을 준비합니다. 다른 작업 폴더가 있으면 새 빈 폴더에서 실행합니다. 11/11 오전 새 클론 감사는 당시 후보 커밋 `ea7b419`를 기준으로 했으며, 최종 main 전체 서비스 재기동 검증과 구분합니다.
 
 ```powershell
-git clone --single-branch --branch codex/s12-personal-live https://github.com/myeongjundev/haedam-soar-portfolio.git
+git clone --single-branch --branch main https://github.com/myeongjundev/haedam-soar-portfolio.git
 Set-Location haedam-soar-portfolio
 git branch --show-current
 git rev-parse --short HEAD
