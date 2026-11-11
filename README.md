@@ -302,7 +302,7 @@ pfSense ISO는 Git에 넣지 않습니다. 실행 중에는 기존 관제 스택
 
 | 항목 | 위치 |
 | --- | --- |
-| 개인 포트폴리오 PPT | [r6 PPTX 33장](output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261111-r6.pptx) · [편집 원본·출처·검증](docs/portfolio/README.md) |
+| 개인 포트폴리오 PPT | [r7 PPTX 34장](output/portfolio/김명준-해담시청-SOAR-개인포트폴리오-20261111-r7.pptx) · [편집 원본·출처·검증](docs/portfolio/README.md) |
 | 과제 검증표 | [개인 설치·실측 상태](docs/portfolio-plan.md) |
 | 제출 준비 | [결과물과 남은 확인](docs/submission-readiness-20261110.md) |
 | 설치 점검 | [새 clone 점검 결과](docs/installation-audit-20261110.md) · [설치 순서](docs/installation-guide.md) |

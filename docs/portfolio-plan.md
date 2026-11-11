@@ -12,7 +12,7 @@
 | pfSense | 새 랩에서 실제 필터 경로·차단·원복, VM 방식 채점 확인 | P04 실측 통과 | 11/10 `P04-20261110T014245Z`: 실제 필터 경로, 공격만 차단·정상 200, 해제 후 양쪽 200. Docker 안 QEMU VM(KVM 없음). VM 방식은 11/9 사용자 결정이며 강사님 확인 여부는 기록 없음. [결과](s10-results-20261110.md) |
 | n8n | 기동, 워크플로·자격증명 설정, 자동 대응·티켓 | S1·S4·S8·H1·개인 S7·S10·S12 통과 | 실제 대응·티켓·원복 확인. [S1](s1-results.md), [S8](s8-results.md), [H1](h1-results.md), [S10](s10-results-20261110.md), [S12](s12-results.md) |
 | 시나리오별 재현 | 테스트 명령, 기대·실측 결과, 가린 캡처 | S8·개인 S7·H1·S10·S1·S4·통제 조건 S12 통과 | 아래 사례별 적용 범위 유지. 새 PC 전체 README 재현은 남음 |
-| 개인 PPT | 7단계 본인 명의 PPT와 개인 실측 근거 | 33장 r6 작성·렌더링·패키지 검사 | [PPT와 편집 원본](portfolio/README.md). S4·S12 실측과 n8n·Graylog·티켓 실제 캡처 추가. Wazuh 실제 UI 캡처는 후속 |
+| 개인 PPT | 7단계 본인 명의 PPT와 개인 실측 근거 | 34장 r7·PowerPoint 실제 열기·주요 장 확인 | [PPT와 편집 원본](portfolio/README.md). S4·S12 실측과 n8n·Graylog·티켓·기존 관제 Wazuh 실제 캡처 포함. 개인 S7 동일 회차의 Wazuh UI와 구분 |
 
 pfSense는 FreeBSD 기반입니다. 공식 설치 경로는 ISO로 VM을 만드는 방식입니다. 한 PC에서 Compose와 pfSense CE VM을 함께 운영하는 구성을 우선 설계하고, 과제의 컨테이너 문구에 이 구성이 허용되는지 강사님 확인이 필요합니다. 11/9 사용자가 VM 방식을 결정했고, 11/10 이 PC에서는 KVM이 없어 Docker 안 QEMU VM으로 설치·실측했습니다. [Netgate 가상화 문서](https://docs.netgate.com/pfsense/en/latest/virtualization/)
 
