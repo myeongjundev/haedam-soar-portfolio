@@ -1,0 +1,92 @@
+{
+  "id": "portfolioS12Health01",
+  "name": "[Portfolio S12] baseline health probe",
+  "active": false,
+  "nodes": [
+    {
+      "id": "respond-Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "haedam-s12-respond-health",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "s12OperatorAuth",
+          "name": "s12OperatorAuth"
+        }
+      },
+      "webhookId": "haedam-s12-respond-health"
+    },
+    {
+      "id": "s12-baseline-health",
+      "name": "Sample health",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const CFG = {\"detection_enabled\": false, \"operator_name\": \"portfolio-s12-operator\", \"event_max_age_seconds\": 150, \"future_clock_tolerance_seconds\": 30, \"ip\": \"172.30.121.21\", \"asset_id\": \"haedam-portal\", \"health_url\": \"http://portal-response:5000/api/v1/health\", \"baseline_ms\": null, \"baseline_source\": null, \"health_k\": 3, \"health_interval_ms\": 2000, \"health_timeout_ms\": 5000};\n\nfunction healthConfig(c) {\n if (c.baseline_ms === null || c.baseline_ms === undefined) return 'no_baseline';\n if (typeof c.baseline_source!=='string' || !/^[A-Za-z0-9._:-]{1,120}$/.test(c.baseline_source) ||\n     !Number.isFinite(c.baseline_ms) || c.baseline_ms <= 0 ||\n     !Number.isFinite(c.health_timeout_ms) || c.health_timeout_ms <= c.baseline_ms || c.health_timeout_ms > 30000 ||\n     !Number.isInteger(c.health_k) || c.health_k < 1 || c.health_k > 10 ||\n     !Number.isFinite(c.health_interval_ms) || c.health_interval_ms <= 0 || c.health_interval_ms > 30000)\n  return 'invalid_health_config';\n return null;\n}\nasync function healthSample(c) {\n const started=Date.now();let status=null,body=null,error=null;\n try {\n  const r=await this.helpers.httpRequest({method:'GET',url:c.health_url,timeout:c.health_timeout_ms,\n   returnFullResponse:true,ignoreHttpStatusCodes:true,json:true});\n  status=Number.isInteger(r.statusCode)?r.statusCode:null;body=r.body;\n } catch(e) {\n  // Fixed codes only: a library error message may contain request/authentication data.\n  error=['ETIMEDOUT','ESOCKETTIMEDOUT','ECONNABORTED'].includes(e?.code)||e?.name==='TimeoutError'?'timeout':\n   e?.name==='SyntaxError'?'invalid_body':'network_error';\n }\n const ms=Math.max(0,Date.now()-started);\n let classification=error;\n if (!classification) {\n  if (status>=500) classification='server_error';\n  else if (status!==200) classification='unexpected_status';\n  else if (body?.success!==true || body?.data?.status!=='ok') classification='invalid_body';\n  else classification=ms>c.baseline_ms?'slow_success':'healthy';\n }\n return {started_at:new Date(started).toISOString(),finished_at:new Date().toISOString(),ms,status,error,\n  classification,ok:classification==='healthy',\n  degraded:['slow_success','timeout','network_error','server_error'].includes(classification)};\n}\n\nconst b=$input.first().json.body;\nif(!b || Object.keys(b).length!==2 || b.case_id!=='S12' || b.mode!=='sample') return [{json:{ok:false,http_status:400}}];\nconst samples=[];\nfor(let i=0;i<CFG.health_k;i++) {\n const v=await healthSample.call(this,{...CFG,baseline_ms:0});\n samples.push({started_at:v.started_at,finished_at:v.finished_at,ms:v.ms,status:v.status,error:v.error,valid_body:['slow_success','healthy'].includes(v.classification)});\n if(i<CFG.health_k-1) await new Promise(r=>setTimeout(r,CFG.health_interval_ms));\n}\nreturn [{json:{ok:true,scope:'actual_n8n_to_portal',samples,http_status:200}}];\n"
+      }
+    },
+    {
+      "id": "respond-Respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": "={{ $json.http_status || 503 }}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Sample health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample health": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  }
+}

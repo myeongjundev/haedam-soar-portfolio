@@ -33,6 +33,10 @@
 
 ## 개인 기여와 검증 근거
 
+11/11 개인 S12의 `infra/s12-*.json`, `infra/n8n/s12-src/`, `infra/n8n/portfolio-s12/`, `infra/graylog/portfolio-s12.json`, `services/s12-target/`, 새 `tools/s12_{settings,lab,client,runtime,configure,measure}.py`, `tools/build_s12_workflows.py`와 S12 테스트는 김명준·Codex의 후속 구현입니다. 김대훈의 팀 S12 요청 수/기준선 정책, 검토된 개인 S1 티켓·포털 하위 흐름, 김상혁의 티켓 저장소를 사용합니다. 기존 `lab/s12/`의 팀 자료는 그대로 보존했습니다. 실제 기준선, 정상 서비스 무대응, 통제된 자원 경합에서 차단·정상 대조·동일 티켓 원복을 확인했습니다. 운영 DDoS 성능 시험은 아닙니다. [개인 결과](s12-results.md).
+
+PPT r6의 추가 S4/S12 실측 장과 n8n·Graylog·해담 보안 대시보드 이미지는 김명준·Codex의 개인 결과입니다. 기존 팀원 아이디어와 원본 출처 표시는 유지하고, 실제 캡처와 노드 요약 도식을 구분했습니다. [편집·검증 내역](portfolio/README.md).
+
 11/10 후속 개인 S1 실측은 [결과·실패 수정·환경 재개 기록](s1-results.md)에 있습니다. 김명준·Codex가 관리 bridge 설정과 n8n 하위 흐름의 반환 경로를 수정하고, 실제 9회 실패 → 탐지 → 차단·티켓 → 정상 로그인 → 원복을 확인했습니다. 아래 S1 문단의 오프라인/미실측 설명은 각 반입 단계 당시의 범위이며, 팀 S1 정책·원본 작성자의 기여는 유지합니다.
 
 PR #20 이후 `tools/s1_rehearsal.py`, `tools/s1_probe.py`, `tools/s1_evidence.py`와 연결 테스트·실측 절차는 김명준·Codex의 개인 후속 준비입니다. 팀 S1 규칙, 기존 입력기·포털·티켓 계약을 그대로 사용하며 정상 합성 계정 로그인, 개인 import 파일 생성, 회차별 증적 대조를 추가했습니다. 실제 엔진 실행 결과로 표시하지 않습니다. [S1 실측 준비](s1-live-preparation.md).

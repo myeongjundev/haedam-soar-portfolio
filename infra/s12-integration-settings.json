@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "detection_enabled": false,
+  "portal_url": "http://portal-response:5000",
+  "ticket_url": "http://ticket-store:8088",
+  "n8n_url": "http://n8n:5678",
+  "respond_path": "haedam-s12-respond",
+  "release_path": "haedam-s12-release",
+  "operator_name": "portfolio-s12-operator",
+  "event_max_age_seconds": 150,
+  "future_clock_tolerance_seconds": 30,
+  "credentials": {
+    "detection": {
+      "id": "s12DetectionAuth",
+      "header": "X-S12-Detection-Key",
+      "env": "S12_DETECTION_KEY"
+    },
+    "operator": {
+      "id": "s12OperatorAuth",
+      "header": "X-S12-Operator-Key",
+      "env": "S12_OPERATOR_KEY"
+    },
+    "portal": {
+      "id": "s12PortalAuth",
+      "header": "X-Response-Key",
+      "env": "PORTAL_RESPONSE_KEY"
+    },
+    "ticket": {
+      "id": "s12TicketAuth",
+      "header": "X-Response-Key",
+      "env": "TICKET_STORE_KEY"
+    }
+  }
+}
